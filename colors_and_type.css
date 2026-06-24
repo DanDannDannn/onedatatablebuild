@@ -1,0 +1,221 @@
+/* ==========================================================================
+   Forward Earth — Design Tokens · BRIDGE to Forward Earth Design System (v2)
+   --------------------------------------------------------------------------
+   This prototype was authored against a set of `--fe-*` tokens. To re-skin it
+   onto the new Forward Earth Design System (v2) — and to make it respond to the
+   10 white-label brand themes (⌥⇧T) — we:
+     1. import the v2 base tokens + per-brand theme overrides, then
+     2. redefine the `--fe-*` roles the prototype uses in terms of the v2
+        semantic tokens, so every brand swap (accent + neutrals + font) flows
+        through automatically with no component edits.
+   Emissions/scope chart colours are kept fixed (brand-independent data
+   semantics, per DESIGN.md "consistent scope colours across every view").
+   ========================================================================== */
+@import url("ds/colors_and_type.css");
+@import url("ds/themes/themes.css");
+
+/* Keep the literal "Satoshi" family available for any direct references. */
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("fonts/Satoshi-Variable.ttf") format("truetype-variations"),
+       url("fonts/Satoshi-Variable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: italic;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("fonts/Satoshi-VariableItalic.ttf") format("truetype-variations"),
+       url("fonts/Satoshi-VariableItalic.ttf") format("truetype");
+}
+
+:root {
+  /* ── ACCENT — now driven by the active brand theme ─────────────────────
+     `--action-primary` & friends re-resolve per [data-theme]. */
+  --fe-accent-primary:        var(--action-primary);
+  --fe-accent-primary-hover:  var(--action-primary-hover);
+  --fe-accent-primary-pressed:var(--action-primary-hover);
+  --fe-accent-primary-soft:   var(--action-primary-surface);
+  --fe-accent-primary-softer: var(--bg-content);
+  --fe-accent-secondary:      var(--chart-secondary);
+  --fe-brand-orange:          var(--fwe-orange-logo);
+
+  /* Partner swatches (reference only) */
+  --fe-partner-novisto: #001233;
+  --fe-partner-assent:  #215273;
+  --fe-partner-prewave: #181615;
+  --fe-partner-secaro:  #8A36FF;
+
+  /* ── PRIMARY scale — key steps follow the brand accent ─────────────────
+     50/100 → accent surfaces, 500/600/700 → accent + hover. Mid/dark steps
+     fall back to the accent hover so partner themes never bleed indigo. */
+  --fe-primary-50:  var(--action-primary-surface);
+  --fe-primary-100: var(--action-primary-surface-hover);
+  --fe-primary-200: var(--action-primary-surface-hover);
+  --fe-primary-300: var(--action-primary);
+  --fe-primary-400: var(--action-primary);
+  --fe-primary-500: var(--action-primary);
+  --fe-primary-600: var(--action-primary-hover);
+  --fe-primary-700: var(--action-primary-hover);
+  --fe-primary-800: var(--action-primary-hover);
+  --fe-primary-900: var(--action-primary-hover);
+  --fe-primary-950: #0E012E;
+
+  /* ── SECONDARY (violet) — kept as a fixed accent for AI / informational ─ */
+  --fe-secondary-50:  #FAF8FF;
+  --fe-secondary-100: #EFE8FF;
+  --fe-secondary-200: #DDC9FF;
+  --fe-secondary-300: #C4A3FF;
+  --fe-secondary-400: #AD6EFF;
+  --fe-secondary-500: #8A36FF;
+  --fe-secondary-600: #7322E8;
+  --fe-secondary-700: #5A14C0;
+  --fe-secondary-800: #420E94;
+  --fe-secondary-900: #2E0A6B;
+  --fe-secondary-950: #1A0440;
+
+  /* ── NEUTRAL GREYS — shared across themes (from v2 grey scale) ─────────── */
+  --fe-gray-50:  var(--fwe-grey-50);
+  --fe-gray-100: var(--fwe-grey-100);
+  --fe-gray-200: var(--fwe-grey-200);
+  --fe-gray-300: var(--fwe-grey-300);
+  --fe-gray-400: var(--fwe-grey-400);
+  --fe-gray-500: var(--fwe-grey-500);
+  --fe-gray-600: var(--fwe-grey-600);
+  --fe-gray-700: var(--fwe-grey-700);
+  --fe-gray-800: var(--fwe-grey-800);
+  --fe-gray-900: var(--fwe-grey-900);
+  --fe-gray-950: var(--fwe-grey-950);
+
+  --fe-tinted-50:  var(--fwe-tintedGrey-50);
+  --fe-tinted-100: var(--fwe-tintedGrey-100);
+  --fe-tinted-200: var(--fwe-tintedGrey-200);
+  --fe-tinted-300: var(--fwe-tintedGrey-300);
+  --fe-tinted-400: var(--fwe-tintedGrey-400);
+  --fe-tinted-500: var(--fwe-tintedGrey-500);
+  --fe-tinted-600: var(--fwe-tintedGrey-600);
+  --fe-tinted-700: var(--fwe-tintedGrey-700);
+  --fe-tinted-800: var(--fwe-tintedGrey-800);
+  --fe-tinted-900: var(--fwe-tintedGrey-900);
+  --fe-tinted-950: var(--fwe-tintedGrey-950);
+
+  /* ── STATUS — feedback colours (fixed, brand-independent) ─────────────── */
+  --fe-error-50:  #FDF1F1; --fe-error-100: #FBE0E0; --fe-error-200: #F7B9B9;
+  --fe-error-300: #F29292; --fe-error-400: #ED6B6B; --fe-error-500: #F35151;
+  --fe-error-600: #C93A3A; --fe-error-700: #9E2626; --fe-error-800: #721717;
+  --fe-error-900: #470C0C; --fe-error-950: #1E0404;
+
+  --fe-success-50:  #DDFFE3; --fe-success-100: #B7FFC3; --fe-success-200: #7AFE8D;
+  --fe-success-300: #3DF75C; --fe-success-400: #19DD39; --fe-success-500: #0FB930;
+  --fe-success-600: #088F25; --fe-success-700: #03661A; --fe-success-800: #00400F;
+  --fe-success-900: #001F06; --fe-success-950: #000C02;
+
+  --fe-alert-50:  #FFF7ED; --fe-alert-100: #FFE7C9; --fe-alert-200: #FFC888;
+  --fe-alert-300: #FFA144; --fe-alert-400: #FF750D; --fe-alert-500: #E25B00;
+  --fe-alert-600: #B74800; --fe-alert-700: #8B3600; --fe-alert-800: #5F2400;
+  --fe-alert-900: #391500; --fe-alert-950: #180900;
+
+  --fe-neutral-50:  var(--fe-secondary-50);
+  --fe-neutral-500: var(--fe-secondary-500);
+  --fe-neutral-900: var(--fe-secondary-900);
+
+  /* ── SEMANTIC ROLES — mapped to v2 (theme-aware) ──────────────────────── */
+  --fe-bg-app:     var(--bg-surface);
+  --fe-bg-panel:   var(--bg-content);
+  --fe-bg-surface: var(--bg-surface);
+  --fe-bg-subtle:  var(--bg-content);
+  --fe-bg-inverse: #0B1031;
+
+  --fe-border-subtle:  var(--border-default);
+  --fe-border-default: var(--fwe-grey-200);
+  --fe-border-strong:  var(--fwe-grey-300);
+  --fe-border-focus:   var(--action-primary);
+
+  --fe-fg-strong:   var(--text-primary);
+  --fe-fg-default:  var(--text-primary);
+  --fe-fg-muted:    var(--text-secondary);
+  --fe-fg-subtle:   var(--text-tertiary);
+  --fe-fg-on-accent:var(--action-primary-inverted);
+  --fe-fg-accent:   var(--action-primary);
+
+  /* ── CHART PALETTE — fixed scope colours (data semantics) ─────────────── */
+  --fe-chart-scope-1: #F35151;   /* Scope 1 — fuels, combustion */
+  --fe-chart-scope-2: #AD6EFF;   /* Scope 2 — electricity */
+  --fe-chart-scope-3: #00BBA7;   /* Scope 3 — supply chain (teal) */
+  --fe-chart-accent:  var(--action-primary);
+  --fe-chart-neutral: var(--fwe-grey-200);
+
+  /* ── TYPOGRAPHY — family follows the active brand theme ───────────────── */
+  --fe-font-sans:    var(--font-text);
+  --fe-font-display: var(--font-heading);
+  --fe-font-mono:    var(--font-code);
+
+  --fe-text-xs: 10px;    --fe-lh-xs: 16px;
+  --fe-text-sm: 12px;    --fe-lh-sm: 20px;
+  --fe-text-base: 14px;  --fe-lh-base: 24px;
+  --fe-text-lg: 16px;    --fe-lh-lg: 26px;
+  --fe-text-xl: 18px;    --fe-lh-xl: 28px;
+  --fe-text-2xl: 20px;   --fe-lh-2xl: 30px;
+  --fe-text-3xl: 24px;   --fe-lh-3xl: 36px;
+  --fe-text-4xl: 28px;   --fe-lh-4xl: 40px;
+  --fe-text-5xl: 35px;   --fe-lh-5xl: 40px;
+  --fe-text-6xl: 60px;   --fe-lh-6xl: 60px;
+
+  --fe-weight-light: 300;
+  --fe-weight-regular: 400;
+  --fe-weight-medium: 500;
+  --fe-weight-bold: 700;
+
+  --fe-tracking-tight: -0.16px;
+  --fe-tracking-normal: 0;
+
+  /* ── SPACING — 4px base ───────────────────────────────────────────────── */
+  --fe-space-0: 0;   --fe-space-1: 4px;  --fe-space-2: 8px;   --fe-space-3: 12px;
+  --fe-space-4: 16px; --fe-space-5: 20px; --fe-space-6: 24px; --fe-space-8: 32px;
+  --fe-space-10: 40px; --fe-space-12: 48px; --fe-space-16: 64px;
+
+  /* ── RADII ────────────────────────────────────────────────────────────── */
+  --fe-radius-none: 0; --fe-radius-xs: 4px; --fe-radius-sm: 6px; --fe-radius-md: 8px;
+  --fe-radius-lg: 12px; --fe-radius-xl: 16px; --fe-radius-full: 9999px;
+
+  /* ── SHADOWS ──────────────────────────────────────────────────────────── */
+  --fe-shadow-xs: 0 1px 2px 0 rgba(11, 16, 49, 0.05);
+  --fe-shadow-sm: 0 1px 3px 0 rgba(11, 16, 49, 0.08), 0 1px 2px -1px rgba(11, 16, 49, 0.08);
+  --fe-shadow-md: 0 4px 12px -2px rgba(11, 16, 49, 0.10);
+  --fe-shadow-lg: 0 12px 60px 0 rgba(0,0,0,0.15), 0 16px 64px 0 rgba(0,0,85,0.024), 0 16px 36px -20px rgba(0,6,46,0.20);
+  --fe-shadow-focus: 0 0 0 4px color-mix(in srgb, var(--action-primary) 18%, transparent);
+
+  /* Transitions */
+  --fe-motion-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --fe-motion-base: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --fe-motion-slow: 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   SEMANTIC TYPE RAMPS
+   ========================================================================== */
+body {
+  font-family: var(--fe-font-sans);
+  font-size: var(--fe-text-base);
+  line-height: var(--fe-lh-base);
+  color: var(--fe-fg-default);
+  background: var(--fe-bg-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.fe-display { font-size: var(--fe-text-6xl); line-height: var(--fe-lh-6xl); font-weight: var(--fe-weight-bold); letter-spacing: var(--fe-tracking-tight); color: var(--fe-fg-strong); }
+.fe-h1      { font-size: var(--fe-text-5xl); line-height: var(--fe-lh-5xl); font-weight: var(--fe-weight-medium); letter-spacing: var(--fe-tracking-tight); color: var(--fe-fg-strong); }
+.fe-h2      { font-size: var(--fe-text-4xl); line-height: var(--fe-lh-4xl); font-weight: var(--fe-weight-medium); letter-spacing: var(--fe-tracking-tight); color: var(--fe-fg-strong); }
+.fe-h3      { font-size: var(--fe-text-3xl); line-height: var(--fe-lh-3xl); font-weight: var(--fe-weight-medium); color: var(--fe-fg-strong); }
+.fe-h4      { font-size: var(--fe-text-2xl); line-height: var(--fe-lh-2xl); font-weight: var(--fe-weight-medium); color: var(--fe-fg-strong); }
+.fe-h5      { font-size: var(--fe-text-lg); line-height: var(--fe-lh-lg); font-weight: var(--fe-weight-bold); color: var(--fe-fg-strong); }
+.fe-body-lg { font-size: var(--fe-text-lg); line-height: var(--fe-lh-lg); font-weight: var(--fe-weight-regular); }
+.fe-body    { font-size: var(--fe-text-base); line-height: var(--fe-lh-base); font-weight: var(--fe-weight-medium); }
+.fe-body-sm { font-size: var(--fe-text-sm); line-height: var(--fe-lh-sm); font-weight: var(--fe-weight-medium); }
+.fe-caption { font-size: var(--fe-text-sm); line-height: var(--fe-lh-sm); color: var(--fe-fg-muted); font-weight: var(--fe-weight-medium); }
+.fe-label   { font-size: var(--fe-text-sm); line-height: var(--fe-lh-sm); color: var(--fe-fg-accent); font-weight: var(--fe-weight-medium); letter-spacing: 0.2px; }
+.fe-mono    { font-family: var(--fe-font-mono); font-size: var(--fe-text-sm); }

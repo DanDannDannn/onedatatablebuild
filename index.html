@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Forward Earth — Calculations prototype (v2)</title>
+<link rel="stylesheet" href="app-v2.css" />
+<link rel="stylesheet" href="extras-v2.css" />
+<link rel="stylesheet" href="src-v2/AICopilot.css" />
+<link rel="stylesheet" href="src-v2/Analyse.css" />
+<link rel="stylesheet" href="src-v2/Imports2.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<!-- Forward Earth Design System (v2): white-label brand theme registry. -->
+<script src="ds/themes/themes.js"></script>
+<style>
+  /* ── Password gate (Forward Earth dark identity) ── */
+  .proto-gate {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: radial-gradient(1200px 600px at 50% -10%, #3D3580 0%, #302A6C 45%, #1E1A4A 100%);
+    font-family: "Satoshi Variable","Satoshi",system-ui,sans-serif;
+  }
+  .proto-gate__card {
+    width: 100%; max-width: 380px;
+    display: flex; flex-direction: column; gap: 14px;
+    background: #3D3580; border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px; padding: 32px 28px;
+    box-shadow: 0 24px 64px -16px rgba(11,16,49,0.55);
+    text-align: left;
+  }
+  .proto-gate__brand {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+    color: #C2C9FF; text-transform: lowercase; margin-bottom: 4px;
+  }
+  .proto-gate__title { margin: 0; font-size: 24px; font-weight: 700; color: #FF9E0D; letter-spacing: -0.2px; }
+  .proto-gate__sub { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: #FFFFFF; opacity: 0.85; }
+  .proto-gate__input {
+    width: 100%; box-sizing: border-box; height: 44px; padding: 0 14px;
+    font-size: 14px; font-family: inherit; color: #FFFFFF;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .proto-gate__input::placeholder { color: #C2C9FF; opacity: 0.6; }
+  .proto-gate__input:focus { border-color: #5A4DFF; box-shadow: 0 0 0 3px rgba(90,77,255,0.30); }
+  .proto-gate__input.is-error { border-color: #F35151; box-shadow: 0 0 0 3px rgba(243,81,81,0.22); }
+  .proto-gate__err { font-size: 12.5px; color: #FFC9C9; margin-top: -4px; }
+  .proto-gate__btn {
+    height: 44px; border: none; border-radius: 8px; cursor: pointer;
+    background: #5A4DFF; color: #fff; font-size: 14px; font-weight: 600; font-family: inherit;
+    transition: background 150ms ease, opacity 150ms ease; margin-top: 2px;
+  }
+  .proto-gate__btn:hover:not(:disabled) { background: #472AD8; }
+  .proto-gate__btn:disabled { opacity: 0.55; cursor: default; }
+
+  /* Brand theme switcher (sidebar) */
+  .brand-switch { position: relative; margin-left: auto; }
+  .brand-switch__btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 28px; padding: 0 7px; border-radius: var(--fe-radius-full);
+    border: 1px solid var(--fe-border-subtle); background: #fff;
+    cursor: pointer; color: var(--fe-fg-muted);
+    transition: border-color var(--fe-motion-fast), background var(--fe-motion-fast);
+  }
+  .brand-switch__btn:hover { border-color: var(--fe-border-strong); background: var(--fe-bg-subtle); }
+  .brand-switch__dot { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(255,255,255,.65); flex-shrink: 0; }
+  .brand-switch__menu {
+    position: absolute; top: 36px; right: 0; z-index: 80;
+    width: 236px; padding: 6px; background: #fff;
+    border: 1px solid var(--fe-border-subtle); border-radius: var(--fe-radius-lg);
+    box-shadow: var(--fe-shadow-lg);
+  }
+  .brand-switch__hd { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--fe-fg-muted); padding: 6px 10px 4px; }
+  .brand-switch__item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--fe-radius-sm); cursor: pointer; }
+  .brand-switch__item:hover { background: var(--fe-bg-subtle); }
+  .brand-switch__item.is-active { background: var(--fe-primary-50); }
+  .brand-switch__sw { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(0,0,0,.08); flex-shrink: 0; }
+  .brand-switch__nm { flex: 1; font-size: 13px; color: var(--fe-fg-strong); }
+  .brand-switch__item.is-active .brand-switch__nm { font-weight: 700; }
+  .brand-switch__kbd { font-family: var(--fe-font-mono); font-size: 10px; background: var(--fe-bg-subtle); padding: 1px 5px; border-radius: 4px; color: var(--fe-fg-muted); }
+  .brand-switch__foot { font-size: 11px; color: var(--fe-fg-subtle); padding: 8px 10px 4px; border-top: 1px solid var(--fe-border-subtle); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;font:500 14px/1.4 system-ui,sans-serif;color:#5F5F78;">Loading dataset…</div></div>
+
+<script type="text/babel" src="src-v2/Icon.jsx"></script>
+<script type="text/babel" src="src-v2/Logo.jsx"></script>
+<script type="text/babel" src="src-v2/data.jsx"></script>
+<script type="text/babel" src="src-v2/bits.jsx"></script>
+<script type="text/babel" src="src-v2/DataGridModel.jsx"></script>
+<script type="text/babel" src="src-v2/SortableHeader.jsx"></script>
+<script type="text/babel" src="src-v2/Shell.jsx"></script>
+<script type="text/babel" src="src-v2/PageSections.jsx"></script>
+<script type="text/babel" src="src-v2/AICopilot.jsx"></script>
+<script type="text/babel" src="src-v2/AIThreads.jsx"></script>
+<script type="text/babel" src="src-v2/ForwardAI.jsx"></script>
+<script type="text/babel" src="src-v2/Reports.jsx"></script>
+<script type="text/babel" src="src-v2/Overview.jsx"></script>
+<script type="text/babel" src="src-v2/CalculationQuality.jsx"></script>
+<script type="text/babel" src="src-v2/BoardFilters.jsx"></script>
+<script type="text/babel" src="src-v2/HotspotAnalysis.jsx"></script>
+<script type="text/babel" src="src-v2/Trends.jsx"></script>
+<script type="text/babel" src="src-v2/Calculations.jsx"></script>
+<script type="text/babel" src="src-v2/DataEntries.jsx"></script>
+<script type="text/babel" src="src-v2/DataToolbar.jsx"></script>
+<script type="text/babel" src="src-v2/FilterBuilder.jsx"></script>
+<script type="text/babel" src="src-v2/AllData.jsx"></script>
+<script type="text/babel" src="src-v2/ViewOverflow.jsx"></script>
+<script type="text/babel" src="src-v2/DataViews.jsx"></script>
+<script type="text/babel" src="src-v2/DataPage.jsx"></script>
+<script type="text/babel" src="src-v2/BulkImport.jsx"></script>
+<script type="text/babel" src="src-v2/Imports2.jsx"></script>
+<script type="text/babel" src="src-v2/ManualEntry.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "density": "comfortable",
+  "drawerWidth": "56vw",
+  "importsVersion": "v2",
+  "aiPresence": "branded",
+  "aiChips": "visible"
+}/*EDITMODE-END*/;
+
+// Hash routing — keep route in sync with window.location.hash so each page
+// has its own URL (e.g. #overview, #calcs). Survives refresh and is preserved
+// when sharing the preview link.
+const VALID_ROUTES = new Set([
+  "getting-started", "forward-ai", "overview", "emission-overview", "hotspot", "quality", "trends",
+  "data", "factors",
+  "import", "manual",
+  "org", "settings",
+  // Legacy aliases — auto-redirected to "data" with the matching tab
+  "calcs", "entries",
+]);
+const readHashRoute = () => {
+  const h = (window.location.hash || "").replace(/^#\/?/, "").split("/")[0];
+  // Allow `report:<id>` routes to pass through directly
+  if (h && h.startsWith("report:")) return h;
+  if (h && VALID_ROUTES.has(h)) return h;
+  // Fall back to legacy localStorage value, then default
+  const stored = localStorage.getItem("fe-proto-route");
+  if (stored && stored.startsWith("report:")) return stored;
+  const r = VALID_ROUTES.has(stored) ? stored : "overview";
+  // Migrate legacy routes to the unified "data" route
+  if (r === "calcs" || r === "entries") return "data";
+  return r;
+};
+// Deep-link: an open data-entry detail is encoded as `#data/<entryId>` so the
+// drawer can be shared and survives refresh / back-forward.
+const readHashEntryId = () => {
+  const segs = (window.location.hash || "").replace(/^#\/?/, "").split("/");
+  return (segs[0] === "data" && segs[1]) ? decodeURIComponent(segs[1]) : null;
+};
+
+function App() {
+  const [route, setRoute] = useState(readHashRoute);
+
+  // ── Brand theme (Forward Earth DS v2 white-label) ───────────────────────
+  // ⌥⇧T cycles all 10 partner brands; accent + neutrals + font swap live.
+  const FWE_THEMES = window.FWE_THEMES || [{ id: 'default', name: 'Forward Earth', accent: '#5a4dff', font: "'Satoshi Variable','Satoshi',sans-serif" }];
+  const [themeId, setThemeId] = useState(() => {
+    const s = localStorage.getItem('fe-theme');
+    return FWE_THEMES.find(t => t.id === s) ? s : 'default';
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeId;
+    localStorage.setItem('fe-theme', themeId);
+  }, [themeId]);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.altKey && e.shiftKey && (e.code === 'KeyT' || e.key === 'T' || e.key === 't' || e.key === '\u2020' || e.key === '\u02c7')) {
+        e.preventDefault();
+        setThemeId(cur => {
+          const i = FWE_THEMES.findIndex(t => t.id === cur);
+          return FWE_THEMES[(i + 1) % FWE_THEMES.length].id;
+        });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const [calcFilter, setCalcFilter] = useState(() => {
+    const stored = localStorage.getItem("fe-proto-calc-filter-v2");
+    // Migrate legacy keys to the new 3-state taxonomy
+    const map = { needs_review: "suggested", verified: "confirmed", locked: "confirmed" };
+    return map[stored] || stored || "all";
+  });
+  const [selCalcId, setSelCalcId] = useState(null);
+  const [selEntryId, setSelEntryId] = useState(readHashEntryId);
+  const [dataTab, setDataTab] = useState(() => {
+    const stored = localStorage.getItem("fe-proto-data-tab");
+    // Only the permanent "All data" default + persisted saved-view tabs survive
+    // reloads; "deepdive" is ephemeral. Legacy "calcs" coerces to "all".
+    if (stored === "all") return "all";
+    if (stored && stored.startsWith("view:")) return stored;
+    return "all";
+  });
+  useEffect(() => {
+    if (dataTab === "all" || (dataTab && dataTab.startsWith("view:"))) {
+      localStorage.setItem("fe-proto-data-tab", dataTab);
+    }
+  }, [dataTab]);
+  // Chart-explore tab keeps its own filter state so deep-dive filters don't
+  // leak into the Calculations tab.
+  const [exploreFilter, setExploreFilter] = useState("all");
+  const [preselectEntry, setPreselectEntry] = useState(null);
+  const [entriesBatchFilter, setEntriesBatchFilter] = useState(null);
+  const [calcs, setCalcs] = useState(() => window.CALCS);
+  const [entries, setEntries] = useState(() => window.ENTRIES);
+  const [toast, setToast] = useState(null);
+  const [showCreateReport, setShowCreateReport] = useState(false);
+  const { reports, createReport } = useReports();
+
+  // Tweaks
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [tweakOn, setTweakOn] = useState(false);
+  useEffect(() => {
+    const onMsg = (e) => {
+      const d = e.data || {};
+      if (d.type === "__activate_edit_mode") setTweakOn(true);
+      if (d.type === "__deactivate_edit_mode") setTweakOn(false);
+    };
+    window.addEventListener("message", onMsg);
+    window.parent.postMessage({type:"__edit_mode_available"}, "*");
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+  const updateTweak = (k, v) => {
+    setTweaks(t => ({...t, [k]: v}));
+    window.parent.postMessage({type:"__edit_mode_set_keys", edits: {[k]: v}}, "*");
+  };
+
+  useEffect(() => {
+    localStorage.setItem("fe-proto-route", route);
+    // Keep URL hash in sync with route (no extra history entry on echoes). On the
+    // data route an open entry is appended as `#data/<id>` so it's shareable.
+    let target = "#" + route;
+    if (route === "data" && selEntryId) target += "/" + encodeURIComponent(selEntryId);
+    if (window.location.hash !== target) {
+      window.history.replaceState(null, "", target);
+    }
+  }, [route, selEntryId]);
+  useEffect(() => { localStorage.setItem("fe-proto-calc-filter-v2", calcFilter); }, [calcFilter]);
+
+  // Apply analyse tweaks (AI presence, chip visibility) as body data-attrs so
+  // CSS can swap variants without prop-drilling into every page.
+  useEffect(() => {
+    document.body.setAttribute("data-ai-presence", tweaks.aiPresence || "branded");
+    document.body.setAttribute("data-ai-chips", tweaks.aiChips || "visible");
+  }, [tweaks.aiPresence, tweaks.aiChips]);
+
+  // Listen for back/forward + manual hash edits
+  useEffect(() => {
+    const onHash = () => {
+      const r = readHashRoute();
+      setRoute(r);
+      setSelCalcId(null);
+      // Restore the open entry from the URL (shared link / back-forward / manual edit)
+      setSelEntryId(readHashEntryId());
+    };
+    window.addEventListener("hashchange", onHash);
+    // Ensure URL reflects initial route on first paint
+    if (!window.location.hash) {
+      window.history.replaceState(null, "", "#" + route);
+    }
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // Deep-dive preset for Calculations — tick bumps on each jump so Calculations re-applies
+  const [calcPreset, setCalcPreset] = useState({ tick: 0, bu: null, scope: null, category: null, query: "", chartSpec: null, origin: null, originLabel: null, originAnchor: null });
+
+  // Saved-view preset for the All data table (entries spine) — tick bumps when
+  // an All-data saved view is opened so the table re-applies its filters.
+  const [allDataPreset, setAllDataPreset] = useState({ tick: 0, period: null, query: "", colFilters: null });
+
+  // Pending "scroll to chart" request — set when a Back-to-page button is used,
+  // resolved once the target route has rendered the section.
+  const [pendingScroll, setPendingScroll] = useState(null);
+  useEffect(() => {
+    if (!pendingScroll || pendingScroll.route !== route) return;
+    let cancelled = false;
+    // Collect every scrollable ancestor (innermost → outermost). We nudge each
+    // one (and the window) by a relative delta so the section lands near the
+    // top regardless of which element is the real scroll container in this
+    // viewport — avoids assuming a fixed selector.
+    const bringToTop = (el) => {
+      const OFFSET = 20;
+      const scrollers = [];
+      let p = el.parentElement;
+      while (p && p !== document.body && p !== document.documentElement) {
+        const s = getComputedStyle(p);
+        if (/(auto|scroll|overlay)/.test(s.overflowY) && p.scrollHeight > p.clientHeight + 4) scrollers.push(p);
+        p = p.parentElement;
+      }
+      scrollers.forEach(sc => {
+        const delta = el.getBoundingClientRect().top - sc.getBoundingClientRect().top - OFFSET;
+        sc.scrollTop = Math.max(0, sc.scrollTop + delta);
+      });
+      // Window / document fallback (when the page itself scrolls).
+      if (document.scrollingElement && document.scrollingElement.scrollHeight > window.innerHeight + 4) {
+        const delta = el.getBoundingClientRect().top - OFFSET;
+        window.scrollTo(0, Math.max(0, window.scrollY + delta));
+      }
+    };
+    let lastTop = -1;
+    let stable = 0;
+    let ticks = 0;
+    const step = () => {
+      if (cancelled) return;
+      const el = document.querySelector(`[data-section-id="${pendingScroll.anchor}"]`);
+      if (el) {
+        bringToTop(el);
+        const top = el.getBoundingClientRect().top;
+        if (Math.abs(top - lastTop) < 2) stable++; else stable = 0;
+        lastTop = top;
+        if (stable >= 3 || ticks > 18) {
+          el.classList.add("section-flash");
+          setTimeout(() => el.classList.remove("section-flash"), 1400);
+          setPendingScroll(null);
+          return;
+        }
+      } else if (ticks > 24) {
+        setPendingScroll(null);
+        return;
+      }
+      ticks++;
+      setTimeout(step, 60);
+    };
+    const t = setTimeout(step, 60);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [pendingScroll, route]);
+
+  // When switching routes, clear selections (avoid leaking into other pages)
+  const go = (newRoute, opts = {}) => {
+    // Remember where a chart deep-dive was launched from, so the Data page can
+    // offer a one-click "Back to <page>" return that scrolls to the chart.
+    const fromRoute = route;
+    const originRoute = (opts.origin ?? (fromRoute && fromRoute !== "data" ? fromRoute : null));
+    const originLabel = originRoute ? (routeTitles[originRoute] || originRoute) : null;
+    const originAnchor = opts.anchor ?? null;
+    // A return-with-scroll request (from a "Back to <page>" button).
+    if (opts.scrollToAnchor) {
+      setPendingScroll({ route: newRoute === "calcs" ? "data" : newRoute, anchor: opts.scrollToAnchor, t: Date.now() });
+    }
+    // Migrate legacy routes from older deep-links / Overview onJumpTo callers
+    let targetTab = null;
+    if (newRoute === "calcs")   {
+      newRoute = "data";
+      // Chart-driven jumps (deep-dive or chartSpec) land on an ephemeral
+      // "Chart deepdive" tab, separate from the Calculations tab.
+      targetTab = (opts.chartSpec || opts.deepDive) ? "deepdive" : "calcs";
+    }
+    if (newRoute === "entries") { newRoute = "data"; targetTab = "activity"; }
+    setRoute(newRoute);
+    setSelCalcId(null);
+    if (newRoute !== "data" || targetTab !== "activity") setSelEntryId(null);
+    if (opts.filter) setCalcFilter(opts.filter);
+    if (opts.entryId) { setPreselectEntry(opts.entryId); setSelEntryId(opts.entryId); targetTab = targetTab || "all"; }
+    if (opts.calcId)  { setSelCalcId(opts.calcId);  targetTab = targetTab || "all"; }
+    if (targetTab) setDataTab(targetTab);
+    if (newRoute === "data" && targetTab === "all") {
+      if (opts.batchId) setEntriesBatchFilter(opts.batchId);
+      else if (opts.clearBatchFilter) setEntriesBatchFilter(null);
+    }
+    if (opts.deepDive) {
+      // Reset other dimensions, set only what the caller passed
+      setCalcPreset(p => ({
+        tick: p.tick + 1,
+        bu: opts.deepDive.bu ?? null,
+        scope: opts.deepDive.scope ?? null,
+        category: opts.deepDive.category ?? null,
+        query: opts.deepDive.query ?? "",
+        chartSpec: opts.chartSpec ?? null,
+        origin: originRoute,
+        originLabel,
+        originAnchor,
+      }));
+      if (!opts.filter) setCalcFilter("all"); // default to all statuses on a deep dive
+      // Also reset the explore filter so deep-dive chart starts from "all"
+      if (!opts.filter) setExploreFilter("all");
+      else setExploreFilter(opts.filter);
+    } else if (opts.chartSpec) {
+      // Pure chart carry-over (no deep-dive filter)
+      setCalcPreset(p => ({ ...p, tick: p.tick + 1, chartSpec: opts.chartSpec, origin: originRoute, originLabel, originAnchor }));
+    }
+  };
+
+  // Route normalisation: route can be a plain key OR `report:<id>` for custom
+  // report boards. readHashRoute validates plain keys; report: routes are
+  // accepted as-is.
+  const isReportRoute = route && route.startsWith && route.startsWith("report:");
+  const activeReportId = isReportRoute ? route.split(":")[1] : null;
+  const activeReport = activeReportId ? reports.find(r => r.id === activeReportId) : null;
+
+  const needsReviewCount = calcs.filter(c => c.status === "pending" || c.status === "suggested").length;
+
+  const routeTitles = {
+    "getting-started":"Getting started",
+    "forward-ai":"Forward AI",
+    overview:"Home",
+    "emission-overview":"Emission overview",
+    hotspot:"Hotspot analysis",
+    quality:"Calculation quality",
+    trends:"Trends",
+    data:"Data", factors:"Emission Factors",
+    import:"Imports", manual:"Manual entry",
+    org:"Organization", settings:"Settings",
+  };
+  const pageTitle = isReportRoute ? (activeReport ? activeReport.name : "Report") : (routeTitles[route] || "—");
+
+  // ---- Calc drawer plumbing ----
+  const filteredCalcs = useMemo(() => {
+    if (calcFilter === "all") return calcs;
+    if (calcFilter === "pending")   return calcs.filter(c => c.status === "pending");
+    if (calcFilter === "suggested") return calcs.filter(c => c.status === "suggested");
+    if (calcFilter === "confirmed") return calcs.filter(c => c.status === "confirmed");
+    // Legacy filter keys → suggested (the old "needs_review")
+    if (calcFilter === "needs_review") return calcs.filter(c => c.status === "pending" || c.status === "suggested");
+    return calcs;
+  }, [calcs, calcFilter]);
+
+  const activeCalc = calcs.find(c => c.id === selCalcId);
+  const activeEntry = entries.find(e => e.id === selEntryId);
+  // Unified side panel: a selected calc anchors to its owning entry (and is
+  // auto-expanded inside the panel); otherwise use the selected entry.
+  const panelEntryId = activeCalc ? activeCalc.entryId : (activeEntry ? activeEntry.id : null);
+  const panelEntry = panelEntryId ? entries.find(e => e.id === panelEntryId) : null;
+
+  // Which kind of surface is the Data page showing? Saved views can be either
+  // an "alldata" (entries spine → entry drawer) or "calcs" (calc drawer) view.
+  const activeDataViewKind = (() => {
+    if (dataTab && dataTab.startsWith && dataTab.startsWith("view:") && window.loadDataViews) {
+      const v = window.loadDataViews().find(x => x.id === dataTab.slice(5));
+      return v ? (v.kind || "calcs") : null;
+    }
+    return null;
+  })();
+  const onAllDataSurface = dataTab === "all" || dataTab === "calcs" || activeDataViewKind === "alldata";
+  const onCalcsSurface = dataTab === "calcs" || dataTab === "deepdive" || activeDataViewKind === "calcs";
+
+  const navCalc = (dir) => {
+    const idx = filteredCalcs.findIndex(c => c.id === selCalcId);
+    if (idx < 0) return;
+    const next = filteredCalcs[Math.max(0, Math.min(filteredCalcs.length-1, idx + dir))];
+    if (next) setSelCalcId(next.id);
+  };
+  const navEntry = (dir) => {
+    const idx = entries.findIndex(e => e.id === selEntryId);
+    if (idx < 0) return;
+    const next = entries[Math.max(0, Math.min(entries.length-1, idx + dir))];
+    if (next) setSelEntryId(next.id);
+  };
+
+  const bulkToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
+  useEffect(() => {
+    const h = (e) => bulkToast(e.detail);
+    window.addEventListener("fe-toast", h);
+    return () => window.removeEventListener("fe-toast", h);
+  }, []);
+
+  // Export jobs — progress banners stacked bottom-right
+  const [exportJobs, setExportJobs] = useState([]);
+  useEffect(() => {
+    const onStart = (e) => {
+      const { title, meta, filename, rows } = e.detail || {};
+      const id = "exp_" + Math.random().toString(36).slice(2, 8);
+      // Scale duration with rows: ~1.2s min, ~4s for large
+      const duration = Math.min(4200, Math.max(1400, 900 + (rows || 200) * 1.2));
+      const startedAt = Date.now();
+      setExportJobs(js => [...js, { id, title, meta, filename, progress: 0, done: false, duration, startedAt }]);
+      const tick = setInterval(() => {
+        setExportJobs(js => js.map(j => {
+          if (j.id !== id || j.done) return j;
+          const p = Math.min(100, ((Date.now() - j.startedAt) / j.duration) * 100);
+          if (p >= 100) { clearInterval(tick); return { ...j, progress: 100, done: true }; }
+          return { ...j, progress: p };
+        }));
+      }, 140);
+      // Auto-dismiss 10s after completion
+      setTimeout(() => {
+        setExportJobs(js => js.filter(j => j.id !== id));
+      }, duration + 10000);
+    };
+    window.addEventListener("fe-export-start", onStart);
+    return () => window.removeEventListener("fe-export-start", onStart);
+  }, []);
+  const dismissJob = (id) => setExportJobs(js => js.filter(j => j.id !== id));
+
+  // Bulk actions for Data Entries — act on the entry_status and sync child calcs where meaningful
+  const entriesBulk = {
+    status: (ids, status) => {
+      // Update the entry-level status directly; no automatic propagation to calcs,
+      // except that "processing" clears any prior "confirmed" back to "suggested".
+      setEntries(es => es.map(e => ids.includes(e.id) ? {...e, entry_status: status} : e));
+      if (status === "processing") {
+        setCalcs(cs => cs.map(c => ids.includes(c.entryId) && c.status === "confirmed" ? {...c, status: "suggested"} : c));
+      }
+      bulkToast(`${ids.length} entries · set to ${status}`);
+    },
+    assign: (ids, user) => {
+      setEntries(es => es.map(e => ids.includes(e.id) ? {...e, user_assigned: user} : e));
+      setCalcs(cs => cs.map(c => ids.includes(c.entryId) ? {...c, user_assigned: user} : c));
+      bulkToast(`${ids.length} entries reassigned to ${user}`);
+    },
+    delete: (ids) => {
+      setEntries(es => es.filter(e => !ids.includes(e.id)));
+      setCalcs(cs => cs.filter(c => !ids.includes(c.entryId)));
+      bulkToast(`${ids.length} entries deleted · undo in 10s`);
+    },
+    export: (ids) => bulkToast(`Exporting ${ids.length} entries to CSV…`),
+  };
+
+  // Bulk actions for Calculations
+  const calcsBulk = {
+    status: (ids, status) => {
+      setCalcs(cs => cs.map(c => ids.includes(c.id)
+        ? {...c, status, confidence: status === "pending" ? null : c.confidence}
+        : c));
+      // Re-compute parent entry_status when child calcs change
+      setEntries(es => es.map(e => {
+        const myCalcs = (es === entries ? calcs : null); // fall back
+        return e; // entry_status will be re-evaluated lazily elsewhere if needed
+      }));
+      bulkToast(`${ids.length} calculations · set to ${status}`);
+    },
+    assign: (ids, user) => {
+      setCalcs(cs => cs.map(c => ids.includes(c.id) ? {...c, user_assigned: user} : c));
+      bulkToast(`${ids.length} calculations reassigned to ${user}`);
+    },
+    delete: (ids) => {
+      setCalcs(cs => cs.filter(c => !ids.includes(c.id)));
+      bulkToast(`${ids.length} calculations deleted`);
+    },
+    export: (ids) => bulkToast(`Exporting ${ids.length} calculations to CSV…`),
+  };
+
+  const approve = () => {
+    if (!activeCalc) return;
+    setCalcs(cs => cs.map(c => c.id === activeCalc.id ? {...c, status: "confirmed"} : c));
+    setToast(`Calculation ${activeCalc.id} confirmed · ${window.fmtKgSmart(activeCalc.kgCO2e)} kgCO₂e`);
+    setTimeout(() => setToast(null), 2200);
+  };
+  const reject = () => {
+    if (!activeCalc) return;
+    setCalcs(cs => cs.map(c => c.id === activeCalc.id ? {...c, status: "pending", confidence: null} : c));
+    setToast(`Calculation ${activeCalc.id} sent back to the AI match queue`);
+    setTimeout(() => setToast(null), 2200);
+  };
+  const swap = () => {
+    setToast("Factor swap — would open factor picker");
+    setTimeout(() => setToast(null), 1800);
+  };
+  // Unified panel navigates the entry spine; a selected calc clears on move.
+  const navPanel = (dir) => {
+    if (!panelEntryId) return;
+    const idx = entries.findIndex(e => e.id === panelEntryId);
+    if (idx < 0) return;
+    const next = entries[Math.max(0, Math.min(entries.length - 1, idx + dir))];
+    if (next) { setSelCalcId(null); setSelEntryId(next.id); }
+  };
+  // Calc actions parameterised by id (used by the unified panel's calc cards).
+  const approveCalc = (cid) => {
+    const c = calcs.find(x => x.id === cid);
+    setCalcs(cs => cs.map(x => x.id === cid ? {...x, status: "confirmed"} : x));
+    if (c) { setToast(`Calculation ${cid} confirmed · ${window.fmtKgSmart(c.kgCO2e)} kgCO₂e`); setTimeout(() => setToast(null), 2200); }
+  };
+  const rejectCalc = (cid) => {
+    setCalcs(cs => cs.map(x => x.id === cid ? {...x, status: "pending", confidence: null} : x));
+    setToast(`Calculation ${cid} sent back to the AI match queue`); setTimeout(() => setToast(null), 2200);
+  };
+  const swapCalc = (cid) => { setToast(`Factor swap for ${cid} — would open factor picker`); setTimeout(() => setToast(null), 1800); };
+
+  return (
+    <div className="app" data-screen-label={`FE · ${routeTitles[route] || route}`} style={{fontSize: tweaks.density === "compact" ? 13 : 14}}>
+      <Sidebar
+        route={route}
+        setRoute={go}
+        needsReviewCount={needsReviewCount}
+        onCreateReport={() => setShowCreateReport(true)}
+        reports={reports}
+        themeId={themeId}
+        setThemeId={setThemeId}
+      />
+      <div className="app-main">
+        <Topbar title={pageTitle} />
+        <div className="app-scroll">
+          {route === "overview" && (
+            <Overview view="home" calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
+          )}
+          {route === "emission-overview" && (
+            <Overview view="emission" calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
+          )}
+          {route === "hotspot" && (
+            <HotspotAnalysis calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
+          )}
+          {route === "forward-ai" && (
+            <ForwardAI
+              suggestions={window.computeHomeSuggestions ? window.computeHomeSuggestions(calcs, entries) : []}
+              onJumpTo={(r,opts) => go(r, opts)}
+            />
+          )}
+          {route === "quality" && (
+            <CalculationQuality calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
+          )}
+          {route === "trends" && (
+            <Trends calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
+          )}
+          {isReportRoute && (
+            <ReportBoard
+              reportId={activeReportId}
+              onJumpTo={(r,opts) => go(r, opts)}
+              calcs={calcs}
+              entries={entries}
+              renderSection={(item, report) => {
+                const pageProps = { calcs, entries, onJumpTo: (r,opts) => go(r, opts) };
+                // AI insights are stored as sectionId "ai:<key>" — they are not
+                // PageSections, so resolve & render the live insight def directly.
+                if (item.sectionId && item.sectionId.startsWith("ai:")) {
+                  const insightKey = item.sectionId.slice(3);
+                  const ins = window.getHomeInsightByKey
+                    ? window.getHomeInsightByKey(insightKey, { calcs, entries, onJumpTo: (r,opts) => go(r, opts) })
+                    : null;
+                  return <window.BoardInsightCard insight={ins} fallbackLabel={item.label} />;
+                }
+                return (
+                  <ReportRenderContext.Provider value={{
+                    source: item.source,
+                    sectionIds: [item.sectionId],
+                    isReport: !!(report && report.isReport),
+                    standard: report && report.isReport ? report.standard : null,
+                  }}>
+                    {item.source === "overview" && <Overview {...pageProps} />}
+                    {item.source === "quality"  && <CalculationQuality {...pageProps} />}
+                    {item.source === "trends"   && <Trends {...pageProps} />}
+                  </ReportRenderContext.Provider>
+                );
+              }}
+            />
+          )}
+          {route === "data" && (
+            <DataPage
+              tab={dataTab}
+              setTab={setDataTab}
+              calcPreset={calcPreset}
+              allDataPreset={allDataPreset}
+              calcs={calcs}
+              entries={entries}
+              selCalcId={selCalcId}
+              setSelCalcId={setSelCalcId}
+              calcFilter={calcFilter}
+              setCalcFilter={setCalcFilter}
+              exploreFilter={exploreFilter}
+              setExploreFilter={setExploreFilter}
+              onCloseDeepdive={() => {
+                // Clear chart context and fall back to All data
+                setCalcPreset({ tick: 0, bu: null, scope: null, category: null, query: "", chartSpec: null, origin: null, originLabel: null, originAnchor: null });
+                setExploreFilter("all");
+                setDataTab("all");
+              }}
+              onBack={(r, anchor) => go(r, anchor ? { scrollToAnchor: anchor } : {})}
+              onAddData={() => {
+                // Notion-style: open the detail drawer for a new blank draft
+                // entry (all fields editable) instead of a separate page.
+                const e = window.makeDraftEntry();
+                setEntries(es => { const next = [e, ...es]; window.ENTRIES = next; return next; });
+                setSelCalcId(null);
+                setSelEntryId(e.id);
+              }}
+              onApplySavedView={(view) => {
+                if (view.kind === "alldata") {
+                  const f = view.filters || {};
+                  setAllDataPreset({
+                    tick: Date.now(),
+                    period: f.period ?? null,
+                    query: f.query ?? "",
+                    colFilters: f.colFilters ?? null,
+                  });
+                  return;
+                }
+                const f = view.filters || null;
+                const norm = (x) => (x && x !== "all") ? x : null;
+                setCalcPreset({
+                  tick: Date.now(),
+                  bu: norm(f?.bu) ?? view.deepDive?.bu ?? null,
+                  scope: norm(f?.scope) ?? view.deepDive?.scope ?? null,
+                  category: norm(f?.category) ?? view.deepDive?.category ?? null,
+                  query: f?.query ?? view.deepDive?.query ?? "",
+                  period: f?.period ?? null,
+                  colFilters: f?.colFilters ?? null,
+                  filters: f,
+                  chartSpec: view.chartSpec ?? null,
+                });
+                setExploreFilter((f && f.status) || view.filter || "all");
+              }}
+              onViewEntry={(eid) => { setSelEntryId(eid); setPreselectEntry(eid); }}
+              calcsBulk={calcsBulk}
+              selEntryId={selEntryId}
+              setSelEntryId={setSelEntryId}
+              preselectEntry={preselectEntry}
+              onViewCalc={(cid) => { const c = calcs.find(x => x.id === cid); setSelCalcId(cid); if (c) setSelEntryId(c.entryId); }}
+              onViewImport={(batchId) => { go("import"); bulkToast(`Would open Bulk imports · ${batchId}`); }}
+              entriesBatchFilter={entriesBatchFilter}
+              onClearBatchFilter={() => setEntriesBatchFilter(null)}
+              entriesBulk={entriesBulk}
+            />
+          )}
+          {/* Imports page hidden — uncomment to re-enable
+          {route === "import" && (
+            tweaks.importsVersion === "v2"
+              ? <ImportsV2Home onViewEntries={(batchId) => go("entries", {batchId})} />
+              : <BulkImportHome onViewEntries={(batchId) => go("entries", {batchId})} />
+          )}
+          */}
+          {route === "manual" && (
+            <ManualEntry
+              onJumpTo={(r) => go(r)}
+              onSubmitted={(entry) => {
+                // Toast handled inside ManualEntry's success state
+                window.dispatchEvent(new CustomEvent("fe-toast", { detail: `Entry ${entry.id} added · matching emission factor…` }));
+              }}
+            />
+          )}
+          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data","manual","forward-ai"].includes(route)) && (
+            <div className="card" style={{padding:0, textAlign:"center"}}>
+              <div className="metric-label">{routeTitles[route]}</div>
+              <h2 className="page-title" style={{marginTop:12}}>{routeTitles[route]}</h2>
+              <div className="page-subtitle" style={{marginTop:6}}>
+                Out of scope for this prototype. Try <span className="link" onClick={() => go("overview")}>Overview</span> or <span className="link" onClick={() => go("data")}>Data</span>.
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Unified detail panel — the data entry, with each calculation expandable
+          inline. Selecting a calc opens this panel anchored to its entry with
+          that calculation expanded; there is no separate calculation drawer. */}
+      {route === "data" && panelEntry && (
+        <EntryDrawer
+          entry={panelEntry}
+          focusCalcId={activeCalc ? activeCalc.id : null}
+          calcs={calcs}
+          batches={window.BATCHES}
+          onClose={() => { setSelEntryId(null); setSelCalcId(null); }}
+          onNav={navPanel}
+          onUpdateEntry={(id, patch) => {
+            setEntries(es => es.map(e => {
+              if (e.id !== id) return e;
+              const next = { ...e, ...patch };
+              const idx = window.ENTRIES.findIndex(x => x.id === id);
+              if (idx >= 0) window.ENTRIES[idx] = next;
+              return next;
+            }));
+          }}
+          onApproveCalc={approveCalc}
+          onRejectCalc={rejectCalc}
+          onSwapCalc={swapCalc}
+          onViewImport={(batchId) => { setSelEntryId(null); setSelCalcId(null); go("import"); bulkToast(`Would open Bulk imports · ${batchId}`); }}
+        />
+      )}
+
+      {showCreateReport && (
+        <CreateReportModal
+          onClose={() => setShowCreateReport(false)}
+          onCreate={({ name, standard }) => {
+            const r = createReport({ name, standard });
+            setShowCreateReport(false);
+            go(`report:${r.id}`);
+          }}
+        />
+      )}
+
+      {toast && (
+        <div className="toast"><Icon name="check" size={16} className="icon"/>{toast}</div>
+      )}
+
+      {exportJobs.length > 0 && (
+        <div className="export-jobs">
+          {exportJobs.map(j => (
+            <div key={j.id} className={"export-job " + (j.done ? "done" : "")}>
+              <div className="ej-top">
+                <div className="ej-icon">
+                  <Icon name={j.done ? "check" : "arrowDown"} size={16}/>
+                </div>
+                <div className="ej-body">
+                  <div className="ej-title">{j.done ? "Export ready" : "Preparing export…"}</div>
+                  <div className="ej-meta">
+                    <span>{j.title}</span>
+                    {j.meta && <><span>·</span><span>{j.meta}</span></>}
+                  </div>
+                </div>
+                <button className="ej-close" onClick={() => dismissJob(j.id)} aria-label="Dismiss">
+                  <Icon name="close" size={14}/>
+                </button>
+              </div>
+              <div className="ej-progress">
+                <div className="ej-progress-fill" style={{width: j.progress + "%"}}/>
+              </div>
+              {j.done && (
+                <div className="ej-actions">
+                  <button className="link-btn" onClick={() => dismissJob(j.id)}>
+                    <Icon name="arrowDown" size={13}/>Download {j.filename}
+                  </button>
+                  <button className="link-btn muted" onClick={() => dismissJob(j.id)}>Dismiss</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tweaks panel */}
+      {tweakOn && (
+        <div className="tweaks">
+          <h4><Icon name="settings" size={14}/>Tweaks</h4>
+          <div className="row">
+            <label>Density</label>
+            <select value={tweaks.density} onChange={e => updateTweak("density", e.target.value)}>
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div className="row">
+            <label>Imports flow</label>
+            <select value={tweaks.importsVersion} onChange={e => updateTweak("importsVersion", e.target.value)}>
+              <option value="v2">v2 — Reimagined (Upload → Process → Review → Submit)</option>
+              <option value="v1">v1 — Original 3-step wizard</option>
+            </select>
+          </div>
+          <div style={{margin: "8px 0 4px 0", borderTop:"1px solid var(--fe-border-subtle)", paddingTop:8, fontSize:11, fontWeight:600, color:"var(--fe-fg-muted)", letterSpacing:"0.04em", textTransform:"uppercase"}}>
+            Forward AI
+          </div>
+          <div className="row">
+            <label>AI presence</label>
+            <select value={tweaks.aiPresence || "branded"} onChange={e => updateTweak("aiPresence", e.target.value)}>
+              <option value="branded">Branded — gradient &amp; sparkle</option>
+              <option value="subtle">Subtle — neutral, native feel</option>
+            </select>
+          </div>
+          <div className="row">
+            <label>Suggested chips</label>
+            <select value={tweaks.aiChips || "visible"} onChange={e => updateTweak("aiChips", e.target.value)}>
+              <option value="visible">Always visible</option>
+              <option value="collapsed">Collapsed by default</option>
+            </select>
+          </div>
+          <div className="row">
+            <label>Drawer width</label>
+            <select value={tweaks.drawerWidth} onChange={e => { updateTweak("drawerWidth", e.target.value); document.documentElement.style.setProperty("--fe-drawer-w", e.target.value); }}>
+              <option value="40vw">Narrow (40vw)</option>
+              <option value="48vw">Default (48vw)</option>
+              <option value="56vw">Wide (56vw)</option>
+            </select>
+          </div>
+          <div style={{fontSize:11, color:"var(--fe-fg-muted)", marginTop:8, borderTop:"1px solid var(--fe-border-subtle)", paddingTop:8}}>
+            Shortcuts: <span className="kbd">J</span>/<span className="kbd">K</span> next/prev · <span className="kbd">Esc</span> close drawer
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Apply drawer width CSS var
+document.documentElement.style.setProperty("--fe-drawer-w", "48vw");
+const style = document.createElement("style");
+style.textContent = `.drawer { width: var(--fe-drawer-w, 48vw); }`;
+document.head.appendChild(style);
+
+// ── Password gate ───────────────────────────────────────────────────────────
+// Lightweight client-side gate so a shared link isn't wide open. NOTE: this is a
+// deterrent, not real security — the page assets are still downloadable. For true
+// protection use the host's auth (Vercel/Netlify password protection, Cloudflare
+// Access). The password itself is NOT stored here, only its SHA-256 hash.
+//
+// To change the password, run this in the browser console and paste the result:
+//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('YOUR_NEW_PASSWORD'))
+//     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+const PROTO_PASSWORD_SHA256 = "20df8ad6cb70ec8b4114b0182fe0861b15565132f53edd3955e10dd68e145077"; // default: "forward-earth"
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+function PasswordGate({ onUnlock }) {
+  const [val, setVal] = useState("");
+  const [err, setErr] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!val || busy) return;
+    setBusy(true);
+    const ok = (await sha256Hex(val)) === PROTO_PASSWORD_SHA256;
+    setBusy(false);
+    if (ok) onUnlock(); else { setErr(true); setVal(""); }
+  };
+  return (
+    <div className="proto-gate">
+      <form className="proto-gate__card" onSubmit={submit}>
+        <div className="proto-gate__brand">forward earth</div>
+        <h1 className="proto-gate__title">Private prototype</h1>
+        <p className="proto-gate__sub">Enter the password to view the Data &amp; Calculations workspace.</p>
+        <input
+          className={"proto-gate__input" + (err ? " is-error" : "")}
+          type="password" value={val} autoFocus
+          placeholder="Password"
+          onChange={(e) => { setVal(e.target.value); setErr(false); }}
+        />
+        {err && <div className="proto-gate__err">Incorrect password — please try again.</div>}
+        <button className="proto-gate__btn" type="submit" disabled={busy || !val}>{busy ? "Checking…" : "Enter"}</button>
+      </form>
+    </div>
+  );
+}
+
+// Load the anonymized client dataset (dataset.json) before first render, then
+// fall back to the in-file seed data if it is missing or fails to parse.
+(async () => {
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  const boot = async () => {
+    try {
+      const res = await fetch("dataset.json", { cache: "force-cache" });
+      if (res.ok && window.applyDataset) {
+        const stats = window.applyDataset(await res.json());
+        console.log(`Dataset loaded: ${stats.entries.toLocaleString()} entries · ${stats.factors} factors · ${stats.total_tco2e.toLocaleString()} tCO₂e`);
+      }
+    } catch (e) {
+      console.warn("dataset.json not loaded — using seed data.", e);
+    }
+    root.render(<App />);
+  };
+  // Password gate disabled for now — boot directly. To re-enable, restore the
+  // sessionStorage check below and render <PasswordGate/> when not authed.
+  if (!window.location.hash) window.location.hash = "overview";
+  boot();
+  // if (sessionStorage.getItem("fe-proto-auth") === "1") {
+  //   boot();
+  // } else {
+  //   root.render(<PasswordGate onUnlock={() => { sessionStorage.setItem("fe-proto-auth", "1"); if (!window.location.hash) window.location.hash = "overview"; boot(); }} />);
+  // }
+})();
+</script>
+</body>
+</html>

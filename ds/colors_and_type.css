@@ -1,0 +1,274 @@
+/* ============================================================================
+   Forward Earth — Design Tokens
+   Source of truth: forward-earth/core › frontend/src/designSystem + themes/default
+   Brand: Forward Earth · "Automated carbon management" · white-label platform
+   ----------------------------------------------------------------------------
+   This file is the single import for any Forward Earth artifact. It declares:
+     1. @font-face (Satoshi Variable + Source Code Pro)
+     2. Primitive color scales (base + default-theme blue/purple/tintedGrey)
+     3. Semantic color tokens (background, text, action, status, form, sidebar…)
+     4. Typography primitives + named text styles (heading/body/label/code)
+     5. Spacing, radius, shadow, z-index scales
+   ========================================================================== */
+
+/* ── 1. Fonts ──────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Satoshi Variable';
+  src:
+    url('fonts/Satoshi-Variable.woff2') format('woff2'),
+    url('fonts/Satoshi-Variable.woff') format('woff'),
+    url('fonts/Satoshi-Variable.ttf') format('truetype');
+  font-weight: 300 900;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Source Code Pro';
+  src: url('fonts/SourceCodePro.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* Roboto — used by the aekmnp partner (white-label) theme, not the default theme.
+   Self-hosted here so partner-theme artifacts can use it. */
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Thin.ttf') format('truetype'); font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-ThinItalic.ttf') format('truetype'); font-weight: 100; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-Black.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Roboto'; src: url('fonts/Roboto-BlackItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
+
+:root {
+  /* ── 2. Primitive color scales ───────────────────────────────────────── */
+
+  /* Blue — PRIMARY brand colour (interactive, selected, links, charts.primary) */
+  --fwe-blue-50:  #ecefff;
+  --fwe-blue-100: #dde2ff;
+  --fwe-blue-200: #c2c9ff;
+  --fwe-blue-300: #9ca5ff;
+  --fwe-blue-400: #7575ff;
+  --fwe-blue-500: #5a4dff;  /* core brand blue/indigo */
+  --fwe-blue-600: #5336f5;
+  --fwe-blue-700: #472ad8;
+  --fwe-blue-800: #3a25ae;
+  --fwe-blue-900: #322689;
+  --fwe-blue-950: #1f1650;
+
+  /* Purple — SECONDARY (table headers, neutral status, charts.secondary) */
+  --fwe-purple-50:  #faf8ff;
+  --fwe-purple-100: #ebe5ff;
+  --fwe-purple-200: #d3c4ff;
+  --fwe-purple-300: #ba9eff;
+  --fwe-purple-400: #a377ff;
+  --fwe-purple-500: #8f4aff;
+  --fwe-purple-600: #7e00f9;
+  --fwe-purple-700: #6000bf;
+  --fwe-purple-800: #430089;
+  --fwe-purple-900: #280057;
+  --fwe-purple-950: #1a003d;
+
+  /* Tinted grey — cool blue-grey, used for app content background + form fields */
+  --fwe-tintedGrey-50:  #f9f9fd;
+  --fwe-tintedGrey-100: #f2f3fb;
+  --fwe-tintedGrey-200: #e8e9f8;
+  --fwe-tintedGrey-300: #c4c7ed;
+  --fwe-tintedGrey-400: #a2a7e4;
+  --fwe-tintedGrey-500: #7d85d8;
+  --fwe-tintedGrey-600: #5763ca;
+  --fwe-tintedGrey-700: #3c48a9;
+  --fwe-tintedGrey-800: #273075;
+  --fwe-tintedGrey-900: #151b48;
+  --fwe-tintedGrey-950: #0b1031;
+
+  /* Grey — neutral text + borders (shared across all themes) */
+  --fwe-grey-50:  #f9f9fa;
+  --fwe-grey-100: #ebebee;
+  --fwe-grey-200: #cbcbd4;
+  --fwe-grey-300: #afafbd;
+  --fwe-grey-400: #9494a7;
+  --fwe-grey-500: #7a7a91;
+  --fwe-grey-600: #5f5f78;
+  --fwe-grey-700: #474760;
+  --fwe-grey-800: #313143;
+  --fwe-grey-900: #1a1a26;
+  --fwe-grey-950: #101019;
+
+  /* Orange — accent (logo mark, charts.tertiary, warning) */
+  --fwe-orange-50:  #fff7ed;
+  --fwe-orange-100: #ffedd4;
+  --fwe-orange-200: #ffd8a8;
+  --fwe-orange-300: #ffbc70;
+  --fwe-orange-400: #ff9537;
+  --fwe-orange-500: #ff750d;
+  --fwe-orange-600: #f05b06;
+  --fwe-orange-700: #c74307;
+  --fwe-orange-800: #9e350e;
+  --fwe-orange-900: #7f2e0f;
+  --fwe-orange-950: #451405;
+  --fwe-orange-logo: #ff9e0d;  /* exact mark colour in logo.svg */
+
+  /* Red — destructive / error */
+  --fwe-red-50:  #fdf1f1;
+  --fwe-red-100: #fce2e2;
+  --fwe-red-200: #f9c1c1;
+  --fwe-red-300: #f6a2a2;
+  --fwe-red-400: #f47d7d;
+  --fwe-red-500: #f35151;
+  --fwe-red-600: #d12828;
+  --fwe-red-700: #a11c1c;
+  --fwe-red-800: #6f1010;
+  --fwe-red-900: #450606;
+  --fwe-red-950: #2f0303;
+
+  /* Green — success */
+  --fwe-green-50:  #f0fdf4;
+  --fwe-green-100: #dcfce7;
+  --fwe-green-200: #bbf7d0;
+  --fwe-green-300: #86efac;
+  --fwe-green-400: #4ade80;
+  --fwe-green-500: #22c55e;
+  --fwe-green-600: #16a34a;
+  --fwe-green-700: #15803d;
+  --fwe-green-800: #166534;
+  --fwe-green-900: #14532d;
+  --fwe-green-950: #052e16;
+
+  --fwe-white: #ffffff;
+
+  /* ── 3. Semantic colors (default theme mapping) ──────────────────────── */
+  --bg-surface:        var(--fwe-white);          /* cards, sidebar, menus    */
+  --bg-content:        var(--fwe-tintedGrey-100); /* app canvas behind cards  */
+  --bg-subtle:         var(--fwe-grey-100);
+
+  --text-primary:      var(--fwe-grey-950);
+  --text-secondary:    var(--fwe-grey-500);
+  --text-tertiary:     var(--fwe-grey-300);
+  --text-disabled:     var(--fwe-grey-300);
+  --text-interactive:  var(--fwe-blue-500);
+  --text-inverse:      var(--fwe-white);
+  --text-accent:       var(--fwe-blue-500);
+  --text-destructive:  var(--fwe-red-500);
+
+  --border-default:     var(--fwe-grey-100);
+  --border-interactive: var(--fwe-blue-500);
+  --border-disabled:    var(--fwe-grey-100);
+
+  /* Action · primary */
+  --action-primary:          var(--fwe-blue-500);
+  --action-primary-hover:    var(--fwe-blue-700);
+  --action-primary-disabled: var(--fwe-grey-400);
+  --action-primary-inverted: var(--fwe-white);
+  --action-primary-surface:  var(--fwe-blue-50);
+  --action-primary-surface-hover: var(--fwe-blue-100);
+  /* Action · subtle */
+  --action-subtle:           var(--fwe-grey-100);
+  --action-subtle-hover:     var(--fwe-grey-300);
+  --action-subtle-inverted:  var(--fwe-grey-500);
+  --action-subtle-surface:   var(--fwe-grey-50);
+  /* Action · destructive */
+  --action-destructive:         var(--fwe-red-600);
+  --action-destructive-hover:   var(--fwe-red-800);
+  --action-destructive-surface: var(--fwe-red-50);
+
+  /* Status */
+  --status-success-bg:  var(--fwe-green-50);  --status-success-border:  var(--fwe-green-400);  --status-success-fg:  var(--fwe-green-700);
+  --status-error-bg:    var(--fwe-red-50);    --status-error-border:    var(--fwe-red-400);    --status-error-fg:    var(--fwe-red-600);
+  --status-warning-bg:  var(--fwe-orange-50); --status-warning-border:  var(--fwe-orange-400); --status-warning-fg:  var(--fwe-orange-700);
+  --status-neutral-bg:  var(--fwe-purple-50); --status-neutral-border:  var(--fwe-purple-400); --status-neutral-fg:  var(--fwe-purple-600);
+
+  /* Form */
+  --form-bg:            var(--fwe-tintedGrey-50);
+  --form-bg-disabled:   var(--fwe-grey-50);
+  --form-border:        var(--fwe-grey-300);
+  --form-border-active: var(--fwe-blue-500);
+  --form-border-error:  var(--fwe-red-500);
+  --form-text:          var(--fwe-grey-950);
+  --form-placeholder:   var(--fwe-grey-300);
+  --form-label:         var(--fwe-grey-700);
+  --form-menu-bg:       var(--fwe-white);
+  --form-menu-border:   var(--fwe-grey-200);
+  --form-menu-item-hover: var(--fwe-blue-50);
+
+  /* Sidebar */
+  --sidebar-surface:        var(--fwe-white);
+  --sidebar-section-label:  var(--fwe-grey-500);
+  --sidebar-divider:        var(--fwe-grey-200);
+  --sidebar-item-text:      var(--fwe-grey-950);
+  --sidebar-item-bg-hover:  var(--fwe-blue-50);
+  --sidebar-item-text-hover: var(--fwe-blue-500);
+  --sidebar-item-selected-bg:   var(--fwe-blue-500);
+  --sidebar-item-selected-text: var(--fwe-white);
+
+  /* Chart roles */
+  --chart-primary:   var(--fwe-blue-500);
+  --chart-secondary: var(--fwe-purple-500);
+  --chart-tertiary:  var(--fwe-orange-500);
+  /* Heatmap ramps */
+  --heatmap-blue-light:   #ecefff;
+  --heatmap-blue-dark:    #9ca5ff;
+  --heatmap-orange-light: #fff7ed;
+  --heatmap-orange-dark:  #f5ae73;
+
+  /* ── 4. Typography ───────────────────────────────────────────────────── */
+  --font-heading: 'Satoshi Variable', 'Satoshi', sans-serif;
+  --font-text:    'Satoshi Variable', 'Satoshi', sans-serif;
+  --font-code:    'Source Code Pro', monospace;
+
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-bold: 700;
+
+  /* size scale (px) */
+  --fs-xs: 10px; --fs-sm: 12px; --fs-base: 14px; --fs-lg: 16px; --fs-xl: 18px;
+  --fs-2xl: 20px; --fs-3xl: 24px; --fs-4xl: 28px; --fs-5xl: 35px; --fs-6xl: 60px;
+  /* line-height scale (px) */
+  --lh-xs: 16px; --lh-sm: 18px; --lh-base: 20px; --lh-lg: 22px; --lh-xl: 24px;
+  --lh-2xl: 26px; --lh-3xl: 32px; --lh-4xl: 40px; --lh-5xl: 52px;
+  /* letter-spacing (em) */
+  --ls-tighter: -0.05em; --ls-tight: -0.025em; --ls-normal: 0; --ls-wide: 0.03em; --ls-wider: 0.05em;
+
+  /* ── 5. Spacing scale (px) ───────────────────────────────────────────── */
+  --sp-0: 0;   --sp-0_5: 2px;  --sp-1: 4px;   --sp-1_5: 6px;  --sp-2: 8px;
+  --sp-2_5: 10px; --sp-3: 12px; --sp-3_5: 14px; --sp-4: 16px; --sp-4_5: 18px;
+  --sp-5: 20px; --sp-5_5: 22px; --sp-6: 24px; --sp-6_5: 28px; --sp-7: 32px;
+  --sp-7_5: 36px; --sp-8: 40px; --sp-8_5: 44px; --sp-9: 48px; --sp-9_5: 56px;
+  --sp-10: 64px; --sp-10_5: 72px; --sp-11: 80px; --sp-11_5: 88px; --sp-12: 96px;
+
+  /* ── Radius ──────────────────────────────────────────────────────────── */
+  --radius-none: 0;  --radius-2xs: 2px; --radius-xs: 4px; --radius-sm: 6px;
+  --radius-md: 8px;  --radius-lg: 12px; --radius-xl: 16px; --radius-full: 9999px;
+
+  /* ── Shadows / elevation ─────────────────────────────────────────────── */
+  /* The app is flat: cards rely on a tinted canvas, not drop shadows.
+     The only shadow in the system is the dropdown/menu popover. */
+  --shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-card: 0 1px 2px rgba(16, 16, 25, 0.04);   /* optional, subtle */
+
+  /* ── z-index ─────────────────────────────────────────────────────────── */
+  --z-drawer: 1200; --z-appbar: 1201; --z-popover: 1300; --z-modal: 1400; --z-tooltip: 1500;
+}
+
+/* ============================================================================
+   Named text styles — apply directly as classes (mirrors the <Text> component)
+   ========================================================================== */
+.fwe-heading-xl { font-family: var(--font-heading); font-size: var(--fs-3xl); font-weight: var(--fw-bold); line-height: var(--lh-3xl); color: var(--text-primary); margin: 0; }
+.fwe-heading-lg { font-family: var(--font-heading); font-size: var(--fs-2xl); font-weight: var(--fw-bold); line-height: var(--lh-2xl); color: var(--text-primary); margin: 0; }
+.fwe-heading-md { font-family: var(--font-heading); font-size: var(--fs-lg);  font-weight: var(--fw-bold); line-height: var(--lh-lg);  color: var(--text-primary); margin: 0; }
+.fwe-heading-sm { font-family: var(--font-heading); font-size: var(--fs-base);font-weight: var(--fw-bold); line-height: var(--lh-base);color: var(--text-primary); margin: 0; }
+
+.fwe-body-lg { font-family: var(--font-text); font-size: var(--fs-lg);   font-weight: var(--fw-medium); line-height: var(--lh-xl);   color: var(--text-primary); margin: 0; }
+.fwe-body-md { font-family: var(--font-text); font-size: var(--fs-base); font-weight: var(--fw-medium); line-height: var(--lh-base); color: var(--text-primary); margin: 0; }
+.fwe-body-sm { font-family: var(--font-text); font-size: var(--fs-sm);   font-weight: var(--fw-medium); line-height: var(--lh-sm);   color: var(--text-primary); margin: 0; }
+
+.fwe-label-lg { font-family: var(--font-text); font-size: var(--fs-base); font-weight: var(--fw-medium); line-height: var(--lh-sm); color: var(--text-primary); margin: 0; }
+.fwe-label-md { font-family: var(--font-text); font-size: var(--fs-sm);   font-weight: var(--fw-medium); line-height: var(--lh-xs); color: var(--text-primary); margin: 0; }
+.fwe-label-sm { font-family: var(--font-text); font-size: var(--fs-xs);   font-weight: var(--fw-medium); line-height: var(--lh-xs); color: var(--text-primary); margin: 0; }
+
+.fwe-code-md { font-family: var(--font-code); font-size: var(--fs-base); font-weight: var(--fw-regular); line-height: var(--lh-sm); }
+.fwe-code-sm { font-family: var(--font-code); font-size: var(--fs-sm);   font-weight: var(--fw-regular); line-height: var(--lh-xs); }

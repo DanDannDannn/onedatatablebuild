@@ -1,0 +1,5 @@
+# Vercel uses this instead of the repo .gitignore when deploying this folder.
+# Keep dataset.json (the app fetches it); drop the heavy raw CSV + the handoff doc.
+data-anonymized.csv
+*.csv
+*.md

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.next/
+out/
+*.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+
+# Raw / large client-data exports — never commit (dataset.json IS committed)
+*.csv
+data-anonymized.csv
