@@ -69,7 +69,6 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
     ]},
     { section: "Collect", items: [
       { key: "data",   label: "Data",        icon: "collect" },
-      { key: "import", label: "Bulk import", icon: "upload", stub: true },
     ]},
     { section: "Manage", items: [
       { key: "settings", label: "Company settings", icon: "settings", stub: true },
@@ -88,15 +87,6 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
       <div className="sidebar-logo">
         <SidebarBrand themeId={themeId} />
         <BrandSwitcher themeId={themeId} setThemeId={setThemeId} />
-      </div>
-
-      <div
-        className={`nav-item nav-forward-ai ${route === "forward-ai" ? "active" : ""}`}
-        onClick={() => setRoute("forward-ai")}
-        title="Forward AI — your saved conversations"
-      >
-        <Icon name="sparkle" size={18} />
-        <span>Forward AI</span>
       </div>
 
       <div className="sidebar-nav">

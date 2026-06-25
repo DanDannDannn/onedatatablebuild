@@ -282,6 +282,7 @@ function DataPage(props) {
         )}
       </div>
 
+      <div className="data-body-row">
       <div className="view-bar">
         <div className="segments view-tabs" role="tablist" aria-label="Saved views" ref={viewRowRef}>
           <button role="tab" aria-selected={tab === "all"} className={`segment ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
@@ -319,6 +320,7 @@ function DataPage(props) {
         </div>
       </div>
 
+      <div className="data-grid-col">
       {activeView && !isDeepdiveView && (
         <AllData
           view={activeView}
@@ -367,6 +369,8 @@ function DataPage(props) {
           />
         </div>
       )}
+      </div>{/* data-grid-col */}
+      </div>{/* data-body-row */}
     </div>
   );
 }

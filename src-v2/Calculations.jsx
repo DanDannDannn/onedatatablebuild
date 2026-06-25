@@ -567,7 +567,7 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
         onDoubleClick={(e) => { if (!e.target.closest("button, a, input, select, .ai-context-strip__chart")) floatDrag.reset(); }}
         style={(!chartCollapsed && floatDrag.pos) ? { position: "fixed", left: floatDrag.pos.x, top: floatDrag.pos.y, right: "auto", zIndex: 60 } : undefined}
         className={"ai-context-strip ai-context-strip--float" + (chartCollapsed ? " is-collapsed" : "") + (floatDrag.dragging ? " is-dragging" : "")}
-        role="region" aria-label="Forward AI insight chart"
+        role="region" aria-label="Deep-dive chart"
       >
         <span className="ai-context-strip__grip" aria-hidden="true" title="Drag to move · double-click to reset"><Icon name="grip" size={14}/></span>
         <button
@@ -843,7 +843,7 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
           onDoubleClick={(e) => { if (!e.target.closest("button, a, input, select, .ai-context-strip__chart")) floatDrag.reset(); }}
           style={floatDrag.pos ? { position: "fixed", left: floatDrag.pos.x, top: floatDrag.pos.y, right: "auto", zIndex: 60 } : undefined}
           className={"ai-context-strip ai-context-strip--float" + (chartCollapsed ? " is-collapsed" : "") + (floatDrag.dragging ? " is-dragging" : "")}
-          role="region" aria-label="Forward AI insight chart"
+          role="region" aria-label="Deep-dive chart"
         >
           <span className="ai-context-strip__grip" aria-hidden="true" title="Drag to move · double-click to reset"><Icon name="grip" size={14}/></span>
           <button
