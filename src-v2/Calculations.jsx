@@ -593,7 +593,7 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
             </button>
           )}
           <div className="ai-context-strip__meta">
-            <FaiBrand soft />
+            {null}
             {chartSpec.tag && <span className="ai-context-strip__tag">· {chartSpec.tag}</span>}
             <span className="ai-context-strip__snapshot" title="A snapshot of the chart you came from — the table is filtered to match">Snapshot</span>
           </div>
@@ -869,7 +869,7 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
               </button>
             )}
             <div className="ai-context-strip__meta">
-              <FaiBrand soft />
+              {null}
               {chartSpec.tag && <span className="ai-context-strip__tag">· {chartSpec.tag}</span>}
               {chartSpec.variant
                 ? <span className="ai-context-strip__snapshot" title="A snapshot of the chart you came from — it stays fixed while you explore the rows below">Snapshot</span>
