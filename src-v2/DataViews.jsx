@@ -13,7 +13,7 @@
 // The two shipped views (All data + Calculations) are seeded on first load via
 // seedDataViews(); thereafter the list is whatever the user has saved.
 
-const FE_DATA_VIEWS_KEY = "fe-data-views-v4";
+const FE_DATA_VIEWS_KEY = "fe-data-views-v7";
 const FE_DATA_VIEWS_EVT = "fe-data-views-changed";
 
 function loadDataViews() {

@@ -6,7 +6,9 @@
 <title>Forward Earth — Calculations prototype (v2)</title>
 <link rel="stylesheet" href="app-v2.css" />
 <link rel="stylesheet" href="extras-v2.css" />
+<link rel="stylesheet" href="src-v2/AICopilot.css" />
 <link rel="stylesheet" href="src-v2/Analyse.css" />
+<link rel="stylesheet" href="src-v2/Imports2.css" />
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
@@ -92,6 +94,9 @@
 <script type="text/babel" src="src-v2/SortableHeader.jsx"></script>
 <script type="text/babel" src="src-v2/Shell.jsx"></script>
 <script type="text/babel" src="src-v2/PageSections.jsx"></script>
+<script type="text/babel" src="src-v2/AICopilot.jsx"></script>
+<script type="text/babel" src="src-v2/AIThreads.jsx"></script>
+<script type="text/babel" src="src-v2/ForwardAI.jsx"></script>
 <script type="text/babel" src="src-v2/Reports.jsx"></script>
 <script type="text/babel" src="src-v2/Overview.jsx"></script>
 <script type="text/babel" src="src-v2/CalculationQuality.jsx"></script>
@@ -106,38 +111,35 @@
 <script type="text/babel" src="src-v2/ViewOverflow.jsx"></script>
 <script type="text/babel" src="src-v2/DataViews.jsx"></script>
 <script type="text/babel" src="src-v2/DataPage.jsx"></script>
+<script type="text/babel" src="src-v2/BulkImport.jsx"></script>
+<script type="text/babel" src="src-v2/Imports2.jsx"></script>
+<script type="text/babel" src="src-v2/ManualEntry.jsx"></script>
 
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useMemo } = React;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "comfortable",
-  "drawerWidth": "56vw"
+  "drawerWidth": "56vw",
+  "importsVersion": "v2",
+  "aiPresence": "branded",
+  "aiChips": "visible"
 }/*EDITMODE-END*/;
 
 // Hash routing — keep route in sync with window.location.hash so each page
 // has its own URL (e.g. #overview, #calcs). Survives refresh and is preserved
 // when sharing the preview link.
 const VALID_ROUTES = new Set([
-  "getting-started", "overview", "emission-overview", "hotspot", "quality", "trends",
+  "getting-started", "forward-ai", "overview", "emission-overview", "hotspot", "quality", "trends",
   "data", "factors",
+  "import", "manual",
   "org", "settings",
   // Legacy aliases — auto-redirected to "data" with the matching tab
   "calcs", "entries",
 ]);
-const readHashRoute = () => {
-  const h = (window.location.hash || "").replace(/^#\/?/, "").split("/")[0];
-  // Allow `report:<id>` routes to pass through directly
-  if (h && h.startsWith("report:")) return h;
-  if (h && VALID_ROUTES.has(h)) return h;
-  // Fall back to legacy localStorage value, then default
-  const stored = localStorage.getItem("fe-proto-route");
-  if (stored && stored.startsWith("report:")) return stored;
-  const r = VALID_ROUTES.has(stored) ? stored : "overview";
-  // Migrate legacy routes to the unified "data" route
-  if (r === "calcs" || r === "entries") return "data";
-  return r;
-};
+// Table-only build: Data is the only page, so every route resolves to "data".
+// (The `#data/<entryId>` drawer deep-link is parsed separately by readHashEntryId.)
+const readHashRoute = () => "data";
 // Deep-link: an open data-entry detail is encoded as `#data/<entryId>` so the
 // drawer can be shared and survives refresh / back-forward.
 const readHashEntryId = () => {
@@ -233,6 +235,13 @@ function App() {
     }
   }, [route, selEntryId]);
   useEffect(() => { localStorage.setItem("fe-proto-calc-filter-v2", calcFilter); }, [calcFilter]);
+
+  // Apply analyse tweaks (AI presence, chip visibility) as body data-attrs so
+  // CSS can swap variants without prop-drilling into every page.
+  useEffect(() => {
+    document.body.setAttribute("data-ai-presence", tweaks.aiPresence || "branded");
+    document.body.setAttribute("data-ai-chips", tweaks.aiChips || "visible");
+  }, [tweaks.aiPresence, tweaks.aiChips]);
 
   // Listen for back/forward + manual hash edits
   useEffect(() => {
@@ -370,6 +379,16 @@ function App() {
     }
   };
 
+  // Leaving the Data page drops any unsaved chart deep-dive: the ephemeral
+  // "Chart deepdive" tab is temporary and disappears unless the user pinned it
+  // (pinning creates a real saved view, which is unaffected by this reset).
+  useEffect(() => {
+    if (route !== "data") {
+      setCalcPreset(p => p.tick === 0 ? p : { tick: 0, bu: null, scope: null, category: null, query: "", chartSpec: null, origin: null, originLabel: null, originAnchor: null });
+      setDataTab(t => t === "deepdive" ? "all" : t);
+    }
+  }, [route]);
+
   // Route normalisation: route can be a plain key OR `report:<id>` for custom
   // report boards. readHashRoute validates plain keys; report: routes are
   // accepted as-is.
@@ -381,12 +400,14 @@ function App() {
 
   const routeTitles = {
     "getting-started":"Getting started",
+    "forward-ai":"Forward AI",
     overview:"Home",
     "emission-overview":"Emission overview",
     hotspot:"Hotspot analysis",
     quality:"Calculation quality",
     trends:"Trends",
     data:"Data", factors:"Emission Factors",
+    import:"Imports", manual:"Manual entry",
     org:"Organization", settings:"Settings",
   };
   const pageTitle = isReportRoute ? (activeReport ? activeReport.name : "Report") : (routeTitles[route] || "—");
@@ -576,6 +597,12 @@ function App() {
           {route === "hotspot" && (
             <HotspotAnalysis calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
           )}
+          {route === "forward-ai" && (
+            <ForwardAI
+              suggestions={window.computeHomeSuggestions ? window.computeHomeSuggestions(calcs, entries) : []}
+              onJumpTo={(r,opts) => go(r, opts)}
+            />
+          )}
           {route === "quality" && (
             <CalculationQuality calcs={calcs} entries={entries} onJumpTo={(r,opts)=>go(r,opts)} />
           )}
@@ -590,6 +617,15 @@ function App() {
               entries={entries}
               renderSection={(item, report) => {
                 const pageProps = { calcs, entries, onJumpTo: (r,opts) => go(r, opts) };
+                // AI insights are stored as sectionId "ai:<key>" — they are not
+                // PageSections, so resolve & render the live insight def directly.
+                if (item.sectionId && item.sectionId.startsWith("ai:")) {
+                  const insightKey = item.sectionId.slice(3);
+                  const ins = window.getHomeInsightByKey
+                    ? window.getHomeInsightByKey(insightKey, { calcs, entries, onJumpTo: (r,opts) => go(r, opts) })
+                    : null;
+                  return <window.BoardInsightCard insight={ins} fallbackLabel={item.label} />;
+                }
                 return (
                   <ReportRenderContext.Provider value={{
                     source: item.source,
@@ -666,13 +702,29 @@ function App() {
               setSelEntryId={setSelEntryId}
               preselectEntry={preselectEntry}
               onViewCalc={(cid) => { const c = calcs.find(x => x.id === cid); setSelCalcId(cid); if (c) setSelEntryId(c.entryId); }}
-              onViewImport={(batchId) => { bulkToast(`Would open Bulk imports · ${batchId}`); }}
+              onViewImport={(batchId) => { go("import"); bulkToast(`Would open Bulk imports · ${batchId}`); }}
               entriesBatchFilter={entriesBatchFilter}
               onClearBatchFilter={() => setEntriesBatchFilter(null)}
               entriesBulk={entriesBulk}
             />
           )}
-          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data"].includes(route)) && (
+          {/* Imports page hidden — uncomment to re-enable
+          {route === "import" && (
+            tweaks.importsVersion === "v2"
+              ? <ImportsV2Home onViewEntries={(batchId) => go("entries", {batchId})} />
+              : <BulkImportHome onViewEntries={(batchId) => go("entries", {batchId})} />
+          )}
+          */}
+          {route === "manual" && (
+            <ManualEntry
+              onJumpTo={(r) => go(r)}
+              onSubmitted={(entry) => {
+                // Toast handled inside ManualEntry's success state
+                window.dispatchEvent(new CustomEvent("fe-toast", { detail: `Entry ${entry.id} added · matching emission factor…` }));
+              }}
+            />
+          )}
+          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data","manual","forward-ai"].includes(route)) && (
             <div className="card" style={{padding:0, textAlign:"center"}}>
               <div className="metric-label">{routeTitles[route]}</div>
               <h2 className="page-title" style={{marginTop:12}}>{routeTitles[route]}</h2>
@@ -707,7 +759,7 @@ function App() {
           onApproveCalc={approveCalc}
           onRejectCalc={rejectCalc}
           onSwapCalc={swapCalc}
-          onViewImport={(batchId) => { setSelEntryId(null); setSelCalcId(null); bulkToast(`Would open Bulk imports · ${batchId}`); }}
+          onViewImport={(batchId) => { setSelEntryId(null); setSelCalcId(null); go("import"); bulkToast(`Would open Bulk imports · ${batchId}`); }}
         />
       )}
 
@@ -770,6 +822,30 @@ function App() {
             <select value={tweaks.density} onChange={e => updateTweak("density", e.target.value)}>
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div className="row">
+            <label>Imports flow</label>
+            <select value={tweaks.importsVersion} onChange={e => updateTweak("importsVersion", e.target.value)}>
+              <option value="v2">v2 — Reimagined (Upload → Process → Review → Submit)</option>
+              <option value="v1">v1 — Original 3-step wizard</option>
+            </select>
+          </div>
+          <div style={{margin: "8px 0 4px 0", borderTop:"1px solid var(--fe-border-subtle)", paddingTop:8, fontSize:11, fontWeight:600, color:"var(--fe-fg-muted)", letterSpacing:"0.04em", textTransform:"uppercase"}}>
+            Forward AI
+          </div>
+          <div className="row">
+            <label>AI presence</label>
+            <select value={tweaks.aiPresence || "branded"} onChange={e => updateTweak("aiPresence", e.target.value)}>
+              <option value="branded">Branded — gradient &amp; sparkle</option>
+              <option value="subtle">Subtle — neutral, native feel</option>
+            </select>
+          </div>
+          <div className="row">
+            <label>Suggested chips</label>
+            <select value={tweaks.aiChips || "visible"} onChange={e => updateTweak("aiChips", e.target.value)}>
+              <option value="visible">Always visible</option>
+              <option value="collapsed">Collapsed by default</option>
             </select>
           </div>
           <div className="row">
@@ -859,7 +935,7 @@ function PasswordGate({ onUnlock }) {
   };
   // Password gate disabled for now — boot directly. To re-enable, restore the
   // sessionStorage check below and render <PasswordGate/> when not authed.
-  if (!window.location.hash) window.location.hash = "overview";
+  if (!window.location.hash) window.location.hash = "data";
   boot();
   // if (sessionStorage.getItem("fe-proto-auth") === "1") {
   //   boot();

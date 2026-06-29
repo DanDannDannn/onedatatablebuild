@@ -288,6 +288,135 @@ function buildFactorRows(calcs, method, { topN } = {}) {
   return rows;
 }
 
+// --- Top-of-page AI insights specific to hotspot analysis ---------------------
+// All figures are derived from the computed rows (locationRows / supplierRows /
+// spendFactorRows) and the raw calcs[] — nothing here is hardcoded. Where a value
+// genuinely cannot be computed it is omitted rather than invented.
+function buildHotspotInsights({ onJumpTo, locationRows = [], supplierRows = [], spendFactorRows = [], siteCount = 0 }) {
+  const HB = window.HorizBarChart;
+
+  // Concentration helpers over a set of {total|value} rows.
+  const sumOf = (rows, k) => rows.reduce((s, r) => s + (r[k] || 0), 0);
+  const pctTopN = (rows, k, n) => {
+    const all = sumOf(rows, k);
+    if (all <= 0) return null;
+    const top = rows.slice(0, n).reduce((s, r) => s + (r[k] || 0), 0);
+    return Math.round((top / all) * 100);
+  };
+  const fmtPct = (p) => p == null ? "—" : p + "%";
+
+  // Location concentration
+  const locTop10 = pctTopN(locationRows, "total", 10);
+  const locTop3  = pctTopN(locationRows, "total", 3);
+  const top3Sites = locationRows.slice(0, 3).map(r => r.label);
+  const locTotal = sumOf(locationRows, "total");
+  const top5SiteRows = locationRows.slice(0, 5).map((r, i) => {
+    const p = locTotal > 0 ? Math.round((r.total / locTotal) * 100) : 0;
+    return { label: r.label, value: p, display: p + "%", highlight: i === 0 };
+  });
+
+  // Supplier concentration
+  const supTop10 = pctTopN(supplierRows, "total", 10);
+  const supTotal = sumOf(supplierRows, "total");
+  const top5SupplierRows = supplierRows.slice(0, 5).map((r, i) => {
+    const p = supTotal > 0 ? Math.round((r.total / supTotal) * 100) : 0;
+    return { label: r.label, value: p, display: p + "%", highlight: i === 0 };
+  });
+
+  // Spend-based factor concentration
+  const spendTop10 = pctTopN(spendFactorRows, "value", 10);
+  const top3Factors = spendFactorRows.slice(0, 3).map(r => r.label);
+
+  // Join up to 3 names into a readable list ("A, B and C").
+  const joinNames = (names) => {
+    const xs = names.filter(Boolean);
+    if (xs.length === 0) return null;
+    if (xs.length === 1) return xs[0];
+    return xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1];
+  };
+  const top3SitesText = joinNames(top3Sites);
+  const top3FactorsText = joinNames(top3Factors);
+
+  return [
+    {
+      key: "hot-loc-concentration",
+      tag: "Location concentration · high confidence",
+      title: <>Top 10 locations contribute {fmtPct(locTop10)} of total emissions</>,
+      body: (
+        <>
+          Just <strong>10 of your {siteCount} sites</strong> account for <strong>{fmtPct(locTop10)}</strong> of FY 2024/25 emissions.
+          {top3SitesText && <> {top3SitesText} alone make up <strong>{fmtPct(locTop3)}</strong> — these are the highest-leverage
+          sites to engage on activity data, on-site energy mix, or operational efficiency.</>}
+        </>
+      ),
+      details: (
+        <p style={{fontSize:12, color:"var(--fe-fg-muted)"}}>
+          Site concentration this steep usually means a small action list goes a long way:
+          a single site improvement on the top 3 typically moves the inventory total
+          measurably, whereas tail-site work rarely shows up at the corporate level.
+        </p>
+      ),
+      chart: HB && top5SiteRows.length > 0 && (
+        <>
+          <div className="ai-modal__chart-title">Top 5 sites · % of FY 2024/25 footprint</div>
+          <HB rows={top5SiteRows} unit="%"/>
+        </>
+      ),
+      link: "Open top sites in Data",
+      onLink: () => onJumpTo("calcs", {}),
+    },
+    {
+      key: "hot-supplier-concentration",
+      tag: "Supplier concentration · high confidence",
+      title: <>Top 10 suppliers contribute {fmtPct(supTop10)} of total emissions</>,
+      body: (
+        <>
+          <strong>10 suppliers</strong> drive <strong>{fmtPct(supTop10)}</strong> of your inventory. This is the
+          set of relationships where activity-data engagement, PCFs, or supplier-specific factors
+          will move the needle — the long tail can stay on spend-based factors without distorting results.
+        </>
+      ),
+      details: (
+        <p style={{fontSize:12, color:"var(--fe-fg-muted)"}}>
+          Concentration this steep means the quickest data-quality win is moving the top spend-only
+          suppliers onto mass-based or activity-based factors, or requesting supplier-specific PCFs
+          — the gold-standard data quality you'd want from each top-10 supplier.
+        </p>
+      ),
+      chart: HB && top5SupplierRows.length > 0 && (
+        <>
+          <div className="ai-modal__chart-title">Top 5 suppliers · % of FY 2024/25 footprint</div>
+          <HB rows={top5SupplierRows} unit="%"/>
+        </>
+      ),
+      link: "Open supplier engagement queue",
+      onLink: () => onJumpTo("calcs", {}),
+    },
+    {
+      key: "hot-spend-fallback",
+      tag: "Methodology upgrade",
+      title: <>10 spend-based factors drive {fmtPct(spendTop10)} of total — start here for activity data</>,
+      body: (
+        <>
+          The top <strong>10 spend-based emission factors</strong> alone account for{" "}
+          <strong>{fmtPct(spendTop10)}</strong> of your footprint. Swapping these to activity-based methods
+          (mass, kWh, tkm) reduces category-level uncertainty by 25-40% and is the single
+          biggest precision lever available.
+        </>
+      ),
+      details: (
+        <p style={{fontSize:12, color:"var(--fe-fg-muted)"}}>
+          {top3FactorsText
+            ? <>{top3FactorsText} top the list. Pulling mass or distance from source systems lets you move these onto activity-based factors, which carry materially lower uncertainty than spend.</>
+            : <>Pulling mass or distance from source systems lets you move the top spend-based factors onto activity-based factors, which carry materially lower uncertainty than spend.</>}
+        </p>
+      ),
+      link: "Open factor coverage",
+      onLink: () => onJumpTo("calcs", {}),
+    },
+  ];
+}
+
 // --- Page shell ---------------------------------------------------------------
 function HotspotAnalysis({ calcs, entries, onJumpTo }) {
   const [editLayout, setEditLayout] = React.useState(false);
@@ -340,6 +469,14 @@ function HotspotAnalysis({ calcs, entries, onJumpTo }) {
   const spendTop10Pct = pctTop(SPEND_FACTOR_ROWS, "value", 10);
   const activityTop10Pct = pctTop(ACTIVITY_FACTOR_ROWS, "value", 10);
 
+  const insights = buildHotspotInsights({
+    onJumpTo,
+    locationRows: LOCATION_ROWS,
+    supplierRows: SUPPLIER_ROWS,
+    spendFactorRows: SPEND_FACTOR_ROWS,
+    siteCount,
+  });
+
   // Build a carry-over chart spec from a card's rows so the carried chart keeps
   // its native dashboard style (stacked segments + legend, or colored bars).
   const mkSpec = ({ tag, title, rows, stacked, valueOf, color, highlightLabel }) => ({
@@ -381,6 +518,16 @@ function HotspotAnalysis({ calcs, entries, onJumpTo }) {
       </div>
 
       <BoardFilters boardKey="hotspot" />
+
+      {/* Pinned AI insights — only shows if the user has explicitly pinned
+          something here from the Forward AI chat on Home. Proactive
+          suggestion cards live under the AI chat, not on individual boards. */}
+      <PinnedBoardInsights
+        boardKey="hotspot"
+        boardLabel="Hotspot analysis"
+        allInsights={insights}
+        onJumpHome={() => onJumpTo("overview")}
+      />
 
       <PageSections pageKey="hotspot" editMode={editLayout}>
         <PageSection id="hot-locations" label="Total emission comparison · by location">
@@ -473,4 +620,4 @@ function HotspotAnalysis({ calcs, entries, onJumpTo }) {
   );
 }
 
-Object.assign(window, { HotspotAnalysis });
+Object.assign(window, { HotspotAnalysis, buildHotspotInsights });

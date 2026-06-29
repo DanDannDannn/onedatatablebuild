@@ -280,9 +280,15 @@ function DataPage(props) {
             <b>{matchCount}</b> of {entries.length} entries match “{globalQuery.trim()}”
           </span>
         )}
+        <button type="button" className="btn secondary data-search-export"
+          title="Export the current view to CSV"
+          onClick={() => window.dispatchEvent(new CustomEvent("fe-export-start", { detail: {
+            title: "Current view", meta: `${dataResultCount.toLocaleString()} rows · CSV`,
+            filename: `data_${new Date().toISOString().slice(0,10)}.csv`, rows: dataResultCount } }))}>
+          <Icon name="download" size={16}/>Export
+        </button>
       </div>
 
-      <div className="data-body-row">
       <div className="view-bar">
         <div className="segments view-tabs" role="tablist" aria-label="Saved views" ref={viewRowRef}>
           <button role="tab" aria-selected={tab === "all"} className={`segment ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>
@@ -316,11 +322,10 @@ function DataPage(props) {
           {hiddenViews.length > 0 && (
             <ViewOverflowMenu items={hiddenViews} isActive={v => tab === "view:" + v.id} dirtyId={dirtyTabId} onSelect={selectView} />
           )}
-          <button className="view-add" onClick={newBlankView} title="New view" aria-label="New view"><Icon name="plus" size={15}/></button>
+          <button className="view-add" onClick={newBlankView} title="New view" aria-label="New view"><Icon name="plus" size={15}/><span>New view</span></button>
         </div>
       </div>
 
-      <div className="data-grid-col">
       {activeView && !isDeepdiveView && (
         <AllData
           view={activeView}
@@ -369,8 +374,6 @@ function DataPage(props) {
           />
         </div>
       )}
-      </div>{/* data-grid-col */}
-      </div>{/* data-body-row */}
     </div>
   );
 }

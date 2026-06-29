@@ -60,19 +60,10 @@ function BrandSwitcher({ themeId, setThemeId }) {
 function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = [], themeId, setThemeId }) {
   // `stub: true` items aren't wired into routes — clicking fires a toast
   // so the rest of the nav feels real without us actually building those pages.
+  // Table-only build: keep the app shell, but Data is the only reachable page.
   const NAV = [
-    { section: "Analyse", items: [
-      { key: "overview",          label: "Home",              icon: "home" },
-      { key: "emission-overview", label: "Emission overview", icon: "chart" },
-      { key: "hotspot",           label: "Hotspot analysis",  icon: "chart" },
-      { key: "trends",            label: "Trends",            icon: "trends" },
-    ]},
     { section: "Collect", items: [
       { key: "data",   label: "Data",        icon: "collect" },
-    ]},
-    { section: "Manage", items: [
-      { key: "settings", label: "Company settings", icon: "settings", stub: true },
-      { key: "users",    label: "Users",            icon: "users",    stub: true },
     ]},
   ];
 

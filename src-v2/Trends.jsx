@@ -175,6 +175,12 @@ function Trends({ calcs, entries, onJumpTo }) {
     };
   })();
 
+  // AI insights catalog — same data Home builds, so any insight pinned to
+  // Trends from Home can be re-rendered here.
+  const allInsights = (window.getHomeBoardCatalog
+    ? window.getHomeBoardCatalog(calcs, entries, onJumpTo)
+    : []);
+
   // --- Carry-over chart specs so every Trends chart deep-dives in its native
   // style with a "Back to Trends" anchor. ---
   const SC_COLORS = { 1: "#F35151", 2: "#AD6EFF", 3: "#5A4DFF" };
@@ -223,6 +229,14 @@ function Trends({ calcs, entries, onJumpTo }) {
       </div>
 
       <BoardFilters boardKey="trends" />
+
+      <PinnedBoardInsights
+        boardKey="trends"
+        boardLabel="Trends"
+        allInsights={allInsights}
+        onJumpHome={() => onJumpTo("overview")}
+        editMode={editLayout}
+      />
 
       <PageSections pageKey="trends" editMode={editLayout}>
 

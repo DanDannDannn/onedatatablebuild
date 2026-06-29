@@ -30,8 +30,8 @@ function inPeriod(row, periodKey) {
   return true;
 }
 
-function ScopeBadge({ scope }) {
-  return <span className={`scope-badge scope-${scope}`}><span className="dot"></span>Scope {scope}</span>;
+function ScopeBadge({ scope, compact }) {
+  return <span className={`scope-badge scope-${scope}`}><span className="dot"></span>{compact ? scope : `Scope ${scope}`}</span>;
 }
 
 // Calculation lifecycle: pending → suggested → confirmed
@@ -81,6 +81,24 @@ function entryWorkflow(e, mine) {
   if (e.entry_status === "ready" || !mine || mine.length === 0) return "de_ready";
   if (mine.every(c => c.status === "confirmed")) return "de_submitted";
   return "de_review"; // submitted; calcs still under review / processing / failed
+}
+// Two shapes of multi-calc entry:
+//  · "additive"    — one activity split into parts (gas, commute, materials…);
+//                    the entry total is the SUM of its calculations.
+//  · "alternative" — the same activity estimated by mutually-exclusive methods
+//                    (e.g. electricity location-based vs market-based); the calcs
+//                    are A-or-B, so there is NO meaningful sum (total shows "—").
+function calcsAreAlternative(entry, mine) {
+  if (entry && entry.calc_relation === "alternative") return true;
+  const ms = (mine || []).map(c => String((c && (c.scope2_method || c.method)) || "").toLowerCase());
+  return ms.some(m => m.includes("location")) && ms.some(m => m.includes("market"));
+}
+// Entry-level total in kgCO₂e — the sum for additive entries, or null when the
+// calculations are mutually-exclusive alternatives (caller renders "—").
+function entryTotalKg(entry, mine) {
+  if (!mine || mine.length === 0) return 0;
+  if (calcsAreAlternative(entry, mine)) return null;
+  return mine.reduce((s, c) => s + c.kgCO2e, 0);
 }
 // CONF_THRESHOLD: a suggested calc at/above this AI confidence is "high".
 const CONF_THRESHOLD = 0.8;
@@ -377,4 +395,4 @@ function Pagination({ page, pageSize, total, onPage }) {
   );
 }
 
-Object.assign(window, { ScopeBadge, StatusChip, Confidence, STATUS_LABELS, entryWorkflow, calcWorkflow, fmtKg, fmtKgSmart, CatLabel, HeaderCheckbox, BulkToolbar, FilterPill, AddFilterButton, Pagination, PERIOD_OPTIONS, inPeriod });
+Object.assign(window, { ScopeBadge, StatusChip, Confidence, STATUS_LABELS, entryWorkflow, calcWorkflow, calcsAreAlternative, entryTotalKg, fmtKg, fmtKgSmart, CatLabel, HeaderCheckbox, BulkToolbar, FilterPill, AddFilterButton, Pagination, PERIOD_OPTIONS, inPeriod });

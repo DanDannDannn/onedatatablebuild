@@ -168,8 +168,12 @@ function AllData({
 
   const rollup = (e) => {
     const mine = calcsByEntry.get(e.id) || [];
+    const alternative = window.calcsAreAlternative(e, mine);
     return {
-      mine, first: mine[0], total: mine.reduce((s, c) => s + c.kgCO2e, 0), count: mine.length,
+      mine, first: mine[0], count: mine.length,
+      alternative,
+      // Additive entries sum; alternative (A/B method) entries have no sum → null.
+      total: alternative ? null : mine.reduce((s, c) => s + c.kgCO2e, 0),
       pending: mine.filter(c => c.status === "pending").length,
       suggested: mine.filter(c => c.status === "suggested").length,
       confirmed: mine.filter(c => c.status === "confirmed").length,
@@ -188,11 +192,13 @@ function AllData({
     return { v: null, u: "" };
   };
 
+  // GHG Protocol Scope 3 category labels (e.g. "3.1 Purchased goods and services").
+  // Non-Scope-3 sources keep a scope-prefixed label.
   const CATEGORY_LABELS = {
-    electricity: "ELECTRICITY", natural_gas: "STATIONARY_COMBUSTION", diesel: "MOBILE_COMBUSTION",
-    flight: "BUSINESS_TRAVEL_AIR", purchased_goods: "PURCHASED_GOODS",
-    capital_goods: "CAPITAL_GOODS", upstream_transport: "UPSTREAM_TRANSPORT",
-    waste: "WASTE_OPERATIONS", business_travel: "BUSINESS_TRAVEL",
+    electricity: "Scope 2 · Electricity", natural_gas: "Scope 1 · Stationary combustion", diesel: "Scope 1 · Mobile combustion",
+    flight: "3.6 Business travel", purchased_goods: "3.1 Purchased goods and services",
+    capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
+    waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
   };
   const SCOPE3_CAT = {
     flight: "6 \u00b7 Business travel", purchased_goods: "1 \u00b7 Purchased goods & services",
@@ -251,6 +257,7 @@ function AllData({
       case "custom_factor": return e.custom_factor || "";
       case "notes": return e.notes || "";
       case "bulk_import_ref": return e.bulk_import_ref || "";
+      case "bulk_import_file": return e.bulk_import_file || "";
       case "created_on": return e.created_on || "";
       case "last_updated": return e.last_updated || "";
       case "files": return e.files_count || 0;
@@ -410,10 +417,10 @@ function AllData({
         return <span title={e.id} style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-strong)" }}>{fmtEntryId(e.id)}</span>;
       case "status": return <StatusChip status={window.entryWorkflow(e, r.mine)} />;
       case "quality": return <StatusChip status={window.calcWorkflow(e, r.mine)} />;
-      case "supplier": { const s = (e.details && e.details.supplier) || ""; return s ? <span title={s} style={{ color: "var(--fe-fg-strong)", fontWeight: 500 }}>{s}</span> : dash; }
+      case "supplier": { const s = (e.details && e.details.supplier) || ""; return s ? <span title={s} style={{ color: "var(--fe-fg-strong)" }}>{s}</span> : dash; }
       case "description": { const t = (e.details && (e.details.description || e.details.product_service)) || e.summary || ""; return t ? <span title={t}>{t}</span> : dash; }
-      case "business_unit": return <span style={{ color: "var(--fe-fg-strong)", fontWeight: 500 }}>{e.business_unit}</span>;
-      case "business_activity": return <span title={e.business_activity} style={{ color: "var(--fe-fg-strong)", fontWeight: 500 }}>{e.business_activity}</span>;
+      case "business_unit": return <span style={{ color: "var(--fe-fg-strong)" }}>{e.business_unit}</span>;
+      case "business_activity": return <span title={e.business_activity} style={{ color: "var(--fe-fg-strong)" }}>{e.business_activity}</span>;
       case "data_input_type": return <span className="chip"><span className="dot"></span>{e.data_input_type}</span>;
       case "start_date": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.start_date}</span>;
       case "end_date": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.end_date}</span>;
@@ -425,39 +432,43 @@ function AllData({
           ? <span className="link" onClick={(ev) => { ev.stopPropagation(); onViewCalc(r.first.id); }}>{r.count} calc{r.count > 1 ? "s" : ""}</span>
           : <span className="draft-tag">0 · draft</span>;
       case "emission_source": {
-        if (c) return <span className="mono-cell">{CATEGORY_LABELS[c.category] || c.category.toUpperCase()}</span>;
+        if (c) return <span title={CATEGORY_LABELS[c.category] || c.category}>{CATEGORY_LABELS[c.category] || c.category}</span>;
         const cs = [...new Set(r.mine.map(x => x.category))];
         if (cs.length === 0) return dash;
         if (cs.length > 1) return Multi;
-        return <span className="mono-cell">{CATEGORY_LABELS[cs[0]] || cs[0].toUpperCase()}</span>;
+        return <span title={CATEGORY_LABELS[cs[0]] || cs[0]}>{CATEGORY_LABELS[cs[0]] || cs[0]}</span>;
       }
       case "scope": {
-        if (c) return <ScopeBadge scope={c.scope} />;
+        if (c) return <span>{c.scope}</span>;
         const ss = [...new Set(r.mine.map(x => x.scope))].sort();
         if (ss.length === 0) return dash;
-        if (ss.length === 1) return <ScopeBadge scope={ss[0]} />;
+        if (ss.length === 1) return <span>{ss[0]}</span>;
         return Multi;
       }
       case "scope2_method": { const src = c ? (c.scope === 2 ? [c] : []) : r.mine.filter(x => x.scope === 2); if (!src.length) return dash; const ms = [...new Set(src.map(x => x.method))]; return ms.length === 1 ? <span style={{ fontSize: 12 }}>{ms[0]}</span> : Multi; }
       case "scope3_category": { const src = c ? (c.scope === 3 ? [c] : []) : r.mine.filter(x => x.scope === 3); if (!src.length) return dash; const cs = [...new Set(src.map(scope3CatOf))]; return cs.length === 1 ? <span style={{ fontSize: 12 }}>{cs[0]}</span> : Multi; }
-      case "consumption_value": { const v = c ? c.quantity : cons.v; return v != null ? <span style={{ color: "var(--fe-fg-strong)", fontWeight: 500 }}>{v.toLocaleString()}</span> : dash; }
+      case "consumption_value": { const v = c ? c.quantity : cons.v; return v != null ? <span style={{ color: "var(--fe-fg-strong)" }}>{v.toLocaleString()}</span> : dash; }
       case "consumption_unit": { const u = c ? c.unit : cons.u; return u ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>{u}</span> : dash; }
-      case "co2e_value": { if (r.count === 0) return dash; const v = c ? c.kgCO2e : r.total; return <span style={{ fontWeight: 600, color: "var(--fe-fg-strong)" }}>{(v / 1000).toLocaleString(undefined, { maximumFractionDigits: v < 100 ? 3 : 2 })}</span>; }
-      case "co2e_unit": return r.count > 0 ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>tCO₂e</span> : dash;
+      case "co2e_value": {
+        if (r.count === 0) return dash;
+        const v = c ? c.kgCO2e : r.total;
+        // Alternative (location- vs market-based) entries have no sum on the parent.
+        if (v == null) return <span title="Location-based vs market-based — alternative methods, not added together" style={{ color: "var(--fe-fg-subtle)" }}>—</span>;
+        return <span style={{ color: "var(--fe-fg-strong)" }}>{(v / 1000).toLocaleString(undefined, { maximumFractionDigits: v < 100 ? 3 : 2 })}</span>;
+      }
+      case "co2e_unit": { if (r.count === 0) return dash; if (!c && r.total == null) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>tCO₂e</span>; }
       case "co2e_method": { if (c) return <span style={{ fontSize: 12 }}>{c.method}</span>; const ms = [...new Set(r.mine.map(x => x.method))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
       case "calc_basis": {
         const src = c ? [c] : r.mine;
         const bs = [...new Set(src.map(efBasisOf))].filter(Boolean);
         if (bs.length === 0) return dash;
         if (bs.length > 1) return Multi;
-        const b = bs[0];
-        const cls = b === "Spend-based" ? "basis-spend" : b === "Precalculated" ? "basis-precalc" : "basis-activity";
-        return <span className={"basis-chip " + cls}>{b}</span>;
+        return <span>{bs[0]}</span>;
       }
       case "ef_name":
         if (!f) return dash;
-        if (efMulti) return <span title={`${f.name} +${r.factors.length - 1} more`} style={{ color: "var(--fe-fg-strong)", fontWeight: 500 }}>{f.name}<span style={{ color: "var(--fe-fg-muted)" }}> +{r.factors.length - 1}</span></span>;
-        return <span title={f.name} style={{ color: "var(--fe-fg-strong)", fontWeight: 500 }}>{f.name}</span>;
+        if (efMulti) return <span title={`${f.name} +${r.factors.length - 1} more`} style={{ color: "var(--fe-fg-strong)" }}>{f.name}<span style={{ color: "var(--fe-fg-muted)" }}> +{r.factors.length - 1}</span></span>;
+        return <span title={f.name} style={{ color: "var(--fe-fg-strong)" }}>{f.name}</span>;
       case "ef_value":   return efMulti ? Multi : (f ? <span style={{ color: "var(--fe-fg-strong)" }}>{f.kg_per_unit}</span> : dash);
       case "ef_unit":    return efMulti ? Multi : (f ? <span style={{ fontSize: 12 }}>{`kgCO₂e/${f.unit}`}</span> : dash);
       case "ef_source":  return efMulti ? Multi : (f ? <span>{f.source}</span> : dash);
@@ -467,7 +478,15 @@ function AllData({
       case "ef_lca":     return efMulti ? Multi : (f ? <span style={{ fontSize: 12 }}>{f.lca || "Cradle-to-gate"}</span> : dash);
       case "custom_factor": return <span style={{ fontSize: 12, color: e.custom_factor && e.custom_factor !== "—" ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)" }}>{e.custom_factor || "—"}</span>;
       case "notes": return <span title={e.notes || ""} style={{ color: e.notes ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)", fontSize: 12 }}>{e.notes || "—"}</span>;
-      case "bulk_import_ref": return <span style={{ fontSize: 12, color: e.bulk_import_ref ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)" }}>{e.bulk_import_ref || "—"}</span>;
+      case "bulk_import_ref": {
+        const v = e.bulk_import_ref;
+        if (!v || v === "—") return <span style={{ fontSize: 12, color: "var(--fe-fg-subtle)" }}>—</span>;
+        return <a className="bulk-link" href="#" title={"Open " + v} onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}>{v}</a>;
+      }
+      case "bulk_import_file": {
+        const f = e.bulk_import_file, has = f && f !== "—";
+        return <span title={has ? f : ""} style={{ fontSize: 12, fontFamily: has ? "var(--fe-font-mono)" : undefined, color: has ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)" }}>{f || "—"}</span>;
+      }
       case "files": return e.files_count > 0 ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="upload" size={14} style={{ color: "var(--fe-fg-muted)" }} />{e.files_count}</span> : dash;
       default: return null;
     }
@@ -507,22 +526,35 @@ function AllData({
   const toggleGroup = (key) => setExpandedGroups(s => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
   // ── Row selection + bulk actions ──────────────────────────────────────────────────────
-  // Selection is per-ENTRY (the row), not per calc sub-row. Select-all targets
-  // whatever rows are currently rendered (the page, or the full set when grouped).
+  // Two-level selection: the unit is the CALCULATION (calc id). Calc-less entries
+  // (drafts) select by entry id. An entry checkbox toggles all its calcs and
+  // reads indeterminate when only some are selected; each calc sub-row also has
+  // its own checkbox so individual calculations can be picked.
   const [selected, setSelected] = React.useState(() => new Set());
   const [selectionOn, setSelectionOn] = React.useState(true);
   const [bulkMsg, setBulkMsg] = React.useState(null);
+  const keysFor = (e) => { const m = calcsByEntry.get(e.id); return (m && m.length) ? m.map(c => c.id) : [e.id]; };
   React.useEffect(() => {
-    const ids = new Set(entries.map(e => e.id));
-    setSelected(prev => { const n = new Set([...prev].filter(id => ids.has(id))); return n.size === prev.size ? prev : n; });
-  }, [entries]);
-  const selectableIds = (group ? filtered : paged).map(e => e.id);
-  const selVis = selectableIds.filter(id => selected.has(id));
-  const allSel = selectableIds.length > 0 && selVis.length === selectableIds.length;
+    const valid = new Set();
+    entries.forEach(e => { valid.add(e.id); (calcsByEntry.get(e.id) || []).forEach(c => valid.add(c.id)); });
+    setSelected(prev => { const n = new Set([...prev].filter(k => valid.has(k))); return n.size === prev.size ? prev : n; });
+  }, [entries, calcsByEntry]);
+  const selectableKeys = (group ? filtered : paged).flatMap(keysFor);
+  const selVis = selectableKeys.filter(k => selected.has(k));
+  const allSel = selectableKeys.length > 0 && selVis.length === selectableKeys.length;
   const someSel = selVis.length > 0 && !allSel;
-  const toggleOne = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () => setSelected(s => { const n = new Set(s); if (allSel) selectableIds.forEach(id => n.delete(id)); else selectableIds.forEach(id => n.add(id)); return n; });
+  const entryAll = (e) => { const ks = keysFor(e); return ks.length > 0 && ks.every(k => selected.has(k)); };
+  const entrySome = (e) => { const ks = keysFor(e); return ks.some(k => selected.has(k)) && !ks.every(k => selected.has(k)); };
+  const toggleEntry = (e) => setSelected(s => { const n = new Set(s); const ks = keysFor(e); const all = ks.every(k => n.has(k)); ks.forEach(k => all ? n.delete(k) : n.add(k)); return n; });
+  const toggleCalc = (cid) => setSelected(s => { const n = new Set(s); n.has(cid) ? n.delete(cid) : n.add(cid); return n; });
+  const toggleAll = () => setSelected(s => { const n = new Set(s); if (allSel) selectableKeys.forEach(k => n.delete(k)); else selectableKeys.forEach(k => n.add(k)); return n; });
   const clearSel = () => setSelected(new Set());
+  // Checkbox that supports an indeterminate (partial) state.
+  const Cb = ({ checked, indeterminate, onChange, label }) => (
+    <input type="checkbox" className="fe-cb" checked={!!checked}
+      ref={el => { if (el) el.indeterminate = !!indeterminate && !checked; }}
+      onChange={onChange} aria-label={label} onClick={(ev) => ev.stopPropagation()} />
+  );
   let bulkTimer = null;
   const runBulk = (msg, clear = true) => { setBulkMsg(msg); clearTimeout(bulkTimer); bulkTimer = setTimeout(() => setBulkMsg(null), 2200); if (clear) clearSel(); };
 
@@ -548,6 +580,9 @@ function AllData({
       <button className="row-action danger" title="Delete entry" aria-label="Delete entry" onClick={() => deleteRow(e)}><Icon name="trash" size={15} /></button>
     </div>
   );
+  // Show the dedicated expander gutter only when the current rows actually have
+  // an expandable (multi-calc) entry, so single-calc views don't get dead space.
+  const hasExpandable = (group ? filtered : paged).some(e => (calcsByEntry.get(e.id) || []).length > 1);
   const renderRow = (e) => {
     const r = rollup(e);
     const canExpand = r.count > 1;
@@ -557,90 +592,91 @@ function AllData({
         aria-label={isOpen ? "Collapse calculations" : "Expand calculations"} aria-expanded={isOpen}
         title={isOpen ? "Collapse" : `Expand ${r.count} calculations`}><Icon name="chevRight" size={13} /></button>
     ) : <span className="row-disc-spacer" />;
+    // The expand chevron lives in its own gutter column (rendered right after the
+    // checkbox — see entryRow), so the first content column never shifts.
+    // firstContentKey marks where a child row's data starts (for the connector).
+    const firstContentKey = renderKeys.find(k => k === "id" || PER_CALC.has(k));
     const idInner = (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-        {discBtn}<span title={e.id} style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-strong)" }}>{fmtEntryId(e.id)}</span>
-      </span>
+      <span title={e.id} style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-strong)" }}>{fmtEntryId(e.id)}</span>
     );
     const cellClassFor = (k) => [tdPinClass(k), window.WRAP_KEYS.has(k) ? "wrap" : "", window.isEditableCol(k) ? "cell-edit" : ""].filter(Boolean).join(" ") || undefined;
 
-    if (!isOpen) {
-      return (
-        <tr key={e.id} className={(canExpand ? "calc-parent" : "") + (selected.has(e.id) ? " sel" : "")} onClick={() => onViewEntry(e.id)}>
-          {selectionOn && (
-            <td className="cb-cell" onClick={(ev) => ev.stopPropagation()}>
-              <input type="checkbox" className="fe-cb" checked={selected.has(e.id)} onChange={() => toggleOne(e.id)} aria-label={`Select entry ${e.id}`} />
-            </td>
-          )}
-          {renderKeys.map(k => k === "id"
-            ? <td key="id" className={tdPinClass("id") || undefined} style={tdPinStyle("id")} onClick={(ev) => { ev.stopPropagation(); onViewEntry(e.id); }}>{idInner}</td>
-            : <td key={k} className={cellClassFor(k)} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, null)}</td>
-          )}
-          <td className="ra-cell" onClick={(ev) => ev.stopPropagation()}>{rowActions(e)}</td>
-        </tr>
-      );
-    }
-    // Expanded: MUI-style row spanning — per-calc columns split, others merge.
+    // The entry (parent) row: entry-level columns + AGGREGATED per-calc columns
+    // (e.g. summed CO₂e). Shown collapsed, and kept as the summary row when open.
+    const entryRow = (
+      <tr key={e.id} className={(canExpand ? "calc-parent" : "") + (isOpen ? " open" : "") + (entryAll(e) ? " sel" : "")} onClick={() => onViewEntry(e.id)}>
+        {selectionOn && (
+          <td className="cb-cell" onClick={(ev) => ev.stopPropagation()}>
+            <Cb checked={entryAll(e)} indeterminate={entrySome(e)} onChange={() => toggleEntry(e)} label={`Select entry ${e.id}`} />
+          </td>
+        )}
+        {hasExpandable && (
+          <td className="exp-cell" onClick={(ev) => ev.stopPropagation()}>{canExpand ? discBtn : null}</td>
+        )}
+        {renderKeys.map(k => k === "id"
+          ? <td key="id" className={tdPinClass("id") || undefined} style={tdPinStyle("id")} onClick={(ev) => { ev.stopPropagation(); onViewEntry(e.id); }}>{idInner}</td>
+          : <td key={k} className={cellClassFor(k)} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, null)}</td>
+        )}
+        <td className="ra-cell" onClick={(ev) => ev.stopPropagation()}>{rowActions(e)}</td>
+      </tr>
+    );
+    if (!isOpen) return entryRow;
+    // Expanded: keep the parent summary row, then one child row per calculation.
+    // Entry-level columns are blank on children (shown once on the parent); the
+    // leftmost content cell gets a tree connector.
     return (
       <React.Fragment key={e.id}>
+        {entryRow}
         {r.mine.map((c, i) => (
-          <tr key={c.id} className={"calc-subrow" + (i === 0 ? " first" : "") + (i === r.mine.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
-            {selectionOn && i === 0 ? (
-              <td className="cb-cell" rowSpan={r.mine.length} style={{ verticalAlign: "top" }} onClick={(ev) => ev.stopPropagation()}>
-                <input type="checkbox" className="fe-cb" checked={selected.has(e.id)} onChange={() => toggleOne(e.id)} aria-label={`Select entry ${e.id}`} />
+          <tr key={c.id} className={"calc-childrow" + (i === r.mine.length - 1 ? " last" : "") + (selected.has(c.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
+            {selectionOn && (
+              <td className="cb-cell" onClick={(ev) => ev.stopPropagation()}>
+                <Cb checked={selected.has(c.id)} onChange={() => toggleCalc(c.id)} label={`Select calculation ${c.id}`} />
               </td>
-            ) : null}
+            )}
+            {hasExpandable && <td className="exp-cell exp-cell--rail"></td>}
             {renderKeys.map(k => {
-              if (k === "id") return i === 0
-                ? <td key="id" rowSpan={r.mine.length} className={["span-cell", tdPinClass("id")].filter(Boolean).join(" ")} style={{ verticalAlign: "top", ...tdPinStyle("id") }} onClick={(ev) => { ev.stopPropagation(); onViewEntry(e.id); }}>{idInner}</td>
-                : null;
-              if (PER_CALC.has(k)) return <td key={k} className={[window.WRAP_KEYS.has(k) ? "wrap" : "", tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, c)}</td>;
-              return i === 0
-                ? <td key={k} rowSpan={r.mine.length} className={["span-cell", window.WRAP_KEYS.has(k) ? "wrap" : "", tdPinClass(k), window.isEditableCol(k) ? "cell-edit" : ""].filter(Boolean).join(" ")} style={{ textAlign: align(k), verticalAlign: "top", ...tdPinStyle(k) }} onClick={(ev) => { ev.stopPropagation(); onViewEntry(e.id); }}>{dataCell(k, e, r, null)}</td>
-                : null;
+              const lead = k === firstContentKey ? "child-lead" : "";
+              if (k === "id") return <td key="id" className={["calc-child-id", lead, tdPinClass("id")].filter(Boolean).join(" ") || undefined} style={tdPinStyle("id")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}><span style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-muted)" }}>{c.id}</span></td>;
+              if (PER_CALC.has(k)) return <td key={k} className={[window.WRAP_KEYS.has(k) ? "wrap" : "", lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, c)}</td>;
+              // entry-level column → blank on the child (the parent already shows it)
+              return <td key={k} className={[lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={tdPinStyle(k)}></td>;
             })}
-            {i === 0 ? <td className="ra-cell" rowSpan={r.mine.length} style={{ verticalAlign: "top" }} onClick={(ev) => ev.stopPropagation()}>{rowActions(e)}</td> : null}
+            <td className="ra-cell"></td>
           </tr>
         ))}
       </React.Fragment>
     );
   };
 
-  const colCount = renderKeys.length + (selectionOn ? 1 : 0) + 1;
+  const colCount = renderKeys.length + (selectionOn ? 1 : 0) + (hasExpandable ? 1 : 0) + 1;
 
   return (
     <>
       <div className="filter-bar">
-        <FilterBuilder
-          rules={filterRules}
-          onChange={setFilterRules}
-          cols={COLS.map(c => ({ k: c.k, label: c.label }))}
-          colConfig={colFilterCfg}
-          numericKeys={window.NUMERIC_KEYS}
-        />
-        {period && (
-          <FilterPill icon="calendar" label="Period" value={period} options={window.PERIOD_OPTIONS}
-            onChange={(v) => setPeriod(v)} onClear={() => setPeriod(null)} />
-        )}
+        <ViewDirtyCluster dirty={dirty} view={view}
+          onSave={() => onSaveView && onSaveView(view.id, workingState)}
+          onSaveAsNew={() => onSaveAsNew && onSaveAsNew(workingState)}
+          onReset={() => reinit(view)} />
 
-        <span className="tb-divider" />
-        <SortControl sort={sort} colOptions={colOptions} onChange={setSort} />
-        {/* Grouping hidden for now */}
-        <ColumnsPanel columns={columns} onChange={setColumns} defaultOrder={window.ENTRY_ORDER}
-          selectionOn={selectionOn} onToggleSelection={() => setSelectionOn(v => { if (v) clearSel(); return !v; })} />
+        <div className="filter-bar-controls">
+          <FilterBuilder
+            rules={filterRules}
+            onChange={setFilterRules}
+            cols={COLS.map(c => ({ k: c.k, label: c.label }))}
+            colConfig={colFilterCfg}
+            numericKeys={window.NUMERIC_KEYS}
+          />
+          {period && (
+            <FilterPill icon="calendar" label="Period" value={period} options={window.PERIOD_OPTIONS}
+              onChange={(v) => setPeriod(v)} onClear={() => setPeriod(null)} />
+          )}
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          <button type="button" className="tb-btn" title="Export the current view to CSV"
-            onClick={() => window.dispatchEvent(new CustomEvent("fe-export-start", { detail: {
-              title: "Current view", meta: `${filtered.length.toLocaleString()} rows · ${renderKeys.length} cols · CSV`,
-              filename: `data_${new Date().toISOString().slice(0,10)}.csv`, rows: filtered.length } }))}>
-            <Icon name="download" size={15}/>
-            <span className="tb-btn-label">Export</span>
-          </button>
-          <ViewDirtyCluster dirty={dirty} view={view}
-            onSave={() => onSaveView && onSaveView(view.id, workingState)}
-            onSaveAsNew={() => onSaveAsNew && onSaveAsNew(workingState)}
-            onReset={() => reinit(view)} />
+          <span className="tb-divider" />
+          <SortControl sort={sort} colOptions={colOptions} onChange={setSort} />
+          {/* Grouping hidden for now */}
+          <ColumnsPanel columns={columns} onChange={setColumns} defaultOrder={window.ENTRY_ORDER}
+            selectionOn={selectionOn} onToggleSelection={() => setSelectionOn(v => { if (v) clearSel(); return !v; })} />
         </div>
       </div>
 
@@ -652,6 +688,7 @@ function AllData({
             <table className={"data-table data-grid-fixed density-comfortable" + (pinnedSet.size ? " has-pinned" : "")} onMouseOver={autoTitleOnOverflow}>
               <colgroup>
                 {selectionOn && <col style={{ width: 40 }} />}
+                {hasExpandable && <col style={{ width: 30 }} />}
                 {renderKeys.map(k => <col key={k} style={{ width: colW(k) }} />)}
                 <col style={{ width: 84 }} />
               </colgroup>
@@ -662,6 +699,7 @@ function AllData({
                       <HeaderCheckbox checked={allSel} indeterminate={someSel} onChange={toggleAll} />
                     </th>
                   )}
+                  {hasExpandable && <th className="exp-cell" aria-hidden="true"></th>}
                   {renderKeys.map(k => {
                     const cfg = colFilterCfg[k];
                     const sLevel = sort.findIndex(s => s.key === k);
@@ -738,10 +776,10 @@ function AllData({
       {selected.size > 0 && (
         <div className="ad-bulkbar" role="toolbar" aria-label="Bulk actions">
           <span className="ad-bulkbar__count">{selected.size} selected</span>
-          <button className="ad-bulk-btn primary" onClick={() => runBulk(`Opening bulk edit for ${selected.size} entries…`, false)}><Icon name="pencil" size={15} />Edit</button>
-          <button className="ad-bulk-btn" onClick={() => runBulk(`${selected.size} entries unsubmitted`)}><Icon name="close" size={15} />Unsubmit</button>
-          <button className="ad-bulk-btn" onClick={() => runBulk(`${selected.size} entries submitted`)}><Icon name="check" size={15} />Submit</button>
-          <button className="ad-bulk-btn danger" onClick={() => { if (confirm(`Delete ${selected.size} entries and their calculations?`)) runBulk(`${selected.size} entries deleted`); }}><Icon name="trash" size={15} />Delete</button>
+          <button className="ad-bulk-btn primary" onClick={() => runBulk(`Opening bulk edit for ${selected.size} item${selected.size > 1 ? "s" : ""}…`, false)}><Icon name="pencil" size={15} />Edit</button>
+          <button className="ad-bulk-btn" onClick={() => runBulk(`${selected.size} item${selected.size > 1 ? "s" : ""} unsubmitted`)}><Icon name="close" size={15} />Unsubmit</button>
+          <button className="ad-bulk-btn" onClick={() => runBulk(`${selected.size} item${selected.size > 1 ? "s" : ""} submitted`)}><Icon name="check" size={15} />Submit</button>
+          <button className="ad-bulk-btn danger" onClick={() => { if (confirm(`Delete ${selected.size} selected item${selected.size > 1 ? "s" : ""}?`)) runBulk(`${selected.size} item${selected.size > 1 ? "s" : ""} deleted`); }}><Icon name="trash" size={15} />Delete</button>
           <button className="ad-bulkbar__x" onClick={clearSel} aria-label="Clear selection" title="Clear selection"><Icon name="close" size={16} /></button>
         </div>
       )}

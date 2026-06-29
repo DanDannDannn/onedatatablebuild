@@ -1,6 +1,16 @@
 // Seed data — Forward Earth carbon accounting prototype
 // Three linked entities: upload_batch -> data_entry -> calculation (1:M:M)
 
+// Bulk-import display: a link label ("Bulk import (CSV)") + the uploaded file name,
+// derived from the source upload batch. Manual entries have neither.
+const IMPORT_TYPE_LABEL = { csv: "CSV", xlsx: "XLSX", pdf: "PDF" };
+function bulkImportInfo(b) {
+  if (!b || !b.source || b.source === "manual") return { ref: "—", file: "—" };
+  if (b.source === "erp") return { ref: "ERP sync", file: "—" };
+  const t = IMPORT_TYPE_LABEL[b.source] || String(b.source).toUpperCase();
+  return { ref: "Bulk import (" + t + ")", file: b.fileName || "—" };
+}
+
 const BATCHES = [
   { id: "B-2026-03",  label: "March 2026 manual",     source: "manual",  date: "2026-03-31", uploadedBy: "Johannes Weber" },
   { id: "B-2026-02",  label: "Feb 2026 utility bills",  source: "pdf",     date: "2026-03-04", uploadedBy: "Johannes Weber", fileName: "utility-bills-feb-2026.pdf" },
@@ -348,7 +358,7 @@ ENTRIES.forEach(e => {
     "Flagged anomaly — awaiting site confirmation.",
     "",
   ][h % 6];
-  e.bulk_import_ref = (b?.source === "csv" || b?.source === "pdf") ? b.fileName : (b?.source === "erp" ? b.id : "—");
+  { const bi = bulkImportInfo(b); e.bulk_import_ref = bi.ref; e.bulk_import_file = bi.file; }
   e.custom_factor = (h % 7 === 0) ? "Supplier PCF v2.1" : "—";
 
   // Extra metadata captured during bulk import (optional columns the user mapped)
@@ -405,6 +415,7 @@ CALCS.forEach(c => {
   c.files_count = e.files_count;
   c.notes = e.notes;
   c.bulk_import_ref = e.bulk_import_ref;
+  c.bulk_import_file = e.bulk_import_file;
   c.custom_factor = e.custom_factor;
 });
 
@@ -485,7 +496,7 @@ window.applyDataset = function (ds) {
       business_unit: buName, business_activity: actName, user_assigned: userName,
       data_input_type: dataInput, start_date: start, end_date: end,
       created_on: start, last_updated: end, files_count: 0,
-      notes, bulk_import_ref: batchId, custom_factor: "—", entry_status: "confirmed",
+      notes, bulk_import_ref: batchId === "manual" ? "—" : "Bulk import (CSV)", bulk_import_file: batchId === "manual" ? "—" : "spend_fy2025_anon.csv", custom_factor: "—", entry_status: "confirmed",
       extra_meta: {
         "Supplier / vendor": sup || "—",
         "Spend": price != null ? curName + " " + fmtNum(price) : "—",
@@ -505,7 +516,7 @@ window.applyDataset = function (ds) {
       business_unit: buName, business_activity: actName, user_assigned: userName,
       start_date: start, end_date: end, data_input_type: dataInput,
       created_on: start, last_updated: end, files_count: 0, notes,
-      bulk_import_ref: batchId, custom_factor: "—",
+      bulk_import_ref: batchId === "manual" ? "—" : "Bulk import (CSV)", bulk_import_file: batchId === "manual" ? "—" : "spend_fy2025_anon.csv", custom_factor: "—",
     };
   }
   const batches = batch.map((bid, idx) => ({
@@ -525,7 +536,8 @@ window.applyDataset = function (ds) {
     business_unit: o.bu, business_activity: o.activity, user_assigned: o.user,
     data_input_type: "Manual entry", start_date: o.start, end_date: o.end,
     created_on: o.date, last_updated: o.date, files_count: 0,
-    notes: o.notes || "", bulk_import_ref: "—", custom_factor: "—", entry_status: o.entry_status,
+    notes: o.notes || "", bulk_import_ref: "—", bulk_import_file: "—", custom_factor: "—", entry_status: o.entry_status,
+    calc_relation: o.calc_relation || "additive",
     extra_meta: {
       "Supplier / vendor": o.supplier || "—",
       "Spend": o.spend || "—",
@@ -537,14 +549,14 @@ window.applyDataset = function (ds) {
     },
   });
   const mkDemoCalc = (e, o) => ({
-    id: "C-" + e.id, entryId: e.id, date: e.date, site: e.site, category: e.category, scope: 3,
+    id: o.id || ("C-" + e.id), entryId: e.id, date: e.date, site: e.site, category: o.category || e.category, scope: o.scope || 3,
     activity: o.summary, gas: "CO₂e", method: o.method, factor: o.factor,
     quantity: o.amount, unit: o.unit, kgCO2e: o.kgCO2e, status: o.calcStatus, confidence: o.confidence,
     reason: o.reason || ("Matched to " + (o.factor ? o.factor.name : "—") + "."),
     business_unit: e.business_unit, business_activity: e.business_activity, user_assigned: e.user_assigned,
     start_date: e.start_date, end_date: e.end_date, data_input_type: "Manual entry",
     created_on: e.created_on, last_updated: e.last_updated, files_count: 0, notes: e.notes,
-    bulk_import_ref: "—", custom_factor: "—",
+    bulk_import_ref: "—", bulk_import_file: "—", custom_factor: "—",
   });
   const demoSpecs = [
     { id: "draft-2f9c", entry_status: "draft", category: "purchased_goods", site: "Vienna HQ",
@@ -579,8 +591,127 @@ window.applyDataset = function (ds) {
       factor: mkFactor("Paper & paperboard, primary", 0.94, "ecoinvent"), method: "Activity-based",
       kgCO2e: 5076, calcStatus: "confirmed", confidence: 0.93 },
   ];
+  // Multi-calculation entries: single lines split across several emission
+  // factors. Prepended to the very top so the master-detail layout (parent
+  // aggregate + per-calc child rows) + two-level selection sit on the first
+  // rows. The leading ones are Submitted (all calcs confirmed); the last is a
+  // review case (one suggested calc) for variety.
+  demoSpecs.unshift(
+    // Alternative (A-or-B) entries grouped on top for demo: electricity estimated
+    // location- vs market-based. Not additive, so each parent total shows "—".
+    {
+      id: "multi-elec-4b1c", entry_status: "confirmed", category: "electricity", site: "Berlin HQ",
+      calc_relation: "alternative",
+      supplier: "Vattenfall", product: "Grid electricity",
+      desc: "Grid electricity, Berlin HQ — FY26 Q2 (location vs market-based)",
+      amount: 84000, unit: "kWh", spend: "EUR 21,000", bu: "Facilities", activity: "Purchased electricity", user: "Lena Hofer",
+      date: "2026-06-20", start: "2026-04-01", end: "2026-06-30", s3cat: "—",
+      summary: "Grid electricity · location vs market-based",
+      calcs: [
+        { summary: "Location-based", method: "Location-based", scope: 2, factor: mkFactor("DE grid electricity — location-based", 0.38, "AIB/UBA"),
+          amount: 84000, unit: "kWh", kgCO2e: 31920, calcStatus: "confirmed", confidence: 0.95 },
+        { summary: "Market-based", method: "Market-based", scope: 2, factor: mkFactor("Supplier residual mix — market-based", 0.21, "Supplier disclosure"),
+          amount: 84000, unit: "kWh", kgCO2e: 17640, calcStatus: "confirmed", confidence: 0.9 },
+      ],
+    },
+    {
+      id: "multi-elec-9d22", entry_status: "confirmed", category: "electricity", site: "London HQ",
+      calc_relation: "alternative",
+      supplier: "EDF Energy", product: "Grid electricity",
+      desc: "Grid electricity, London HQ — FY26 Q2 (location vs green tariff)",
+      amount: 132000, unit: "kWh", spend: "GBP 29,700", bu: "Facilities", activity: "Purchased electricity", user: "Tobias Brandt",
+      date: "2026-06-19", start: "2026-04-01", end: "2026-06-30", s3cat: "—",
+      summary: "Grid electricity · location vs market-based",
+      calcs: [
+        { summary: "Location-based", method: "Location-based", scope: 2, factor: mkFactor("UK grid electricity — location-based", 0.207, "DEFRA"),
+          amount: 132000, unit: "kWh", kgCO2e: 27324, calcStatus: "confirmed", confidence: 0.96 },
+        { summary: "Market-based", method: "Market-based", scope: 2, factor: mkFactor("Renewable tariff (REGO-backed) — market-based", 0.0, "Supplier contract"),
+          amount: 132000, unit: "kWh", kgCO2e: 0, calcStatus: "confirmed", confidence: 0.93 },
+      ],
+    },
+    {
+      id: "multi-elec-1f70", entry_status: "confirmed", category: "electricity", site: "Paris Office",
+      calc_relation: "alternative",
+      supplier: "EDF", product: "Grid electricity",
+      desc: "Grid electricity, Paris Office — FY26 Q2 (location vs residual mix)",
+      amount: 96000, unit: "kWh", spend: "EUR 18,200", bu: "Facilities", activity: "Purchased electricity", user: "Amelia Schroeder",
+      date: "2026-06-18", start: "2026-04-01", end: "2026-06-30", s3cat: "—",
+      summary: "Grid electricity · location vs market-based",
+      calcs: [
+        { summary: "Location-based", method: "Location-based", scope: 2, factor: mkFactor("FR grid electricity — location-based", 0.052, "ADEME"),
+          amount: 96000, unit: "kWh", kgCO2e: 4992, calcStatus: "confirmed", confidence: 0.95 },
+        { summary: "Market-based", method: "Market-based", scope: 2, factor: mkFactor("FR residual mix — market-based", 0.45, "AIB"),
+          amount: 96000, unit: "kWh", kgCO2e: 43200, calcStatus: "confirmed", confidence: 0.87 },
+      ],
+    },
+    {
+      id: "multi-7f3b", entry_status: "confirmed", category: "capital_goods", site: "Linz Plant",
+      supplier: "Steiermark Maschinenbau AG", product: "Production line upgrade",
+      desc: "Production line upgrade, FY26 Q1 — machinery + installation",
+      amount: 320000, unit: "€", spend: "EUR 320,000", bu: "Operations", activity: "Capital goods", user: "Markus Reiter",
+      date: "2026-06-24", start: "2026-01-01", end: "2026-03-31", s3cat: "2 · Capital goods",
+      summary: "Production line upgrade · 2 calculations",
+      calcs: [
+        { summary: "Industrial machinery", method: "Spend-based", factor: mkFactor("Industrial machinery, spend", 0.31, "EXIOBASE"),
+          amount: 280000, unit: "€", kgCO2e: 86800, calcStatus: "confirmed", confidence: 0.84 },
+        { summary: "Electrical installation", method: "Spend-based", factor: mkFactor("Electrical installation, spend", 0.27, "EXIOBASE"),
+          amount: 40000, unit: "€", kgCO2e: 10800, calcStatus: "confirmed", confidence: 0.81 },
+      ],
+    },
+    {
+      id: "multi-2e9d", entry_status: "confirmed", category: "purchased_goods", site: "Hamburg Office",
+      supplier: "Alpenland Konsumgüter Handel", product: "Catering & supplies",
+      desc: "Catering & supplies, FY26 Q1 — multi-line invoice",
+      amount: 7600, unit: "kg", spend: "EUR 8,900", bu: "Facilities", activity: "Purchased goods", user: "Amelia Schroeder",
+      date: "2026-06-23", start: "2026-01-01", end: "2026-03-31", s3cat: "1 · Purchased goods & services",
+      summary: "Catering & supplies · 3 calculations",
+      calcs: [
+        { summary: "Food & beverage", method: "Activity-based", factor: mkFactor("Food & beverage, mixed", 1.9, "ecoinvent"),
+          amount: 3200, unit: "kg", kgCO2e: 6080, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Paper & packaging", method: "Activity-based", factor: mkFactor("Paper & paperboard, primary", 0.94, "ecoinvent"),
+          amount: 2400, unit: "kg", kgCO2e: 2256, calcStatus: "confirmed", confidence: 0.91 },
+        { summary: "Cleaning supplies", method: "Activity-based", factor: mkFactor("Cleaning agents, mixed", 1.2, "ecoinvent"),
+          amount: 2000, unit: "kg", kgCO2e: 2400, calcStatus: "confirmed", confidence: 0.87 },
+      ],
+    },
+    {
+      id: "multi-8a2c", entry_status: "confirmed", category: "upstream_transport", site: "Rotterdam DC",
+      supplier: "NordSee Logistik BV", product: "Inbound freight",
+      desc: "Inbound freight, FY26 Q2 — split by transport leg",
+      amount: 14200, unit: "t·km", spend: "EUR 9,400", bu: "Logistics", activity: "Upstream transport", user: "Sofie Daan",
+      date: "2026-06-21", start: "2026-04-01", end: "2026-06-30", s3cat: "4 · Upstream transport & distribution",
+      summary: "Inbound freight · 2 calculations",
+      calcs: [
+        { summary: "Road freight, HGV >32t", method: "Activity-based", factor: mkFactor("Road freight, HGV >32t", 0.082, "DEFRA"),
+          amount: 5400, unit: "t·km", kgCO2e: 442800, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Sea freight, container", method: "Activity-based", factor: mkFactor("Sea freight, container", 0.016, "DEFRA"),
+          amount: 8800, unit: "t·km", kgCO2e: 140800, calcStatus: "confirmed", confidence: 0.86 },
+      ],
+    },
+    {
+      id: "multi-3d7e", entry_status: "confirmed", category: "purchased_goods", site: "Vienna HQ",
+      supplier: "Wiener Bürobedarf GmbH", product: "Mixed facilities supplies",
+      desc: "Mixed facilities supplies, FY26 Q2 — split across materials",
+      amount: 9200, unit: "kg", spend: "EUR 11,800", bu: "Facilities", activity: "Purchased goods", user: "Lena Hofer",
+      date: "2026-06-19", start: "2026-04-01", end: "2026-06-30", s3cat: "1 · Purchased goods & services",
+      summary: "Mixed facilities supplies · 3 calculations",
+      calcs: [
+        { summary: "Paper & paperboard", method: "Activity-based", factor: mkFactor("Paper & paperboard, primary", 0.94, "ecoinvent"),
+          amount: 5400, unit: "kg", kgCO2e: 5076, calcStatus: "confirmed", confidence: 0.93 },
+        { summary: "Plastics, primary form", method: "Activity-based", factor: mkFactor("Plastics, primary form", 2.7, "ecoinvent"),
+          amount: 1800, unit: "kg", kgCO2e: 4860, calcStatus: "confirmed", confidence: 0.88 },
+        { summary: "Office electronics (spend-based)", method: "Spend-based", factor: mkFactor("Office electronics, spend", 0.42, "EXIOBASE"),
+          amount: 6800, unit: "€", kgCO2e: 2856, calcStatus: "suggested", confidence: 0.49,
+          reason: "Low-confidence spend-based match — verify with activity data." },
+      ],
+    },
+  );
   const demoEntries = [], demoCalcs = [];
-  demoSpecs.forEach(o => { const e = mkDemoEntry(o); demoEntries.push(e); if (o.factor) demoCalcs.push(mkDemoCalc(e, o)); });
+  demoSpecs.forEach(o => {
+    const e = mkDemoEntry(o); demoEntries.push(e);
+    if (o.calcs) o.calcs.forEach((cs, i) => demoCalcs.push(mkDemoCalc(e, { ...cs, id: "C-" + e.id + "-" + (i + 1) })));
+    else if (o.factor) demoCalcs.push(mkDemoCalc(e, o));
+  });
   entries.unshift(...demoEntries);
   calcs.unshift(...demoCalcs);
 
@@ -605,7 +736,7 @@ window.makeDraftEntry = function () {
     business_unit: "", business_activity: "", user_assigned: (window.USERS && window.USERS[0]) || "",
     data_input_type: "Manual entry", start_date: today, end_date: today,
     created_on: today, last_updated: today, files_count: 0,
-    notes: "", bulk_import_ref: "—", custom_factor: "—", entry_status: "draft",
+    notes: "", bulk_import_ref: "—", bulk_import_file: "—", custom_factor: "—", entry_status: "draft",
     _isNew: true,
   };
 };

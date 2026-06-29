@@ -567,7 +567,7 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
         onDoubleClick={(e) => { if (!e.target.closest("button, a, input, select, .ai-context-strip__chart")) floatDrag.reset(); }}
         style={(!chartCollapsed && floatDrag.pos) ? { position: "fixed", left: floatDrag.pos.x, top: floatDrag.pos.y, right: "auto", zIndex: 60 } : undefined}
         className={"ai-context-strip ai-context-strip--float" + (chartCollapsed ? " is-collapsed" : "") + (floatDrag.dragging ? " is-dragging" : "")}
-        role="region" aria-label="Deep-dive chart"
+        role="region" aria-label="Forward AI insight chart"
       >
         <span className="ai-context-strip__grip" aria-hidden="true" title="Drag to move · double-click to reset"><Icon name="grip" size={14}/></span>
         <button
@@ -593,7 +593,8 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
             </button>
           )}
           <div className="ai-context-strip__meta">
-            {chartSpec.tag && <span className="ai-context-strip__tag">{chartSpec.tag}</span>}
+            <FaiBrand soft />
+            {chartSpec.tag && <span className="ai-context-strip__tag">· {chartSpec.tag}</span>}
             <span className="ai-context-strip__snapshot" title="A snapshot of the chart you came from — the table is filtered to match">Snapshot</span>
           </div>
           <div className="ai-context-strip__title">{chartSpec.title}</div>
@@ -842,7 +843,7 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
           onDoubleClick={(e) => { if (!e.target.closest("button, a, input, select, .ai-context-strip__chart")) floatDrag.reset(); }}
           style={floatDrag.pos ? { position: "fixed", left: floatDrag.pos.x, top: floatDrag.pos.y, right: "auto", zIndex: 60 } : undefined}
           className={"ai-context-strip ai-context-strip--float" + (chartCollapsed ? " is-collapsed" : "") + (floatDrag.dragging ? " is-dragging" : "")}
-          role="region" aria-label="Deep-dive chart"
+          role="region" aria-label="Forward AI insight chart"
         >
           <span className="ai-context-strip__grip" aria-hidden="true" title="Drag to move · double-click to reset"><Icon name="grip" size={14}/></span>
           <button
@@ -868,7 +869,8 @@ function Calculations({ calcs, entries, selectedId, setSelectedId, filter, setFi
               </button>
             )}
             <div className="ai-context-strip__meta">
-              {chartSpec.tag && <span className="ai-context-strip__tag">{chartSpec.tag}</span>}
+              <FaiBrand soft />
+              {chartSpec.tag && <span className="ai-context-strip__tag">· {chartSpec.tag}</span>}
               {chartSpec.variant
                 ? <span className="ai-context-strip__snapshot" title="A snapshot of the chart you came from — it stays fixed while you explore the rows below">Snapshot</span>
                 : <span className="ai-context-strip__live" title="Recalculates as you filter">

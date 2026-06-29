@@ -16,27 +16,30 @@
 // ro:     read-only (no inline edit affordance)
 // group:  "ef" → part of the collapsible Emission-factor column group
 // editable getter = kind==="entry" && !ro
+// Default `w` reflects typical CONTENT width, not the header label width
+// (headers ellipsize via .sh-label). Short-content columns with long titles \u2014
+// e.g. Consumption unit ("kWh"), CO2e emission unit ("tCO2e") \u2014 stay narrow.
 const DATA_COLUMNS = [
-  { k:"id",                label:"Data entry ID",            w:150, kind:"entry",   ro:true },
-  { k:"status",            label:"Status",                   w:128, kind:"derived", ro:true },
-  { k:"quality",           label:"Calculation status",        w:170, kind:"derived", ro:true },
-  { k:"calc_basis",        label:"Calculation basis",        w:160, kind:"calc",    ro:true },
+  { k:"id",                label:"Data entry ID",            w:140, kind:"entry",   ro:true },
+  { k:"status",            label:"Status",                   w:112, kind:"derived", ro:true },
+  { k:"quality",           label:"Calculation status",        w:172, kind:"derived", ro:true },
+  { k:"calc_basis",        label:"Calculation basis",        w:148, kind:"calc",    ro:true },
   { k:"supplier",          label:"Supplier name",            w:200, kind:"entry",   ro:true },
-  { k:"description",       label:"Description",              w:260, kind:"entry",   ro:true },
-  { k:"business_unit",     label:"Business unit",            w:140, kind:"entry" },
-  { k:"business_activity", label:"Business activity",        w:200, kind:"entry" },
-  { k:"data_input_type",   label:"Data input type",          w:160, kind:"entry",   ro:true },
-  { k:"start_date",        label:"Start date",               w:110, kind:"entry" },
-  { k:"end_date",          label:"End date",                 w:110, kind:"entry" },
-  { k:"calcs_count",       label:"Related calculations",     w:170, kind:"derived", ro:true },
-  { k:"emission_source",   label:"Category",                 w:190, kind:"calc",    ro:true },
-  { k:"scope",             label:"Scope",                    w:120, kind:"calc",    ro:true },
-  { k:"consumption_value", label:"Consumption value",        w:140, kind:"entry" },
-  { k:"consumption_unit",  label:"Consumption unit",         w:130, kind:"entry" },
-  { k:"co2e_value",        label:"CO\u2082e emission",        w:150, kind:"calc",    ro:true },
-  { k:"co2e_unit",         label:"CO\u2082e emission unit",   w:150, kind:"calc",    ro:true },
-  { k:"user_assigned",     label:"User assigned",            w:160, kind:"entry" },
-  { k:"last_updated",      label:"Last updated",             w:120, kind:"entry",   ro:true },
+  { k:"description",       label:"Description",              w:240, kind:"entry",   ro:true },
+  { k:"business_unit",     label:"Business unit",            w:128, kind:"entry" },
+  { k:"business_activity", label:"Business activity",        w:180, kind:"entry" },
+  { k:"data_input_type",   label:"Data input type",          w:130, kind:"entry",   ro:true },
+  { k:"start_date",        label:"Start date",               w:104, kind:"entry" },
+  { k:"end_date",          label:"End date",                 w:104, kind:"entry" },
+  { k:"calcs_count",       label:"Related calculations",     w:118, kind:"derived", ro:true },
+  { k:"emission_source",   label:"Category",                 w:206, kind:"calc",    ro:true },
+  { k:"scope",             label:"Scope",                    w:88,  kind:"calc",    ro:true },
+  { k:"consumption_value", label:"Consumption value",        w:122, kind:"entry" },
+  { k:"consumption_unit",  label:"Consumption unit",         w:96,  kind:"entry" },
+  { k:"co2e_value",        label:"CO\u2082e emission",        w:124, kind:"calc",    ro:true },
+  { k:"co2e_unit",         label:"CO\u2082e emission unit",   w:100, kind:"calc",    ro:true },
+  { k:"user_assigned",     label:"User assigned",            w:148, kind:"entry" },
+  { k:"last_updated",      label:"Last updated",             w:110, kind:"entry",   ro:true },
   // Emission-factor group — hidden by default, toggled as one block
   { k:"ef_name",           label:"Emission factor name",     w:220, kind:"calc", ro:true, group:"ef" },
   { k:"ef_value",          label:"Emission factor value",    w:150, kind:"calc", ro:true, group:"ef" },
@@ -54,6 +57,7 @@ const DATA_COLUMNS = [
   { k:"notes",             label:"Notes",                    w:220, kind:"entry" },
   { k:"files",             label:"Files",                    w:90,  kind:"entry",  ro:true },
   { k:"bulk_import_ref",   label:"Bulk import",              w:160, kind:"entry",  ro:true },
+  { k:"bulk_import_file",  label:"Bulk import file",         w:200, kind:"entry",  ro:true },
   { k:"created_on",        label:"Created on",               w:120, kind:"entry",  ro:true },
 ];
 
@@ -80,26 +84,27 @@ const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind 
 // Description), keep the status compact, and push the time columns to the far
 // right. `id` and the EF group stay in the catalog but hidden by default.
 const ENTRY_ORDER = [
-  "emission_source","supplier","description","status","quality","calc_basis","scope",
-  "co2e_value","co2e_unit","business_unit","business_activity",
-  "consumption_value","consumption_unit","calcs_count","user_assigned",
-  "start_date","end_date","last_updated",
+  "status","emission_source","supplier","description","ef_name",
+  "co2e_value","consumption_value","consumption_unit",
+  "co2e_unit","quality","calc_basis","scope","business_unit","business_activity",
+  "calcs_count","user_assigned","start_date","end_date","last_updated",
   "id","data_input_type","created_on",
-  "ef_name","ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
-  "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref",
+  "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
+  "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file",
 ];
 const ENTRY_VISIBLE = [
-  "emission_source","supplier","description","status","quality","calc_basis","scope",
-  "co2e_value","co2e_unit","business_unit","business_activity",
-  "consumption_value","consumption_unit","calcs_count","user_assigned",
-  "start_date","end_date","last_updated",
+  "status","emission_source","supplier","description","ef_name",
+  "co2e_value","consumption_value","consumption_unit",
+  "calc_basis","scope","business_unit","business_activity",
+  "calcs_count","user_assigned","start_date","end_date","last_updated",
+  "bulk_import_ref","bulk_import_file",
 ];
 const CALC_ORDER = [
   "id","status","quality","calc_basis","co2e_value","co2e_unit","scope","emission_source","ef_name",
   "calcs_count","business_unit","business_activity","consumption_value","consumption_unit",
   "start_date","end_date","data_input_type","user_assigned","last_updated",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
-  "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","created_on",
+  "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
 ];
 const CALC_VISIBLE = [
   "id","status","quality","co2e_value","co2e_unit","scope","emission_source","ef_name",

@@ -1,5 +1,5 @@
 // Calculation Quality — second Analyse sub-page.
-// Data-quality breakdowns and Scope 3 coverage.
+// Forward AI chat strip + proactive cards + data-quality breakdowns.
 
 function CalculationQuality({ calcs, entries, onJumpTo }) {
   // ---- derive quality stats from real calc data ----
@@ -89,6 +89,194 @@ function CalculationQuality({ calcs, entries, onJumpTo }) {
   });
   const coveredCount = SCOPE3_CATS.filter(c => c.covered).length;
 
+  // Low-confidence / suspect calcs (for AI top-card content)
+  const suspects = calcs
+    .filter(c => c.status === "pending" || (c.status === "suggested" && c.confidence != null && c.confidence < 0.7))
+    .sort((a,b) => b.kgCO2e - a.kgCO2e)
+    .slice(0, 5);
+
+  const spendFallbacks = calcs.filter(c => /spend/i.test(c.method));
+  const spendKg = spendFallbacks.reduce((s,c) => s + c.kgCO2e, 0);
+  const totalKg = calcs.reduce((s,c) => s + c.kgCO2e, 0);
+  const spendKgPct = totalKg ? Math.round(spendKg/totalKg*100) : 0;
+
+  // Top spend-based suppliers — map entryId → supplier, group spend-based kg by supplier
+  const supplierByEntry = React.useMemo(() => {
+    const m = new Map();
+    entries.forEach(e => m.set(e.id, e.details?.supplier || null));
+    return m;
+  }, [entries]);
+  const topSpendSuppliers = React.useMemo(() => {
+    const bySupplier = new Map();
+    spendFallbacks.forEach(c => {
+      const name = supplierByEntry.get(c.entryId) || "Unattributed";
+      bySupplier.set(name, (bySupplier.get(name) || 0) + c.kgCO2e);
+    });
+    return [...bySupplier.entries()]
+      .map(([name, kg]) => ({ name, kg, pct: totalKg ? Math.round(kg/totalKg*100) : 0 }))
+      .sort((a,b) => b.kg - a.kg)
+      .slice(0, 5);
+  }, [spendFallbacks, supplierByEntry, totalKg]);
+  const topSpendSuppliersPct = topSpendSuppliers.reduce((s,r) => s + r.pct, 0);
+  const topSpendSupplierName = topSpendSuppliers[0]?.name;
+
+  // ---- Suggested AI questions with rich responses ----
+  const suggestions = [
+    {
+      key: "double-check",
+      q: "Which calculations should I double-check first?",
+      answer: () => (
+        <>
+          <p>
+            I found <strong>{suspects.length} calculations</strong> with confidence below 70% or unresolved factor matches.
+            These have the highest absolute kgCO₂e impact and are the best place to start.
+          </p>
+          <table className="fai-mini-table">
+            <thead>
+              <tr><th>Calculation</th><th>Method</th><th className="right">kgCO₂e</th><th className="right">Confidence</th></tr>
+            </thead>
+            <tbody>
+              {suspects.map(c => (
+                <tr key={c.id}>
+                  <td>{c.activity}</td>
+                  <td><span className="tag">{c.method}</span></td>
+                  <td className="right">{c.kgCO2e.toLocaleString(undefined,{maximumFractionDigits:0})}</td>
+                  <td className="right">
+                    <span className={"tag " + (c.confidence == null ? "danger" : c.confidence < 0.6 ? "danger" : "warn")}>
+                      {c.confidence == null ? "no match" : Math.round(c.confidence*100) + "%"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )
+    },
+    {
+      key: "activity-vs-spend",
+      q: "What's my activity-based vs spend-based share?",
+      answer: () => (
+        <>
+          <p>
+            Across {total_n.toLocaleString()} calculations, <strong>{activityShare}%</strong> use higher-quality
+            activity- or distance-based methods. <strong>{dq_spend}</strong> calculations
+            still rely on spend-based fallbacks, contributing roughly <strong>{spendKgPct}%</strong> of your total emissions.
+          </p>
+          <div className="mini-bar-list">
+            {dqBuckets.map(b => (
+              <div key={b.key} className="mini-bar-row">
+                <div className="label">{b.label}</div>
+                <div className="track"><div className="fill" style={{width: b.pct + "%", background: b.color}}/></div>
+                <div className="val">{b.n} · {b.pct}%</div>
+              </div>
+            ))}
+          </div>
+          {topSpendSupplierName && (
+            <p style={{marginTop: 10}}>
+              <strong>Suggestion:</strong> {topSpendSupplierName} is your largest spend-based supplier by emissions.
+              Swapping in activity-based (mass, distance, kWh) or supplier-specific factors could materially improve precision.
+            </p>
+          )}
+        </>
+      )
+    },
+    {
+      key: "missing-categories",
+      q: "Which Scope 3 categories haven't I covered?",
+      answer: () => {
+        const missing = SCOPE3_CATS.filter(c => !c.covered);
+        return (
+          <>
+            <p>
+              You've reported <strong>{coveredCount} of 15</strong> Scope 3 categories so far.
+              The GHG Protocol expects you to screen all 15 and either report or justify exclusion.
+              {missing.length > 0 && <> The following are not yet covered:</>}
+            </p>
+            <ul style={{margin:"4px 0 12px 18px", padding: 0}}>
+              {missing.slice(0, 3).map(c => (
+                <li key={c.num}><strong>{c.num} — {c.name}.</strong></li>
+              ))}
+            </ul>
+            {missing.length > 3 && (
+              <p style={{fontSize: 11, color: "var(--fe-fg-muted)"}}>
+                Remaining categories: {missing.slice(3).map(c => c.num).join(" · ")} —
+                you can mark these as "not material" with a justification to satisfy reporting standards.
+              </p>
+            )}
+          </>
+        );
+      }
+    },
+    {
+      key: "outliers",
+      q: "Is there any outlier data I should double check?",
+      answer: () => {
+        const flagged = suspects.slice(0, 3);
+        return (
+          <>
+            <p>
+              I scanned all {total_n.toLocaleString()} calculations
+              {flagged.length > 0
+                ? <> and flagged <strong>{flagged.length === 1 ? "1 calculation" : flagged.length + " calculations"}</strong> worth a look — lowest confidence, highest kgCO₂e impact.</>
+                : <> and found no low-confidence outliers — every calculation matched a factor at or above the review threshold.</>}
+            </p>
+            <table className="fai-mini-table">
+              <thead>
+                <tr><th>Entry</th><th>Why suspicious</th><th className="right">Confidence</th></tr>
+              </thead>
+              <tbody>
+                {flagged.length > 0 ? flagged.map(c => {
+                  const e = entries.find(en => en.id === c.entryId);
+                  const label = e?.details?.description || e?.details?.product_service || c.factor?.name || c.id;
+                  return (
+                    <tr key={c.id}>
+                      <td>{c.id} · {label}</td>
+                      <td>Low-confidence factor match with high kgCO₂e impact</td>
+                      <td className="right">
+                        <span className={"tag " + (c.confidence == null || c.confidence < 0.6 ? "danger" : "warn")}>
+                          {c.confidence == null ? "no match" : Math.round(c.confidence*100) + "%"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr>
+                    <td>No outliers</td>
+                    <td>All calculations confirmed at or above the confidence threshold</td>
+                    <td className="right"><span className="tag ok">clear</span></td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </>
+        );
+      }
+    },
+    {
+      key: "methodology",
+      q: "Is my methodology clear and documented?",
+      answer: () => (
+        <>
+          <p>Your methodology coverage looks like this:</p>
+          <table className="fai-mini-table">
+            <tbody>
+              <tr><td>Calculation approach (GHG Protocol)</td><td className="right"><span className="tag ok">documented</span></td></tr>
+              <tr><td>Emission factor sources & vintages</td><td className="right"><span className="tag ok">documented</span></td></tr>
+              <tr><td>Organisational boundary</td><td className="right"><span className="tag ok">documented</span></td></tr>
+              <tr><td>Operational boundary (scopes & cats)</td><td className="right"><span className="tag warn">partial</span></td></tr>
+              <tr><td>Materiality assessment</td><td className="right"><span className="tag danger">missing</span></td></tr>
+              <tr><td>Recalculation policy</td><td className="right"><span className="tag danger">missing</span></td></tr>
+            </tbody>
+          </table>
+          <p style={{marginTop: 8}}>
+            Two gaps for CSRD-grade reporting: a written <strong>materiality assessment</strong> explaining excluded
+            categories, and a <strong>recalculation policy</strong>. Both can be drafted from existing decisions.
+          </p>
+        </>
+      )
+    },
+  ];
 
   return (
     <>
@@ -175,6 +363,70 @@ function CalculationQuality({ calcs, entries, onJumpTo }) {
           <span className="dq-detail-chev" aria-hidden="true"><Icon name="chev" size={14}/></span>
         </button>
       </div>
+      </PageSection>
+
+      <PageSection id="ai-copilot" label="Forward AI chat" noAddToReport>
+      {/* Forward AI copilot */}
+      <AICopilot
+        page="quality"
+        suggestions={suggestions}
+        placeholder="Ask Forward AI about data quality, outliers, EF matching…"
+        onJumpTo={onJumpTo}
+        boardTargets={[
+          { key: "emission-overview", label: "Emission overview" },
+          { key: "trends",            label: "Trends" },
+        ]}
+        pageLabel="Calculations"
+      />
+
+      {/* Pinned AI answers */}
+      <PinnedAnswers page="quality" suggestions={suggestions} onJumpTo={onJumpTo}/>
+      </PageSection>
+
+      <PageSection id="ai-cards" label="Forward AI insights" noAddToReport>
+      {/* Proactive AI insight cards */}
+      {(() => {
+        const insights = [
+          {
+            key: "spend-based-top5",
+            tag: "Methodology upgrade",
+            title: <>{spendKgPct}% of your footprint uses spend-based methodology</>,
+            body: (
+              <>
+                <strong>{spendKgPct}%</strong> of your inventory flows through spend-based factors. Your top 5
+                spend-based suppliers cover <strong>{topSpendSuppliersPct}% of total</strong> — switching just those
+                to activity-based methods would materially improve precision without retooling the whole inventory.
+              </>
+            ),
+            details: (
+              <p style={{fontSize:12, color:"var(--fe-fg-muted)"}}>
+                Activity-based methods (mass, distance, kWh, EPDs) typically reduce category-level uncertainty
+                by 25–40% vs spend. Best place to start: suppliers who already publish EPDs or run a PCF programme.
+              </p>
+            ),
+            chart: (
+              <>
+                <div className="ai-modal__chart-title">Top 5 spend-based suppliers · % of footprint</div>
+                <HorizBarChart rows={topSpendSuppliers.map((s, i) => ({
+                  label: s.name,
+                  value: s.pct,
+                  display: s.pct + "%",
+                  highlight: i === 0,
+                }))} unit="%"/>
+              </>
+            ),
+            link: "Open supplier engagement queue",
+            onLink: () => onJumpTo("calcs", {
+              chartSpec: {
+                kind: "auto", by: "spend-supplier", topN: 5,
+                title: "Top 5 spend-based suppliers · % of footprint",
+                tag: "Methodology upgrade",
+              },
+            }),
+          },
+        ];
+        return <AIInsightsBoard pageKey="quality" insights={insights}/>;
+      })()}
       </PageSection>
 
       <PageSection id="s3-coverage" label="Scope 3 coverage">

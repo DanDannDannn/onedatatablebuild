@@ -695,7 +695,8 @@ function EntryDrawer({ entry, calcs, batches, onClose, onNav, onViewCalc, onView
   if (!entry) return null;
   const mine = calcs.filter(c => c.entryId === entry.id);
   const batch = batches.find(b => b.id === entry.batchId);
-  const total = mine.reduce((s,c) => s + c.kgCO2e, 0);
+  // null for alternative (location- vs market-based) entries — no meaningful sum.
+  const total = window.entryTotalKg ? window.entryTotalKg(entry, mine) : mine.reduce((s,c) => s + c.kgCO2e, 0);
   const needs = mine.filter(c => c.status === "pending" || c.status === "suggested").length;
 
   // ── Editing (draft / ready / failed) ───────────────────────────────────
@@ -844,25 +845,34 @@ function EntryDrawer({ entry, calcs, batches, onClose, onNav, onViewCalc, onView
     <>
       <div className="drawer-backdrop" onClick={onClose}/>
       <aside className="drawer" role="dialog" aria-label="Entry detail">
-        <div className="drawer-head">
-          <div style={{flex:1, minWidth:0}}>
-            <div className="kicker">Activity · {entry.id}</div>
-            <h2>{(entry.details && entry.details.description) || entry.summary || entry.business_activity || "Activity"}</h2>
-            {(entry.details && entry.details.supplier) && <div className="dh-supplier">{entry.details.supplier}</div>}
-            <div className="dh-tags">
-              <StatusChip status={window.entryWorkflow ? window.entryWorkflow(entry, mine) : entry.entry_status}/>
-              {needs > 0 && <span className="chip alert"><span className="dot"></span>{needs} calc{needs>1?"s":""} need review</span>}
-              {!(entry.entry_status === "draft" || entry.entry_status === "ready") && mine.length > 0 && (
-                <span className="dh-total"><b>{(total/1000).toLocaleString(undefined, {maximumFractionDigits: total<100 ? 3 : 2})}</b> tCO₂e · {mine.length} calculation{mine.length>1?"s":""}</span>
-              )}
-            </div>
-          </div>
-          <button className="btn-close" onClick={onClose} title="Close (Esc)"><Icon name="close" size={18}/></button>
-        </div>
+        <button className="btn-close drawer-close-fixed" onClick={onClose} title="Close (Esc)"><Icon name="close" size={18}/></button>
 
         <div className="drawer-body">
+          <div className="drawer-head">
+            <div style={{flex:1, minWidth:0}}>
+              <div className="kicker"><CatLabel cat={entry.category}/></div>
+              <h2>{(entry.details && entry.details.description) || entry.summary || entry.business_activity || "Activity"}</h2>
+              {(entry.details && entry.details.supplier) && <div className="dh-supplier">{entry.details.supplier}</div>}
+              <div className="dh-tags">
+                <StatusChip status={window.entryWorkflow ? window.entryWorkflow(entry, mine) : entry.entry_status}/>
+                {needs > 0 && <span className="chip alert"><span className="dot"></span>{needs} calc{needs>1?"s":""} need review</span>}
+                {!(entry.entry_status === "draft" || entry.entry_status === "ready") && mine.length > 0 && (
+                  <span className="dh-total">{total == null
+                    ? <span title="Location-based vs market-based — alternative methods, not added together"><b>—</b> tCO₂e</span>
+                    : <><b>{(total/1000).toLocaleString(undefined, {maximumFractionDigits: total<100 ? 3 : 2})}</b> tCO₂e</>} · {mine.length} calculation{mine.length>1?"s":""}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Activity data */}
           <FoldSection title="Activity data" defaultOpen={true}>
+            <div className="d-grid d-fields" style={{marginBottom:10}}>
+              <div className="d-field">
+                <div className="k">Data entry ID</div>
+                <div className="v">{entry.id}</div>
+              </div>
+            </div>
             {editing && (
               <div className="d-grid d-fields" style={{marginBottom:10}}>
                 <div className="d-field wide">

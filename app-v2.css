@@ -247,6 +247,8 @@ body { font-family: var(--fe-font-sans); color: var(--fe-fg-default); background
 
 /* --- Filter bar --------------------------------------------------------- */
 .filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;}
+/* Controls (Filter / Sort / Columns) sit on the right; dirty cluster stays left */
+.filter-bar-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .filter {
   display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 10px;
