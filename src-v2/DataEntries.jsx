@@ -690,412 +690,259 @@ function FoldSection({ title, sub, defaultOpen = true, children }) {
     </details>
   );
 }
-
-function EntryDrawer({ entry, calcs, batches, onClose, onNav, onViewCalc, onViewImport, onUpdateEntry, focusCalcId, onApproveCalc, onRejectCalc, onSwapCalc }) {
+// Detail surface — read-only, mirrors the HTML reference. Submitted entries open
+// a centred entry modal (full form); everything else opens the side drawer
+// (provenance chain: Overview → Activity data → Emission factor → Result).
+// Editing / calc-approval were intentionally dropped in this restyle.
+function EntryDrawer({ entry, calcs, onClose }) {
   if (!entry) return null;
   const mine = calcs.filter(c => c.entryId === entry.id);
-  const batch = batches.find(b => b.id === entry.batchId);
-  // null for alternative (location- vs market-based) entries — no meaningful sum.
-  const total = window.entryTotalKg ? window.entryTotalKg(entry, mine) : mine.reduce((s,c) => s + c.kgCO2e, 0);
-  const needs = mine.filter(c => c.status === "pending" || c.status === "suggested").length;
-
-  // ── Editing (draft / ready / failed) ───────────────────────────────────
-  const initForm = (e) => {
-    return {
-      category: e.category || "",
-      business_unit: e.business_unit || "",
-      business_activity: e.business_activity || "",
-      site: e.site || "",
-      start_date: e.start_date || "",
-      end_date: e.end_date || "",
-      user_assigned: e.user_assigned || "",
-      summary: e.summary || "",
-      custom_factor: (e.custom_factor && e.custom_factor !== "—") ? e.custom_factor : "",
-      notes: e.notes || "",
-      details: { ...(e.details || {}) },
-    };
-  };
-  const [editing, setEditing] = React.useState(entry.entry_status === "draft");
-  const [form, setForm] = React.useState(() => initForm(entry));
-  React.useEffect(() => {
-    setForm(initForm(entry));
-    setEditing(entry.entry_status === "draft");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry.id]);
-
-  // ── Unified panel: calculations expand inline inside the entry ──────────
-  const pickOpenCalc = (list) => {
-    if (focusCalcId) return focusCalcId;
-    const review = list.find(c => c.status === "pending" || c.status === "suggested");
-    return (review || list[0])?.id || null;
-  };
-  const [openCalc, setOpenCalc] = React.useState(() => pickOpenCalc(mine));
-  const focusRef = React.useRef(null);
-  React.useEffect(() => { setOpenCalc(pickOpenCalc(mine)); }, [focusCalcId, entry.id]);
-  React.useEffect(() => {
-    if (!focusCalcId) return;
-    const t = setTimeout(() => {
-      const el = focusRef.current;
-      if (!el) return;
-      const body = el.closest(".drawer-body");
-      if (!body) return;
-      const delta = el.getBoundingClientRect().top - body.getBoundingClientRect().top;
-      body.scrollTop = Math.max(0, body.scrollTop + delta - 16);
-    }, 70);
-    return () => clearTimeout(t);
-  }, [focusCalcId, entry.id]);
-  const set    = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const setDetail = (k, v) => setForm(f => ({ ...f, details: { ...f.details, [k]: v } }));
-  // Map a missing-field label (e.g. "Meter / account #") to its details key.
-  const reqKeyFor = (label) => /supplier|vendor/i.test(label) ? "supplier"
-                            : /meter|account/i.test(label)   ? "meter_id"
-                            : null;
-  const requiredKeys = new Set((entry.missing_fields || []).map(reqKeyFor).filter(Boolean));
-  const remainingMissing = (entry.missing_fields || []).filter(label => {
-    const k = reqKeyFor(label);
-    if (!k) return true;
-    return !String(form.details[k] ?? "").trim();
-  });
-  const dirty =
-    form.category          !== (entry.category || "") ||
-    form.business_unit     !== (entry.business_unit || "") ||
-    form.business_activity !== (entry.business_activity || "") ||
-    form.site              !== (entry.site || "") ||
-    form.start_date        !== (entry.start_date || "") ||
-    form.end_date          !== (entry.end_date || "") ||
-    form.user_assigned     !== (entry.user_assigned || "") ||
-    form.summary           !== (entry.summary || "") ||
-    form.custom_factor     !== ((entry.custom_factor && entry.custom_factor !== "—") ? entry.custom_factor : "") ||
-    form.notes             !== (entry.notes || "") ||
-    JSON.stringify(form.details) !== JSON.stringify(entry.details || {});
-
+  const wf = window.entryWorkflow(entry, mine);
+  const isSubmitted = wf === "de_submitted";
+  const total = window.entryTotalKg ? window.entryTotalKg(entry, mine) : mine.reduce((s, c) => s + c.kgCO2e, 0);
+  const first = mine[0];
   const toast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { detail: msg }));
 
-  const commit = () => {
-    const patch = {
-      category: form.category,
-      business_unit: form.business_unit,
-      business_activity: form.business_activity,
-      site: form.site,
-      start_date: form.start_date,
-      end_date: form.end_date,
-      date: form.start_date,
-      user_assigned: form.user_assigned,
-      summary: form.summary,
-      custom_factor: form.custom_factor.trim() || "—",
-      notes: form.notes,
-    };
-    // Fold edited category details back in, parsing numeric fields to Numbers.
-    const parsedDetails = {};
-    Object.entries(form.details || {}).forEach(([k, v]) => {
-      if (CAT_NUM_KEYS.includes(k) && typeof v === "string") {
-        const n = Number(String(v).replace(/[,\s]/g, ""));
-        parsedDetails[k] = (v.trim() === "" || isNaN(n)) ? v : n;
-      } else {
-        parsedDetails[k] = v;
-      }
-    });
-    patch.details = parsedDetails;
-    if (entry.entry_status === "draft") {
-      patch.missing_fields = remainingMissing;
-      if (remainingMissing.length === 0) patch.entry_status = "ready";
-    }
-    onUpdateEntry && onUpdateEntry(entry.id, patch);
-    if (entry.entry_status === "draft" && remainingMissing.length === 0) {
-      toast(`${entry.id} completed — ready to calculate`);
-      setEditing(false);
-    } else if (entry.entry_status === "draft") {
-      toast(`Draft ${entry.id} saved`);
-    } else {
-      toast(`${entry.id} updated`);
-      setEditing(false);
-    }
-  };
-  const discard = () => {
-    setForm(initForm(entry));
-    if (entry.entry_status !== "draft") setEditing(false);
-  };
+  // Close on Esc.
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
-  // Shared calc-detail body — reused by the inline single-calc view and the
-  // multi-calc expandable cards.
-  const renderCalcDetail = (c, confLevel) => (
-    <>
-      <div className="calc-formula">
-        <span className="lbl">activity</span><span className="v">{c.quantity.toLocaleString()}</span><span>{c.unit}</span>
-        <span className="op">×</span>
-        <span className="lbl">factor</span><span className="v">{c.factor.kg_per_unit}</span><span>kg/{c.unit}</span>
-        <span className="op">=</span>
-        <span className="v">{fmtKgSmart(c.kgCO2e)}</span><span>kgCO₂e</span>
-      </div>
-      {window.EFMatchSection && <window.EFMatchSection calc={c} confLevel={confLevel} onSwap={() => onSwapCalc && onSwapCalc(c.id)} />}
-      <div className="entry-calc-sub">
-        <FoldSection title="Change log" defaultOpen={false}>
-          {window.ChangeLog && <window.ChangeLog calc={c} entry={entry}/>}
-        </FoldSection>
-      </div>
-      {window.CalcActions && (
-        <div className="entry-calc-actions">
-          <window.CalcActions calc={c} confLevel={confLevel} onApprove={() => onApproveCalc && onApproveCalc(c.id)} onSwap={() => onSwapCalc && onSwapCalc(c.id)} onReject={() => onRejectCalc && onRejectCalc(c.id)} />
-        </div>
-      )}
-    </>
-  );
+  const num = (n) => n == null ? "—" : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const d = entry.details || {};
+  const cons = { v: d.activity_amount, u: d.activity_unit || "" };
+  const isSpend = ["USD", "EUR", "GBP"].includes(String(cons.u).toUpperCase())
+    || (entry.extra_meta && entry.extra_meta["Spend"] && entry.extra_meta["Spend"] !== "—");
+  const activityName = entry.business_activity || (window.CatLabel ? null : entry.category) || entry.category;
+  const period = `${entry.start_date} → ${entry.end_date}`;
 
-  return (
-    <>
-      <div className="drawer-backdrop" onClick={onClose}/>
-      <aside className="drawer" role="dialog" aria-label="Entry detail">
-        <button className="btn-close drawer-close-fixed" onClick={onClose} title="Close (Esc)"><Icon name="close" size={18}/></button>
+  // ── Provenance drawer (draft / ready / review) ──────────────────────────
+  if (!isSubmitted) {
+    const Field = (k, v, cls) => (
+      <div className="fwe-field" key={k}><span className="k">{k}</span><span className={"v " + (cls || "")}>{v}</span></div>
+    );
+    const f = first && first.factor;
+    const conf = first && first.confidence != null ? first.confidence : null;
+    return (
+      <>
+        <div className="fwe-scrim" onClick={onClose} />
+        <aside className="fwe-drawer" role="dialog" aria-label="Entry detail">
+          <div className="fwe-drawer__head">
+            <div style={{ minWidth: 0 }}>
+              <h2>{activityName}{entry.business_unit ? " — " + entry.business_unit : ""}</h2>
+              <span className="sub">Entry {entry.id}</span>
+            </div>
+            <button className="fwe-drawer__close" onClick={onClose} aria-label="Close">
+              <Icon name="close" size={18} />
+            </button>
+          </div>
 
-        <div className="drawer-body">
-          <div className="drawer-head">
-            <div style={{flex:1, minWidth:0}}>
-              <div className="kicker"><CatLabel cat={entry.category}/></div>
-              <h2>{(entry.details && entry.details.description) || entry.summary || entry.business_activity || "Activity"}</h2>
-              {(entry.details && entry.details.supplier) && <div className="dh-supplier">{entry.details.supplier}</div>}
-              <div className="dh-tags">
-                <StatusChip status={window.entryWorkflow ? window.entryWorkflow(entry, mine) : entry.entry_status}/>
-                {needs > 0 && <span className="chip alert"><span className="dot"></span>{needs} calc{needs>1?"s":""} need review</span>}
-                {!(entry.entry_status === "draft" || entry.entry_status === "ready") && mine.length > 0 && (
-                  <span className="dh-total">{total == null
-                    ? <span title="Location-based vs market-based — alternative methods, not added together"><b>—</b> tCO₂e</span>
-                    : <><b>{(total/1000).toLocaleString(undefined, {maximumFractionDigits: total<100 ? 3 : 2})}</b> tCO₂e</>} · {mine.length} calculation{mine.length>1?"s":""}</span>
-                )}
-              </div>
+          <div className="fwe-drawer__body">
+            <div className="fwe-group">
+              <p className="fwe-group__title">Overview</p>
+              {Field("Status", <window.StatusChip status={wf} />)}
+              {Field("Business unit", entry.business_unit || "—")}
+              {Field("User assigned", entry.user_assigned || "—")}
+              {Field("Reporting period", period)}
+            </div>
+
+            <div className="fwe-group">
+              <p className="fwe-group__title">Activity data</p>
+              {Field("Data input type", entry.data_input_type || "—")}
+              {Field("Matching method", (first && first.method) || "—")}
+              {Field("Consumption", `${num(cons.v)} ${cons.u}`.trim(), "num")}
+            </div>
+
+            <div className="fwe-group">
+              <p className="fwe-group__title">Emission factor</p>
+              {f ? (
+                <div className="fwe-ef-callout">
+                  <div className="ef-top">
+                    <span className="ef-name">{f.source}{f.name ? " — " + f.name : ""}</span>
+                    {conf != null && <span className="fwe-conf">{conf >= 0.8 ? "High match" : "Needs review"}</span>}
+                  </div>
+                  <div className="ef-meta">
+                    {f.kg_per_unit} kgCO₂e per {f.unit} · {first.method || "auto-selected"}
+                  </div>
+                </div>
+              ) : (
+                <div className="fwe-ef-callout"><div className="ef-meta">Not matched yet — emission factor assigned once the entry is submitted.</div></div>
+              )}
+            </div>
+
+            <div className="fwe-group">
+              <p className="fwe-group__title">Result</p>
+              {mine.length === 0 ? (
+                <div className="ef-meta" style={{ fontSize: 13, color: "var(--fe-fg-muted)" }}>Pending calculation.</div>
+              ) : total == null ? (
+                <div className="ef-meta" style={{ fontSize: 13, color: "var(--fe-fg-muted)" }}>{mine.length} alternative methods — no combined total.</div>
+              ) : (
+                <>
+                  <div className="fwe-result-big"><span className="n">{window.fmtKgSmart(total)}</span><span className="u">kgCO₂e</span></div>
+                  {mine.length === 1 && f ? (
+                    <div className="fwe-field" style={{ marginTop: 8 }}>
+                      <span className="k">Calculation</span>
+                      <span className="v num">{num(first.quantity)} {first.unit} × {f.kg_per_unit} = {window.fmtKgSmart(first.kgCO2e)} kg</span>
+                    </div>
+                  ) : (
+                    <div className="fwe-field" style={{ marginTop: 8 }}>
+                      <span className="k">Calculation</span><span className="v num">Sum of {mine.length} calculations</span>
+                    </div>
+                  )}
+                </>
+              )}
+              {entry.notes && Field("Notes", entry.notes)}
             </div>
           </div>
 
-          {/* Activity data */}
-          <FoldSection title="Activity data" defaultOpen={true}>
-            <div className="d-grid d-fields" style={{marginBottom:10}}>
-              <div className="d-field">
-                <div className="k">Data entry ID</div>
-                <div className="v">{entry.id}</div>
+          <div className="fwe-drawer__foot">
+            <button className="fwe-btn-secondary" onClick={onClose}>Close</button>
+            <div className="grow" />
+            <button className="fwe-btn-primary" onClick={() => toast("Editing — not built in this prototype")}>Edit entry</button>
+          </div>
+        </aside>
+      </>
+    );
+  }
+
+  // ── Submitted-entry modal (read-only form) ──────────────────────────────
+  const Ro = (label, value, o) => {
+    o = o || {};
+    const empty = value === "" || value == null || value === "—";
+    const v = empty ? (o.empty || "—") : value;
+    return (
+      <div className="fwe-fld" key={label}>
+        <span className="lab">{label}{o.optional && <span className="opt"> (optional)</span>}</span>
+        <div className={"control" + (empty ? " placeholder" : "")}>{v}</div>
+      </div>
+    );
+  };
+  const S3 = {
+    flight: "6 · Business travel", business_travel: "6 · Business travel",
+    purchased_goods: "1 · Purchased goods & services", capital_goods: "2 · Capital goods",
+    upstream_transport: "4 · Upstream transport & distribution", waste: "5 · Waste generated in operations",
+  };
+  const scope3Of = (c) => S3[c.category] || (entry.extra_meta && entry.extra_meta["Scope & category"]) || "3 · Fuel & energy-related";
+  const CUR = { USD: "USD – US dollar", EUR: "EUR – Euro", GBP: "GBP – Pound sterling" };
+
+  const consumptionFields = isSpend
+    ? [Ro("Currency", CUR[String(cons.u).toUpperCase()] || cons.u), Ro("Price", num(cons.v))]
+    : [Ro("Material/service quantity", num(cons.v)), Ro("Material/service unit", cons.u)];
+
+  return (
+    <>
+      <div className="fwe-scrim" onClick={onClose} />
+      <div className="fwe-modal-wrap" role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="fwe-modal">
+          <div className="fwe-modal__head">
+            <h2 className="trunc">{activityName}{"  |  "}{entry.business_unit}{"  |  "}{entry.start_date} - {entry.end_date}</h2>
+            <window.StatusChip status={wf} />
+            <button className="link-ic" title="Copy link to this entry" aria-label="Copy link to this entry"
+              onClick={(e) => { e.stopPropagation(); toast(`Link to ${entry.id} copied to clipboard`); }}>
+              <Icon name="link" size={17} />
+            </button>
+            <button className="close" aria-label="Close" onClick={onClose}><Icon name="close" size={18} /></button>
+          </div>
+
+          <div className="fwe-modal__body">
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">General information</h3>
+              <div className="fwe-form-grid">
+                {Ro("Business activity", activityName)}
+                {Ro("Business unit", entry.business_unit)}
+                {Ro("User assigned", entry.user_assigned)}
+                <div className="fwe-form-grid two">
+                  {Ro("Start date", entry.start_date)}
+                  {Ro("End date", entry.end_date)}
+                </div>
               </div>
-            </div>
-            {editing && (
-              <div className="d-grid d-fields" style={{marginBottom:10}}>
-                <div className="d-field wide">
-                  <div className="k">Consumption summary</div>
-                  <div className="v">
-                    <input className="d-edit-input" value={form.summary} onChange={e=>set("summary", e.target.value)}/>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Data entry type</h3>
+              <p className="fwe-form-card__sub">How the data in this entry was provided</p>
+              <div className="fwe-form-grid">
+                {Ro("Data input type", entry.data_input_type)}
+                {Ro("Consumption data type", isSpend ? "Spend data" : "Material/service data")}
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Consumption details</h3>
+              <div className="fwe-form-grid">
+                {consumptionFields}
+                {Ro("Description", d.description || d.product_service || entry.summary, { optional: true })}
+                {Ro("Supplier name", d.supplier, { optional: true })}
+              </div>
+            </section>
+
+            {mine.map((c, i) => {
+              const f = c.factor || {};
+              const title = mine.length > 1
+                ? <>Calculation <span className="calc-n">{i + 1} of {mine.length}</span></>
+                : "Calculation";
+              return (
+                <section className="fwe-form-card" key={c.id}>
+                  <h3 className="fwe-form-card__title">{title}</h3>
+                  <div className="fwe-form-grid">
+                    {Ro("Emission factor name", f.name)}
                   </div>
-                </div>
-              </div>
-            )}
-            <CategoryFields entry={entry} editing={editing} details={form.details} setDetail={setDetail} requiredKeys={requiredKeys}/>
-          </FoldSection>
-
-          {/* How this was calculated — secondary, below the activity context */}
-          {mine.length > 0 ? (
-            <FoldSection title={mine.length > 1 ? `Calculations from this entry (${mine.length})` : "Calculation"} defaultOpen={true}>
-              {mine.length === 1 ? (() => {
-                const c = mine[0];
-                const confLevel = c.confidence == null ? "" : c.confidence < 0.6 ? "low" : c.confidence < 0.8 ? "med" : "";
-                return (
-                  <div className="entry-calc-single" ref={focusRef}>
-                    <div className="entry-calc-single-head">
-                      <ScopeBadge scope={c.scope}/>
-                      <span className="calc-id-tag">{c.id}</span>
-                      <StatusChip status={c.status}/>
-                    </div>
-                    {renderCalcDetail(c, confLevel)}
+                  <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                    {Ro("Emission factor value", f.kg_per_unit != null ? String(f.kg_per_unit) : "—")}
+                    {Ro("Emission factor unit", f.unit ? "kgCO₂e/" + f.unit : "—")}
+                    {Ro("Emission factor source", f.source)}
+                    {Ro("Emission factor dataset", f.dataset || f.source)}
+                    {Ro("Emission factor year", f.vintage)}
+                    {Ro("Emission factor region", f.region || "Global")}
+                    {Ro("Emission factor LCA activity", f.lca || "Cradle-to-gate")}
+                    {Ro("Scope", c.scope != null ? String(c.scope) : "—")}
+                    {c.scope === 2 && Ro("Scope 2 method", c.method)}
+                    {c.scope === 3 && Ro("Scope 3 category", scope3Of(c))}
                   </div>
-                );
-              })() : (
-                <div className="entry-calc-list">
-                  {mine.map(c => {
-                    const open = openCalc === c.id;
-                    const confLevel = c.confidence == null ? "" : c.confidence < 0.6 ? "low" : c.confidence < 0.8 ? "med" : "";
-                    return (
-                      <div key={c.id} ref={c.id === focusCalcId ? focusRef : null} className={"entry-calc" + (open ? " open" : "")}>
-                        <button className="entry-calc-head" onClick={() => setOpenCalc(open ? null : c.id)} aria-expanded={open}>
-                          <Icon name="chev" size={14} className="entry-calc-chev"/>
-                          <div className="entry-calc-main">
-                            <div className="entry-calc-meta">
-                              <ScopeBadge scope={c.scope}/>
-                              <StatusChip status={c.status}/>
-                              <div className="kg num">{fmtKgSmart(c.kgCO2e)} <span style={{fontSize:11, color:"var(--fe-fg-muted)", fontWeight:500}}>kg</span></div>
-                            </div>
-                            <div className="entry-calc-titles">
-                              <div className="label">{c.activity}</div>
-                              <div className="sub">{c.gas} · {c.factor.name} · {c.factor.source}</div>
-                            </div>
-                          </div>
-                        </button>
-                        {open && (
-                          <div className="entry-calc-body">
-                            {renderCalcDetail(c, confLevel)}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </FoldSection>
-          ) : (
-            <div className="d-section">
-              <div className="d-section-head">Calculations</div>
-              <div className="nocalc-note">
-                <Icon name="info" size={14}/>
-                No calculations yet. {entry.entry_status === "draft" ? "Complete required fields first to enable submission." : "Submit to run AI factor matching."}
-              </div>
-            </div>
-          )}
+                  <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                    {Ro("CO2e emission", num(c.kgCO2e))}
+                    {Ro("CO2e emission unit", "kgCO₂e")}
+                  </div>
+                  <div className="fwe-form-grid" style={{ marginTop: 18 }}>
+                    {Ro("CO2e calculation method", "GWP100")}
+                  </div>
+                </section>
+              );
+            })}
 
-          {/* Classification */}
-          <FoldSection title="Classification" defaultOpen={true}>
-            <div className="d-grid d-fields">
-              <div className="d-field">
-                <div className="k">Business unit</div>
-                <div className="v">
-                  {editing
-                    ? <select className="d-edit-select" value={form.business_unit} onChange={e=>set("business_unit", e.target.value)}>
-                        <option value="">—</option>
-                        {(window.BUSINESS_UNITS||[]).map(u => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    : entry.business_unit}
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Attachments</h3>
+              <p className="fwe-form-card__sub">Upload supporting documents (images or PDFs, max 2MB) as proof of your entries</p>
+              <div className="fwe-dropzone">
+                <div className="fwe-dropzone__drop">
+                  <Icon name="upload" size={18} />
+                  <span>You can't add files to a submitted data entry</span>
+                </div>
+                <div className="fwe-dropzone__files">
+                  <h4>Uploaded files</h4>
+                  <p>{entry.files_count > 0 ? `${entry.files_count} file${entry.files_count > 1 ? "s" : ""} attached` : "Files have not been uploaded yet"}</p>
                 </div>
               </div>
-              <div className="d-field">
-                <div className="k">Business activity</div>
-                <div className="v">
-                  {editing
-                    ? <input className="d-edit-input" value={form.business_activity} onChange={e=>set("business_activity", e.target.value)}/>
-                    : entry.business_activity}
-                </div>
-              </div>
-              <div className="d-field">
-                <div className="k">Category</div>
-                <div className="v">
-                  {editing
-                    ? <select className="d-edit-select" value={form.category} onChange={e=>set("category", e.target.value)}>
-                        <option value="">—</option>
-                        {CAT_CHOICES.map(c => <option key={c.k} value={c.k}>{c.l}</option>)}
-                      </select>
-                    : <CatLabel cat={entry.category}/>}
-                </div>
-              </div>
-              <div className="d-field">
-                <div className="k">Site</div>
-                <div className="v">
-                  {editing
-                    ? <input className="d-edit-input" value={form.site} onChange={e=>set("site", e.target.value)}/>
-                    : (entry.site || "—")}
-                </div>
-              </div>
-              <div className="d-field">
-                <div className="k">Reporting period</div>
-                <div className="v">
-                  {editing
-                    ? <span className="d-edit-dates">
-                        <input className="d-edit-input" type="date" value={form.start_date} onChange={e=>set("start_date", e.target.value)}/>
-                        <span className="sep">→</span>
-                        <input className="d-edit-input" type="date" value={form.end_date} onChange={e=>set("end_date", e.target.value)}/>
-                      </span>
-                    : <>{entry.start_date} → {entry.end_date}</>}
-                </div>
-              </div>
-              <div className="d-field">
-                <div className="k">Owner</div>
-                <div className="v">
-                  {editing
-                    ? <select className="d-edit-select" value={form.user_assigned} onChange={e=>set("user_assigned", e.target.value)}>
-                        {(window.USERS||[]).map(u => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    : entry.user_assigned}
-                </div>
-              </div>
-            </div>
-          </FoldSection>
+            </section>
 
-          {/* Source & audit */}
-          <FoldSection title="Source & audit" defaultOpen={false}>
-            <div className="d-grid d-fields">
-              <div className="d-field">
-                <div className="k">ID</div>
-                <div className="v" style={{fontFamily:"var(--fe-font-mono)", fontSize:12}}>{entry.id}</div>
-              </div>
-              <div className="d-field wide">
-                <div className="k">Source import</div>
-                <div className="v">
-                  {batch ? (
-                    <span className="link" onClick={() => onViewImport?.(batch.id)} title={`Open bulk import ${batch.id}`}>
-                      <Icon name={batch.source === "csv" ? "upload" : batch.source === "erp" ? "check" : "collect"} size={12}/>
-                      {batch.label}
-                      <Icon name="arrowRight" size={12}/>
-                    </span>
-                  ) : "—"}
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Notes</h3>
+              <div className="fwe-fld">
+                <span className="lab">Notes</span>
+                <div className={"control" + (entry.notes ? "" : " placeholder")} style={{ minHeight: 84, alignItems: "flex-start" }}>
+                  {entry.notes || "—"}
                 </div>
               </div>
-              <div className="d-field">
-                <div className="k">Bulk import file</div>
-                <div className="v" style={{fontSize:12}}>{entry.bulk_import_ref}</div>
-              </div>
-              <div className="d-field">
-                <div className="k">Files</div>
-                <div className="v">
-                  {entry.files_count > 0
-                    ? <span style={{display:"inline-flex", alignItems:"center", gap:4}}><Icon name="upload" size={13}/>{entry.files_count} attachment{entry.files_count>1?"s":""}</span>
-                    : <span className="d-empty">—</span>}
-                </div>
-              </div>
-              <div className="d-field">
-                <div className="k">Custom emission factor</div>
-                <div className="v">
-                  {editing
-                    ? <input className="d-edit-input" value={form.custom_factor} placeholder="—" onChange={e=>set("custom_factor", e.target.value)}/>
-                    : <span style={{color: (entry.custom_factor && entry.custom_factor!=="—") ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)"}}>{entry.custom_factor || "—"}</span>}
-                </div>
-              </div>
-              <div className="d-field">
-                <div className="k">Created on</div>
-                <div className="v" style={{color:"var(--fe-fg-muted)"}}>{entry.created_on}</div>
-              </div>
-              <div className="d-field">
-                <div className="k">Last updated</div>
-                <div className="v" style={{color:"var(--fe-fg-muted)"}}>{entry.last_updated}</div>
-              </div>
-              <div className="d-field wide">
-                <div className="k">Notes</div>
-                <div className="v">
-                  {editing
-                    ? <textarea className="d-edit-textarea" value={form.notes} placeholder="Add a note — source document, who provided this, special context…" onChange={e=>set("notes", e.target.value)}/>
-                    : <div style={{fontSize:13, color: entry.notes ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)", lineHeight:1.5}}>{entry.notes || "No notes."}</div>}
-                </div>
-              </div>
-            </div>
-          </FoldSection>
+            </section>
+          </div>
 
-          {entry.extra_meta && (
-            <FoldSection title="Additional info from bulk import" defaultOpen={false}
-              sub={<span className="d-section-sub">Optional columns captured from <b>{entry.bulk_import_ref}</b></span>}>
-              <div className="d-grid d-fields">
-                {Object.entries(entry.extra_meta).map(([k, v]) => (
-                  <div className="d-field" key={k}><div className="k">{k}</div><div className="v">{v}</div></div>
-                ))}
-              </div>
-            </FoldSection>
-          )}
-
+          <div className="fwe-modal__foot">
+            <button className="fwe-btn-danger" onClick={() => { toast(`${entry.id} unsubmitted`); onClose && onClose(); }}>Unsubmit</button>
+          </div>
         </div>
-
-        <div className="drawer-foot">
-          <button className="btn secondary small" title="Previous entry" aria-label="Previous entry" onClick={() => onNav(-1)}><Icon name="chev" size={14} style={{transform:"rotate(180deg)"}}/></button>
-          <button className="btn secondary small" title="Next entry" aria-label="Next entry" onClick={() => onNav(1)}><Icon name="chev" size={14}/></button>
-          <div className="spacer"/>
-          <EntryActions
-            entry={entry}
-            editing={editing}
-            dirty={dirty}
-            remainingMissing={remainingMissing}
-            onSave={commit}
-            onDiscard={discard}
-            onEdit={() => setEditing(true)}
-          />
-        </div>
-      </aside>
+      </div>
     </>
   );
 }

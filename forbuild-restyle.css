@@ -1,0 +1,257 @@
+/* ForBuild restyle — loaded LAST so it overrides app-v2 / extras-v2 / Analyse.
+   Three things, all from the user's HTML reference + product screenshot:
+     1. Top horizontal nav bar (company selector + account + settings).
+     2. Read-only detail surfaces: provenance drawer + submitted-entry modal.
+     3. Data table styled with the violet header from the reference.
+   All new classes are `fwe-` prefixed to avoid colliding with existing chrome. */
+
+/* ─────────────────────────── 1 · Top bar ─────────────────────────── */
+/* Restore the full-width top bar. Account chrome moved here from the sidebar. */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--fe-border-subtle);
+  flex-shrink: 0;
+}
+.fwe-sidebar-toggle {
+  width: 38px; height: 38px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--fe-border-default); background: #fff;
+  color: var(--fe-fg-muted); cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+.fwe-sidebar-toggle:hover { background: var(--fe-primary-50); border-color: var(--fe-accent-primary); color: var(--fe-accent-primary); }
+.fwe-topbar-spacer { flex: 1; }
+
+.fwe-company-select {
+  position: relative;
+  display: flex; flex-direction: column;
+  min-width: 280px;
+  background: #fff;
+  border: 1px solid var(--fe-border-default);
+  border-radius: 8px;
+  padding: 6px 38px 6px 14px;
+  cursor: pointer;
+  transition: border-color .12s ease;
+}
+.fwe-company-select:hover { border-color: var(--fe-border-strong); }
+.fwe-company-select .lbl { font-size: 11px; color: var(--fe-fg-muted); font-weight: 500; }
+.fwe-company-select .val { font-size: 14px; font-weight: 500; color: var(--fe-fg-strong); }
+.fwe-company-select .caret { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--fe-fg-muted); }
+
+.fwe-icon-btn {
+  width: 40px; height: 40px; border-radius: 9999px;
+  display: inline-grid; place-items: center;
+  border: 1px solid var(--fe-border-default); background: #fff;
+  color: var(--fe-accent-primary); cursor: pointer;
+  transition: background .12s ease;
+}
+.fwe-icon-btn:hover { background: var(--fe-primary-50); }
+
+/* Sidebar collapse (driven by a class on .app, toggled from the top bar) */
+.app.fwe-sidebar-collapsed { grid-template-columns: 0 1fr; }
+.app.fwe-sidebar-collapsed .sidebar { opacity: 0; pointer-events: none; }
+
+/* ─────────────────── 2 · Detail table: violet header ─────────────────── */
+/* Reference look: solid violet header, white labels, alternating rows. */
+.data-table thead th,
+.data-table thead th.cb-cell,
+.data-table thead th.exp-cell,
+.data-table thead th.ra-cell,
+.data-table thead th.td-pin {
+  background: var(--fe-accent-primary);
+  color: #fff;
+  border-bottom: none;
+  font-weight: 500;
+}
+.data-table thead th:hover { background: var(--fe-accent-primary-hover); }
+/* Column separators: faint white instead of grey */
+.data-table thead th:not(.cb-cell)::after { background: rgba(255,255,255,0.28); }
+
+/* Header internals (sort/filter affordances) must read on violet */
+.data-table thead th .sh,
+.data-table thead th .sh-label,
+.data-table thead th .sh.active,
+.data-table thead th .sh-sort-ind,
+.data-table thead th .sh-pinned { color: #fff; }
+.data-table thead th .sh-menu { color: rgba(255,255,255,0.85); }
+.data-table thead th .sh-menu:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.data-table thead th .sh-menu.on { color: #fff; background: rgba(255,255,255,0.22); }
+.data-table thead th .sh-rank { background: rgba(255,255,255,0.22); color: #fff; }
+/* Header checkbox: white outline on violet */
+.data-table thead th .fe-cb { accent-color: #fff; }
+
+/* Rows: white / subtle-grey alternation, light primary hover (reference) */
+.data-table tbody tr:nth-child(odd)  { background: #fff; }
+.data-table tbody tr:nth-child(even) { background: var(--fe-bg-subtle); }
+.data-table tr:hover td { background: var(--fe-primary-50); }
+
+/* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
+.fwe-scrim {
+  position: fixed; inset: 0; background: rgba(20,20,45,0.32);
+  z-index: 1200;
+}
+.fwe-drawer {
+  position: fixed; top: 0; right: 0; height: 100vh;
+  width: 460px; max-width: 92vw;
+  background: #fff;
+  box-shadow: -16px 0 48px -24px rgba(16,16,40,0.30);
+  z-index: 1210; display: flex; flex-direction: column;
+  font-family: var(--fe-font-sans);
+  animation: fwe-drawer-in 220ms cubic-bezier(.32,.72,0,1);
+}
+@keyframes fwe-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.fwe-drawer__head {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 22px 24px 18px; border-bottom: 1px solid var(--fe-border-subtle);
+}
+.fwe-drawer__head h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--fe-fg-strong); }
+.fwe-drawer__head .sub { font-size: 12.5px; color: var(--fe-fg-muted); font-variant-numeric: tabular-nums; }
+.fwe-drawer__close {
+  margin-left: auto; width: 34px; height: 34px; border-radius: 6px;
+  border: 1px solid var(--fe-border-subtle); background: #fff; color: var(--fe-fg-muted);
+  display: grid; place-items: center; cursor: pointer;
+}
+.fwe-drawer__close:hover { background: var(--fe-bg-subtle); }
+.fwe-drawer__body { flex: 1; overflow-y: auto; padding: 8px 24px 24px; }
+
+.fwe-group { padding: 16px 0; border-bottom: 1px solid var(--fe-border-subtle); }
+.fwe-group:last-child { border-bottom: none; }
+.fwe-group__title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fe-fg-muted); margin: 0 0 12px; }
+.fwe-field { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; }
+.fwe-field .k { color: var(--fe-fg-muted); font-size: 13px; flex: 0 0 auto; }
+.fwe-field .v { color: var(--fe-fg-strong); font-size: 13.5px; font-weight: 500; text-align: right; }
+.fwe-field .v.num { font-variant-numeric: tabular-nums; }
+
+.fwe-ef-callout {
+  margin-top: 10px; padding: 12px 14px;
+  background: var(--fe-primary-50); border: 1px solid var(--fe-primary-100);
+  border-radius: 6px;
+}
+.fwe-ef-callout .ef-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fwe-ef-callout .ef-name { font-weight: 500; font-size: 13.5px; color: var(--fe-fg-strong); }
+.fwe-ef-callout .ef-meta { font-size: 12px; color: var(--fe-fg-muted); line-height: 1.5; }
+.fwe-conf {
+  margin-left: auto; font-size: 11px; font-weight: 500;
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--fe-success-50, #ECFDF5); color: var(--fe-success-700, #047857);
+  border: 1px solid var(--fe-success-200, #A7F3D0);
+}
+.fwe-result-big { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+.fwe-result-big .n { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--fe-fg-strong); }
+.fwe-result-big .u { font-size: 14px; color: var(--fe-fg-muted); font-weight: 500; }
+
+.fwe-drawer__foot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 24px; border-top: 1px solid var(--fe-border-subtle);
+}
+.fwe-drawer__foot .grow { flex: 1; }
+
+/* shared read-only buttons */
+.fwe-btn-secondary {
+  height: 42px; padding: 0 18px;
+  background: #fff; color: #45454f;
+  border: 1px solid var(--fe-border-default); border-radius: 6px;
+  font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;
+}
+.fwe-btn-secondary:hover { background: var(--fe-bg-subtle); }
+.fwe-btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 42px; padding: 0 20px;
+  background: var(--fe-accent-primary); color: #fff;
+  border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;
+}
+.fwe-btn-primary:hover { background: var(--fe-accent-primary-hover); }
+.fwe-btn-danger {
+  height: 42px; padding: 0 22px;
+  background: var(--fe-error-500, #f35151); color: #fff;
+  border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;
+}
+.fwe-btn-danger:hover { background: var(--fe-error-700, #d12828); }
+
+/* ───────────────────── 4 · Submitted-entry modal ───────────────────── */
+.fwe-modal-wrap {
+  position: fixed; inset: 0; z-index: 1210;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 32px 24px; overflow-y: auto;
+  font-family: var(--fe-font-sans);
+}
+.fwe-modal {
+  width: 100%; max-width: 720px;
+  background: var(--fe-bg-panel);
+  border-radius: 16px;
+  box-shadow: 0 32px 80px -24px rgba(16,16,40,0.45);
+  display: flex; flex-direction: column; overflow: hidden;
+  margin: auto;
+  animation: fwe-modal-in 200ms cubic-bezier(.32,.72,0,1);
+}
+@keyframes fwe-modal-in { from { transform: translateY(8px) scale(0.99); opacity: 0; } to { transform: none; opacity: 1; } }
+.fwe-modal__head {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff;
+  padding: 18px 24px; border-bottom: 1px solid var(--fe-border-subtle);
+  position: sticky; top: 0; z-index: 2;
+}
+.fwe-modal__head h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--fe-fg-strong); }
+.fwe-modal__head h2.trunc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 460px; flex: 0 1 auto; }
+.fwe-modal__head .link-ic, .fwe-modal__head .close {
+  width: 32px; height: 32px; border: none; background: transparent;
+  color: var(--fe-fg-muted); display: grid; place-items: center;
+  border-radius: 6px; cursor: pointer; flex: 0 0 auto;
+}
+.fwe-modal__head .link-ic { margin-left: auto; }
+.fwe-modal__head .close + .link-ic, .fwe-modal__head .link-ic + .close { margin-left: 0; }
+.fwe-modal__head .link-ic:hover, .fwe-modal__head .close:hover { background: var(--fe-bg-subtle); color: var(--fe-accent-primary); }
+
+.fwe-modal__body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.fwe-modal__foot {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  background: #fff; border-top: 1px solid var(--fe-border-subtle);
+  padding: 14px 24px;
+}
+
+.fwe-form-card {
+  background: #fff; border: 1px solid var(--fe-border-subtle);
+  border-radius: 12px; padding: 20px;
+}
+.fwe-form-card__title { margin: 0 0 2px; font-size: 16px; font-weight: 700; color: var(--fe-accent-primary); letter-spacing: -0.01em; }
+.fwe-form-card__title .calc-n { color: var(--fe-fg-muted); font-weight: 600; }
+.fwe-form-card__sub { margin: 4px 0 16px; font-size: 13px; color: var(--fe-fg-muted); line-height: 1.5; }
+.fwe-form-card__title + .fwe-form-grid { margin-top: 14px; }
+.fwe-form-grid { display: flex; flex-direction: column; gap: 18px; }
+.fwe-form-grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Read-only "field" rendered like a disabled input (label notch + control) */
+.fwe-fld { position: relative; }
+.fwe-fld > .lab {
+  position: absolute; top: -7px; left: 11px; z-index: 1;
+  padding: 0 5px; background: #fff;
+  font-size: 11px; font-weight: 500; color: var(--fe-fg-muted);
+  pointer-events: none;
+}
+.fwe-fld > .lab .opt { color: var(--fe-fg-muted); font-weight: 400; }
+.fwe-fld .control {
+  width: 100%; box-sizing: border-box;
+  min-height: 50px; padding: 14px;
+  background: var(--fe-gray-50, #f9f9fa);
+  border: 1px solid var(--fe-border-subtle); border-radius: 8px;
+  font-family: inherit; font-size: 14px; color: var(--fe-fg-muted);
+  display: flex; align-items: center; gap: 8px; cursor: default;
+}
+.fwe-fld .control.placeholder { color: var(--fe-fg-subtle); }
+
+.fwe-dropzone { display: flex; gap: 24px; align-items: stretch; }
+.fwe-dropzone__drop {
+  flex: 1; min-height: 96px;
+  border: 1.5px dashed var(--fe-border-default); border-radius: 8px;
+  background: var(--fe-bg-subtle);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--fe-fg-subtle); font-size: 13.5px; cursor: not-allowed; text-align: center;
+}
+.fwe-dropzone__files { flex: 1; padding-top: 4px; }
+.fwe-dropzone__files h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; color: var(--fe-fg-strong); }
+.fwe-dropzone__files p { margin: 0; font-size: 13px; color: var(--fe-fg-muted); }
