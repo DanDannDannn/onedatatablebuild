@@ -269,19 +269,6 @@ function DataPage(props) {
         </div>
       </div>
 
-      <div className="data-search-row">
-        <span className="global-search">
-          <Icon name="search" size={16} style={{ color: "var(--fe-fg-muted)" }} />
-          <input placeholder="Search all data…" value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)} aria-label="Search all data" />
-          {globalQuery && <button className="fs-clear" onClick={() => setGlobalQuery("")} aria-label="Clear search"><Icon name="close" size={13} /></button>}
-        </span>
-        {matchCount != null && (
-          <span className="search-result-chip">
-            <b>{matchCount}</b> of {entries.length} entries match “{globalQuery.trim()}”
-          </span>
-        )}
-      </div>
-
       <div className="view-bar">
         <div className="segments view-tabs" role="tablist" aria-label="Saved views" ref={viewRowRef}>
           <button role="tab" aria-selected={tab === "all"} className={`segment ${tab === "all" ? "active" : ""}`} onClick={() => setTab("all")}>

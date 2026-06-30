@@ -61,9 +61,23 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
   // `stub: true` items aren't wired into routes — clicking fires a toast
   // so the rest of the nav feels real without us actually building those pages.
   // Table-only build: keep the app shell, but Data is the only reachable page.
+  // Decorative nav (no real routes) restored to match the product shell. Only
+  // "Data" is wired; the rest are stubs. `dot` shows the "not built" indicator
+  // for the items the reference marks (Bulk import, Company settings, Users).
   const NAV = [
+    { section: "Analyse", items: [
+      { key: "overview",          label: "Home",              icon: "home",   stub: true },
+      { key: "emission-overview", label: "Emission overview", icon: "chart",  stub: true },
+      { key: "hotspot",           label: "Hotspot analysis",  icon: "chart",  stub: true },
+      { key: "trends",            label: "Trends",            icon: "trends", stub: true },
+    ]},
     { section: "Collect", items: [
       { key: "data",   label: "Data",        icon: "collect" },
+      { key: "import", label: "Bulk import", icon: "upload", stub: true, dot: true },
+    ]},
+    { section: "Manage", items: [
+      { key: "company", label: "Company settings", icon: "settings", stub: true, dot: true },
+      { key: "users",   label: "Users",            icon: "users",    stub: true, dot: true },
     ]},
   ];
 
@@ -93,7 +107,7 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
               >
                 <Icon name={it.icon} size={18} />
                 <span>{it.label}</span>
-                {it.stub && <span className="stub-dot" aria-hidden="true" />}
+                {it.dot && <span className="stub-dot" aria-hidden="true" />}
                 {it.count ? <span className={`count ${it.alert ? "alert" : ""}`}>{it.count}</span> : null}
               </div>
             ))}
@@ -113,7 +127,7 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
                 ))}
                 <div
                   className="nav-item nav-action"
-                  onClick={onCreateReport}
+                  onClick={() => stubClick("New board")}
                   title="Create a custom report board"
                 >
                   <Icon name="plus" size={18} />
