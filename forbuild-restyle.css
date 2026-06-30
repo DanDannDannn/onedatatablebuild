@@ -57,23 +57,31 @@
 .app.fwe-sidebar-collapsed { grid-template-columns: 0 1fr; }
 .app.fwe-sidebar-collapsed .sidebar { opacity: 0; pointer-events: none; }
 
-/* ─────────────────── 2 · Detail table: violet header ─────────────────── */
-/* Reference look: solid violet header, white labels, alternating rows. */
+/* ─────────────────── 2 · Data table: purple theme ─────────────────── */
+/* Table-scoped purple palette — header, hover, selection, checkboxes. Kept
+   separate from the app's brand indigo so buttons / nav stay unchanged. */
+.data-table {
+  --tbl-accent:        #7c3aed;  /* header background + checkbox accent */
+  --tbl-accent-hover:  #6d28d9;  /* hovered header cell */
+  --tbl-tint:          #f3effe;  /* row hover */
+  --tbl-tint-sel:      #ece2fd;  /* selected row */
+  --tbl-tint-sel-hover:#e2d3fb;  /* selected + hover */
+}
 .data-table thead th,
 .data-table thead th.cb-cell,
 .data-table thead th.exp-cell,
 .data-table thead th.ra-cell,
 .data-table thead th.td-pin {
-  background: var(--fe-accent-primary);
+  background: var(--tbl-accent);
   color: #fff;
   border-bottom: none;
   font-weight: 500;
 }
-.data-table thead th:hover { background: var(--fe-accent-primary-hover); }
+.data-table thead th:hover { background: var(--tbl-accent-hover); }
 /* Column separators: faint white instead of grey */
 .data-table thead th:not(.cb-cell)::after { background: rgba(255,255,255,0.28); }
 
-/* Header internals (sort/filter affordances) must read on violet */
+/* Header internals (sort/filter affordances) must read on the purple header */
 .data-table thead th .sh,
 .data-table thead th .sh-label,
 .data-table thead th .sh.active,
@@ -83,13 +91,23 @@
 .data-table thead th .sh-menu:hover { background: rgba(255,255,255,0.18); color: #fff; }
 .data-table thead th .sh-menu.on { color: #fff; background: rgba(255,255,255,0.22); }
 .data-table thead th .sh-rank { background: rgba(255,255,255,0.22); color: #fff; }
-/* Header checkbox: white outline on violet */
+/* Header checkbox: white outline on purple */
 .data-table thead th .fe-cb { accent-color: #fff; }
 
-/* Rows: white / subtle-grey alternation, light primary hover (reference) */
+/* Rows: alternation + purple hover / selection */
 .data-table tbody tr:nth-child(odd)  { background: #fff; }
 .data-table tbody tr:nth-child(even) { background: var(--fe-bg-subtle); }
-.data-table tr:hover td { background: var(--fe-primary-50); }
+.data-table tr:hover td { background: var(--tbl-tint); }
+.data-table tbody tr.sel > td,
+.data-table tr.sel td,
+.data-table tr.selected td,
+.data-table tr.sel td.ra-cell,
+.data-table tr.selected td.ra-cell { background: var(--tbl-tint-sel); }
+.data-table tbody tr.sel:hover > td,
+.data-table tr.sel:hover td,
+.data-table tr.sel:hover td.ra-cell { background: var(--tbl-tint-sel-hover); }
+/* Body checkboxes adopt the purple accent */
+.data-table tbody .fe-cb { accent-color: var(--tbl-accent); }
 
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
