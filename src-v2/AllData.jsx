@@ -466,8 +466,10 @@ function AllData({
         return <span>{bs[0]}</span>;
       }
       case "ef_name":
+        // Parent row of a multi-calc entry whose calcs use different factors →
+        // no single name applies, so show "Multiple" (matches the other EF cols).
+        if (efMulti) return Multi;
         if (!f) return dash;
-        if (efMulti) return <span title={`${f.name} +${r.factors.length - 1} more`} style={{ color: "var(--fe-fg-strong)" }}>{f.name}<span style={{ color: "var(--fe-fg-muted)" }}> +{r.factors.length - 1}</span></span>;
         return <span title={f.name} style={{ color: "var(--fe-fg-strong)" }}>{f.name}</span>;
       case "ef_value":   return efMulti ? Multi : (f ? <span style={{ color: "var(--fe-fg-strong)" }}>{f.kg_per_unit}</span> : dash);
       case "ef_unit":    return efMulti ? Multi : (f ? <span style={{ fontSize: 12 }}>{`kgCO₂e/${f.unit}`}</span> : dash);
