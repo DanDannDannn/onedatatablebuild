@@ -61,6 +61,75 @@
 .view-tabs .segment--saved.active .segment-action:focus-visible,
 .view-tabs .segment--saved.active .segment-action[aria-expanded="true"] { opacity: 1; }
 
+/* ── Exploration: view tabs + "New view" as a segmented pill control ────────
+   Reshapes the underline tab strip into a single rounded track where the active
+   view is a filled pill and "+ New view" is the trailing pill. Override-only,
+   so it's easy to revert if we don't keep it. */
+.view-bar .view-tabs.segments {
+  display: inline-flex; width: auto; gap: 6px;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid var(--fe-border-subtle);
+  border-radius: 12px;
+}
+.view-tabs.segments .segment,
+.view-tabs.segments .segment--saved,
+.view-tabs.segments .segment--ephemeral {
+  border-radius: 8px; border-bottom: 0; margin-bottom: 0;
+  padding: 8px 16px;
+  background: var(--fe-gray-100, #ebebee);   /* inactive = filled grey pill */
+  color: var(--fe-fg-muted); font-weight: 500;
+}
+.view-tabs.segments .segment:not(.active):hover {
+  background: var(--fe-gray-200, #deded6); color: var(--fe-fg-strong);
+}
+.view-tabs.segments .segment.active,
+.view-tabs.segments .segment--saved.active,
+.view-tabs.segments .segment--ephemeral.active {
+  background: var(--fe-accent-primary, #5A4DFF); color: #fff; font-weight: 600;
+  border-bottom: 0; box-shadow: 0 1px 2px rgba(16,16,40,0.14);
+}
+.view-tabs.segments .segment.active svg { color: #fff; }
+.view-tabs.segments .segment.active .segment-count { background: rgba(255,255,255,0.22); color: #fff; }
+/* Options (…) button on the active pill: sits INLINE (the pill reserves room and
+   widens a touch) instead of absolutely overlaying the label — which read as
+   buggy — with a clean circular hover. The reveal-on-hover (opacity) still
+   applies, so there's no layout shift when it appears. */
+.view-tabs.segments .segment--saved .tab-menu-wrap {
+  position: relative; right: auto; top: auto; transform: none;
+}
+.view-tabs.segments .segment--saved.active .segment-action {
+  width: 22px; height: 22px; border-radius: 50%;
+  color: rgba(255,255,255,0.92);
+}
+.view-tabs.segments .segment--saved.active .segment-action:hover {
+  background: rgba(255,255,255,0.24); color: #fff;
+}
+/* "+ New view" becomes the trailing pill in the same track */
+.view-bar .view-add {
+  height: auto; margin: 0; padding: 7px 12px;
+  border: 0; border-radius: 7px;
+  background: transparent; color: var(--fe-accent-primary);
+}
+.view-bar .view-add:hover { background: var(--fe-gray-100, #ebebee); color: var(--fe-accent-primary); }
+
+/* Horizontal baseline under the whole tab bar (the pill track is self-contained,
+   so the row no longer carries the divider the underline tabs used to). */
+.view-bar { border-bottom: 1px solid var(--fe-border-subtle); padding-bottom: 14px; }
+
+/* Wrap the entire Data section (title + tabs + toolbar + table) in one white
+   card on the lavender page background — matching the reference structure. */
+.app-scroll .data-page-root {
+  background: #fff;
+  border: 1px solid var(--fe-border-subtle);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(16,16,25,0.04), 0 12px 32px -20px rgba(16,16,40,0.18);
+  padding: 22px 24px;
+}
+/* The table card now nests inside the panel — drop its own border/shadow/fill so
+   it reads as part of the card (keep radius + overflow for the header corners). */
+.data-page-root > .card { border: 0; box-shadow: none; background: transparent; }
+
 /* Sidebar collapse (driven by a class on .app, toggled from the top bar) */
 .app.fwe-sidebar-collapsed { grid-template-columns: 0 1fr; }
 .app.fwe-sidebar-collapsed .sidebar { opacity: 0; pointer-events: none; }
