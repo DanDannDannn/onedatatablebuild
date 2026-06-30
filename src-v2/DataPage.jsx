@@ -280,13 +280,6 @@ function DataPage(props) {
             <b>{matchCount}</b> of {entries.length} entries match “{globalQuery.trim()}”
           </span>
         )}
-        <button type="button" className="btn secondary data-search-export"
-          title="Export the current view to CSV"
-          onClick={() => window.dispatchEvent(new CustomEvent("fe-export-start", { detail: {
-            title: "Current view", meta: `${dataResultCount.toLocaleString()} rows · CSV`,
-            filename: `data_${new Date().toISOString().slice(0,10)}.csv`, rows: dataResultCount } }))}>
-          <Icon name="download" size={16}/>Export
-        </button>
       </div>
 
       <div className="view-bar">

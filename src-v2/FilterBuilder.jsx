@@ -106,7 +106,7 @@ function FilterBuilder({ rules, onChange, cols, colConfig, numericKeys }) {
         onClick={() => setOpen(o => !o)}
       >
         <Icon name="filter" size={15}/>
-        <span className="tb-btn-label">Filter</span>
+        <span className="tb-btn-label">Filters</span>
         {count ? <span className="tb-badge">{count}</span> : null}
       </button>
       {open && (

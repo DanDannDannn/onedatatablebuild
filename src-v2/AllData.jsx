@@ -660,6 +660,17 @@ function AllData({
           onReset={() => reinit(view)} />
 
         <div className="filter-bar-controls">
+          {/* Toolbar: Export · Columns · Filters (Sort removed). Export acts on
+              the live filtered result set. */}
+          <button type="button" className="tb-btn" title="Export the current view to CSV"
+            onClick={() => window.dispatchEvent(new CustomEvent("fe-export-start", { detail: {
+              title: "Current view", meta: `${filtered.length.toLocaleString()} rows · CSV`,
+              filename: `data_${new Date().toISOString().slice(0,10)}.csv`, rows: filtered.length } }))}>
+            <Icon name="download" size={15}/>
+            <span className="tb-btn-label">Export</span>
+          </button>
+          <ColumnsPanel columns={columns} onChange={setColumns} defaultOrder={window.ENTRY_ORDER}
+            selectionOn={selectionOn} onToggleSelection={() => setSelectionOn(v => { if (v) clearSel(); return !v; })} />
           <FilterBuilder
             rules={filterRules}
             onChange={setFilterRules}
@@ -671,12 +682,6 @@ function AllData({
             <FilterPill icon="calendar" label="Period" value={period} options={window.PERIOD_OPTIONS}
               onChange={(v) => setPeriod(v)} onClear={() => setPeriod(null)} />
           )}
-
-          <span className="tb-divider" />
-          <SortControl sort={sort} colOptions={colOptions} onChange={setSort} />
-          {/* Grouping hidden for now */}
-          <ColumnsPanel columns={columns} onChange={setColumns} defaultOrder={window.ENTRY_ORDER}
-            selectionOn={selectionOn} onToggleSelection={() => setSelectionOn(v => { if (v) clearSel(); return !v; })} />
         </div>
       </div>
 
