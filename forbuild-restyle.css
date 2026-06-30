@@ -53,6 +53,14 @@
    them to the button's right edge so they expand leftward and stay on-screen. */
 .filter-bar-controls .tb-pop { left: auto; right: 0; }
 
+/* Active view tab: reveal its options (…) button only on hover. Stays visible
+   on keyboard focus and while its menu is open. Opacity (not display) keeps the
+   tab width steady so nothing shifts on hover. */
+.view-tabs .segment--saved.active .segment-action { opacity: 0; transition: opacity .12s ease; }
+.view-tabs .segment--saved.active:hover .segment-action,
+.view-tabs .segment--saved.active .segment-action:focus-visible,
+.view-tabs .segment--saved.active .segment-action[aria-expanded="true"] { opacity: 1; }
+
 /* Sidebar collapse (driven by a class on .app, toggled from the top bar) */
 .app.fwe-sidebar-collapsed { grid-template-columns: 0 1fr; }
 .app.fwe-sidebar-collapsed .sidebar { opacity: 0; pointer-events: none; }
