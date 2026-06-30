@@ -53,14 +53,6 @@
    them to the button's right edge so they expand leftward and stay on-screen. */
 .filter-bar-controls .tb-pop { left: auto; right: 0; }
 
-/* Active view tab: reveal its options (…) button only on hover. Stays visible
-   on keyboard focus and while its menu is open. Opacity (not display) keeps the
-   tab width steady so nothing shifts on hover. */
-.view-tabs .segment--saved.active .segment-action { opacity: 0; transition: opacity .12s ease; }
-.view-tabs .segment--saved.active:hover .segment-action,
-.view-tabs .segment--saved.active .segment-action:focus-visible,
-.view-tabs .segment--saved.active .segment-action[aria-expanded="true"] { opacity: 1; }
-
 /* ── Exploration: view tabs + "New view" as a segmented pill control ────────
    Reshapes the underline tab strip into a single rounded track where the active
    view is a filled pill and "+ New view" is the trailing pill. Override-only,
@@ -91,20 +83,35 @@
 }
 .view-tabs.segments .segment.active svg { color: #fff; }
 .view-tabs.segments .segment.active .segment-count { background: rgba(255,255,255,0.22); color: #fff; }
-/* Options (…) button on the active pill: sits INLINE (the pill reserves room and
-   widens a touch) instead of absolutely overlaying the label — which read as
-   buggy — with a clean circular hover. The reveal-on-hover (opacity) still
-   applies, so there's no layout shift when it appears. */
+/* Options (…) button — collapsed to zero width and hidden by default on EVERY
+   view pill (active or inactive); the pill grows ONLY on hover (or while its menu
+   is open), so idle pills stay compact and there's no permanently-reserved gap.
+   The button clips itself when collapsed; the dropdown lives in the unclipped
+   wrap, so opening the menu is never cut off. */
+.view-tabs.segments .segment--saved { gap: 0; }
 .view-tabs.segments .segment--saved .tab-menu-wrap {
   position: relative; right: auto; top: auto; transform: none;
+  display: inline-flex; align-items: center;
 }
-.view-tabs.segments .segment--saved.active .segment-action {
-  width: 22px; height: 22px; border-radius: 50%;
-  color: rgba(255,255,255,0.92);
+.view-tabs.segments .segment--saved .segment-action {
+  width: 0; min-width: 0; height: 22px; padding: 0; margin-left: 0;
+  overflow: hidden; opacity: 0; border-radius: 50%;
+  transition: width .15s ease, margin-left .15s ease, opacity .15s ease;
 }
-.view-tabs.segments .segment--saved.active .segment-action:hover {
-  background: rgba(255,255,255,0.24); color: #fff;
+.view-tabs.segments .segment--saved:hover .segment-action,
+.view-tabs.segments .segment--saved .segment-action[aria-expanded="true"] {
+  width: 22px; margin-left: 6px; opacity: 1;
 }
+/* :focus-visible kept in its own rule so an engine that doesn't know it can't
+   invalidate the hover / menu-open reveal above. */
+.view-tabs.segments .segment--saved .segment-action:focus-visible {
+  width: 22px; margin-left: 6px; opacity: 1;
+}
+/* per-state colours: dark dots on the grey inactive pill, white on the indigo active pill */
+.view-tabs.segments .segment--saved:not(.active) .segment-action { color: var(--fe-fg-muted); }
+.view-tabs.segments .segment--saved:not(.active) .segment-action:hover { background: var(--fe-gray-200, #deded6); color: var(--fe-fg-strong); }
+.view-tabs.segments .segment--saved.active .segment-action { color: rgba(255,255,255,0.92); }
+.view-tabs.segments .segment--saved.active .segment-action:hover { background: rgba(255,255,255,0.24); color: #fff; }
 /* "+ New view" becomes the trailing pill in the same track */
 .view-bar .view-add {
   height: auto; margin: 0; padding: 7px 12px;

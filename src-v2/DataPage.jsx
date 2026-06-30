@@ -48,7 +48,7 @@ function ViewTab({ v, active, dirty, onSelect, onRename, onDelete, onDuplicate, 
         <span onDoubleClick={(e) => { e.stopPropagation(); if (active) setEditing(true); }} title={active ? "Double-click to rename" : v.desc || undefined}>{v.name}</span>
       )}
       {active && dirty && <span className="segment-dirty" title="Unsaved changes" aria-label="Modified"/>}
-      {active && !editing && (
+      {!editing && (
         <div className="tab-menu-wrap">
           <button type="button" className="segment-action" title="View options" aria-haspopup="menu" aria-expanded={menuOpen}
             onClick={(e) => { e.stopPropagation(); setMenuOpen(o => !o); }}><Icon name="dots" size={15}/></button>
