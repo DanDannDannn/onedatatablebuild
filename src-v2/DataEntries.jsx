@@ -703,6 +703,10 @@ function EntryDrawer({ entry, calcs, onClose }) {
   const first = mine[0];
   const toast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { detail: msg }));
 
+  // Fold state for the Calculation cards (submitted-entry modal).
+  const [collapsedCalcs, setCollapsedCalcs] = React.useState(() => new Set());
+  const toggleCalcFold = (id) => setCollapsedCalcs(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
   // Close on Esc.
   React.useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
@@ -797,34 +801,48 @@ function EntryDrawer({ entry, calcs, onClose }) {
 
             {mine.map((c, i) => {
               const f = c.factor || {};
+              const collapsed = collapsedCalcs.has(c.id);
               const title = mine.length > 1
                 ? <>Calculation <span className="calc-n">{i + 1} of {mine.length}</span></>
                 : "Calculation";
               return (
                 <section className="fwe-form-card" key={c.id}>
-                  <h3 className="fwe-form-card__title">{title}</h3>
-                  <div className="fwe-form-grid">
-                    {Ro("Emission factor name", f.name)}
-                  </div>
-                  <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
-                    {Ro("Emission factor value", f.kg_per_unit != null ? String(f.kg_per_unit) : "—")}
-                    {Ro("Emission factor unit", f.unit ? "kgCO₂e/" + f.unit : "—")}
-                    {Ro("Emission factor source", f.source)}
-                    {Ro("Emission factor dataset", f.dataset || f.source)}
-                    {Ro("Emission factor year", f.vintage)}
-                    {Ro("Emission factor region", f.region || "Global")}
-                    {Ro("Emission factor LCA activity", f.lca || "Cradle-to-gate")}
-                    {Ro("Scope", c.scope != null ? String(c.scope) : "—")}
-                    {c.scope === 2 && Ro("Scope 2 method", c.method)}
-                    {c.scope === 3 && Ro("Scope 3 category", scope3Of(c))}
-                  </div>
-                  <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
-                    {Ro("CO2e emission", num(c.kgCO2e))}
-                    {Ro("CO2e emission unit", "kgCO₂e")}
-                  </div>
-                  <div className="fwe-form-grid" style={{ marginTop: 18 }}>
-                    {Ro("CO2e calculation method", "GWP100")}
-                  </div>
+                  <h3 className="fwe-form-card__title fwe-card-head">
+                    <span>{title}</span>
+                    <button type="button" className={"fwe-card-fold" + (collapsed ? " is-collapsed" : "")}
+                      onClick={() => toggleCalcFold(c.id)} aria-expanded={!collapsed}
+                      aria-label={collapsed ? "Expand calculation" : "Collapse calculation"} title={collapsed ? "Expand" : "Collapse"}>
+                      <Icon name="chev" size={16} />
+                    </button>
+                  </h3>
+                  {collapsed ? (
+                    <p className="fwe-card-collapsed-sum">{f.name || "—"} · {num(c.kgCO2e)} kgCO₂e</p>
+                  ) : (
+                    <>
+                      <div className="fwe-form-grid">
+                        {Ro("Emission factor name", f.name)}
+                      </div>
+                      <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                        {Ro("Emission factor value", f.kg_per_unit != null ? String(f.kg_per_unit) : "—")}
+                        {Ro("Emission factor unit", f.unit ? "kgCO₂e/" + f.unit : "—")}
+                        {Ro("Emission factor source", f.source)}
+                        {Ro("Emission factor dataset", f.dataset || f.source)}
+                        {Ro("Emission factor year", f.vintage)}
+                        {Ro("Emission factor region", f.region || "Global")}
+                        {Ro("Emission factor LCA activity", f.lca || "Cradle-to-gate")}
+                        {Ro("Scope", c.scope != null ? String(c.scope) : "—")}
+                        {c.scope === 2 && Ro("Scope 2 method", c.method)}
+                        {c.scope === 3 && Ro("Scope 3 category", scope3Of(c))}
+                      </div>
+                      <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                        {Ro("CO2e emission", num(c.kgCO2e))}
+                        {Ro("CO2e emission unit", "kgCO₂e")}
+                      </div>
+                      <div className="fwe-form-grid" style={{ marginTop: 18 }}>
+                        {Ro("CO2e calculation method", "GWP100")}
+                      </div>
+                    </>
+                  )}
                 </section>
               );
             })}
