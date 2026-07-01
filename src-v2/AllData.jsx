@@ -594,7 +594,9 @@ function AllData({
   const [selected, setSelected] = React.useState(() => new Set());
   const [selectionOn, setSelectionOn] = React.useState(true);
   const [bulkMsg, setBulkMsg] = React.useState(null);
-  const keysFor = (e) => { const m = calcsByEntry.get(e.id); return (m && m.length) ? m.map(c => c.id) : [e.id]; };
+  // Selection is entry-level: bulk actions operate on data entries, not on
+  // individual calculations (DAM-7401), so calc sub-rows have no checkbox.
+  const keysFor = (e) => [e.id];
   React.useEffect(() => {
     const valid = new Set();
     entries.forEach(e => { valid.add(e.id); (calcsByEntry.get(e.id) || []).forEach(c => valid.add(c.id)); });
@@ -689,12 +691,9 @@ function AllData({
       <React.Fragment key={e.id}>
         {entryRow}
         {r.mine.map((c, i) => (
-          <tr key={c.id} className={"calc-childrow" + (i === r.mine.length - 1 ? " last" : "") + (selected.has(c.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
-            {selectionOn && (
-              <td className="cb-cell" onClick={(ev) => ev.stopPropagation()}>
-                <Cb checked={selected.has(c.id)} onChange={() => toggleCalc(c.id)} label={`Select calculation ${c.id}`} />
-              </td>
-            )}
+          <tr key={c.id} className={"calc-childrow" + (i === r.mine.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
+            {/* No checkbox on calc sub-rows — selection is entry-level. */}
+            {selectionOn && <td className="cb-cell" aria-hidden="true" />}
             {hasExpandable && <td className="exp-cell exp-cell--rail"></td>}
             {renderKeys.map(k => {
               const lead = k === firstContentKey ? "child-lead" : "";

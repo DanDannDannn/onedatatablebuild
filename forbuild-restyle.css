@@ -223,6 +223,12 @@
 .data-table tbody tr.sel:hover td.td-pin { background: var(--tbl-tint-sel-hover); }
 .data-table thead th.td-pin { background: var(--tbl-accent); }
 
+/* Child (calc) rows: the expand/rail cell defaults to position:relative for its
+   tree-connector line, which turned the frozen `left:40px` into a sideways shift
+   and left a white gap. Keep it sticky like the parent's expand cell (sticky is
+   still a positioning context for the connector ::before). */
+.data-table tbody tr.calc-childrow .exp-cell--rail { position: sticky; left: 40px; }
+
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
   position: fixed; inset: 0; background: rgba(20,20,45,0.32);
