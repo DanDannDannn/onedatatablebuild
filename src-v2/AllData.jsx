@@ -430,9 +430,23 @@ function AllData({
   // ── Cell renderer (entry-level rollup when c==null; per-calc when c set) ──
   const dataCell = (k, e, r, c) => {
     const f = c ? c.factor : r.first?.factor;
-    const efMulti = !c && r.factors.length > 1;
     const cons = consumption(e);
     const dash = <span style={muted}>—</span>;
+    // ── Multi-calc parent aggregation (DAM-7401 "Expandable Row Logic") ──
+    // For each EF-group column, show the shared value when every sub-calc agrees,
+    // else "Multiple" (Conflicting). This is per-VALUE, not per-EF-name, so e.g.
+    // WTT/TTW legs (same EF name, different LCA activity) correctly read "Multiple"
+    // on LCA while EF name stays shared. On a child row (c set) show that calc.
+    const efCell = (getter, render) => {
+      if (c) { const v = c.factor ? getter(c.factor) : null; return (v != null && v !== "") ? render(v) : dash; }
+      const vals = [...new Set(r.mine.map(x => x.factor ? getter(x.factor) : null).filter(v => v != null && v !== ""))];
+      if (!vals.length) return dash;
+      if (vals.length > 1) return Multi;
+      return render(vals[0]);
+    };
+    // Scope-conflict rule: if scope differs across sub-calcs, every scope-dependent
+    // field (Scope 2 method, Scope 3 category) also shows "Multiple".
+    const scopeConflict = !c && [...new Set(r.mine.map(x => x.scope))].length > 1;
     switch (k) {
       case "id":
         return <span title={e.id} style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-strong)" }}>{fmtEntryId(e.id)}</span>;
@@ -479,18 +493,34 @@ function AllData({
         if (ss.length === 1) return <span>{ss[0]}</span>;
         return Multi;
       }
-      case "scope2_method": { const src = c ? (c.scope === 2 ? [c] : []) : r.mine.filter(x => x.scope === 2); if (!src.length) return dash; const ms = [...new Set(src.map(x => x.method))]; return ms.length === 1 ? <span style={{ fontSize: 12 }}>{ms[0]}</span> : Multi; }
-      case "scope3_category": { const src = c ? (c.scope === 3 ? [c] : []) : r.mine.filter(x => x.scope === 3); if (!src.length) return dash; const cs = [...new Set(src.map(scope3CatOf))]; return cs.length === 1 ? <span style={{ fontSize: 12 }}>{cs[0]}</span> : Multi; }
-      case "consumption_value": { const v = c ? c.quantity : cons.v; return v != null ? <span style={{ color: "var(--fe-fg-strong)" }}>{v.toLocaleString()}</span> : dash; }
-      case "consumption_unit": { const u = c ? c.unit : cons.u; return u ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>{u}</span> : dash; }
+      case "scope2_method": { if (scopeConflict) return Multi; const src = c ? (c.scope === 2 ? [c] : []) : r.mine.filter(x => x.scope === 2); if (!src.length) return dash; const ms = [...new Set(src.map(x => x.method))]; return ms.length === 1 ? <span style={{ fontSize: 12 }}>{ms[0]}</span> : Multi; }
+      case "scope3_category": { if (scopeConflict) return Multi; const src = c ? (c.scope === 3 ? [c] : []) : r.mine.filter(x => x.scope === 3); if (!src.length) return dash; const cs = [...new Set(src.map(scope3CatOf))]; return cs.length === 1 ? <span style={{ fontSize: 12 }}>{cs[0]}</span> : Multi; }
+      case "consumption_value": {
+        if (c) return c.quantity != null ? <span style={{ color: "var(--fe-fg-strong)" }}>{c.quantity.toLocaleString()}</span> : dash;
+        // Different amounts across sub-calcs (e.g. commuting modes) → "Multiple";
+        // shared amount → show once (prefer the calc quantity over the category-
+        // specific entry field, which isn't populated for every demo category).
+        const qs = [...new Set(r.mine.map(x => x.quantity).filter(v => v != null))];
+        if (qs.length > 1) return Multi;
+        const v = qs.length === 1 ? qs[0] : cons.v;
+        return v != null ? <span style={{ color: "var(--fe-fg-strong)" }}>{v.toLocaleString()}</span> : dash;
+      }
+      case "consumption_unit": {
+        if (c) return c.unit ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>{c.unit}</span> : dash;
+        const us = [...new Set(r.mine.map(x => x.unit).filter(Boolean))];
+        if (us.length > 1) return Multi;
+        const u = us.length === 1 ? us[0] : cons.u;
+        return u ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>{u}</span> : dash;
+      }
       case "co2e_value": {
         if (r.count === 0) return dash;
         const v = c ? c.kgCO2e : r.total;
-        // Alternative (location- vs market-based) entries have no sum on the parent.
-        if (v == null) return <span title="Location-based vs market-based — alternative methods, not added together" style={{ color: "var(--fe-fg-subtle)" }}>—</span>;
+        // Alternative methods (e.g. location- vs market-based) aren't additive →
+        // "Multiple" (DAM-7401); the per-method values live in the expand.
+        if (v == null) return Multi;
         return <span style={{ color: "var(--fe-fg-strong)" }}>{(v / 1000).toLocaleString(undefined, { maximumFractionDigits: v < 100 ? 3 : 2 })}</span>;
       }
-      case "co2e_unit": { if (r.count === 0) return dash; if (!c && r.total == null) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>tCO₂e</span>; }
+      case "co2e_unit": { if (r.count === 0) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>tCO₂e</span>; }
       case "co2e_method": { if (c) return <span style={{ fontSize: 12 }}>{c.method}</span>; const ms = [...new Set(r.mine.map(x => x.method))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
       case "calc_basis": {
         const src = c ? [c] : r.mine;
@@ -499,19 +529,14 @@ function AllData({
         if (bs.length > 1) return Multi;
         return <span>{bs[0]}</span>;
       }
-      case "ef_name":
-        // Parent row of a multi-calc entry whose calcs use different factors →
-        // no single name applies, so show "Multiple" (matches the other EF cols).
-        if (efMulti) return Multi;
-        if (!f) return dash;
-        return <span title={f.name} style={{ color: "var(--fe-fg-strong)" }}>{f.name}</span>;
-      case "ef_value":   return efMulti ? Multi : (f ? <span style={{ color: "var(--fe-fg-strong)" }}>{f.kg_per_unit}</span> : dash);
-      case "ef_unit":    return efMulti ? Multi : (f ? <span style={{ fontSize: 12 }}>{`kgCO₂e/${f.unit}`}</span> : dash);
-      case "ef_source":  return efMulti ? Multi : (f ? <span>{f.source}</span> : dash);
-      case "ef_dataset": return efMulti ? Multi : (f ? <span style={{ fontSize: 12 }}>{f.dataset || f.source}</span> : dash);
-      case "ef_year":    return efMulti ? Multi : (f ? <span style={{ color: "var(--fe-fg-muted)" }}>{f.vintage}</span> : dash);
-      case "ef_region":  return efMulti ? Multi : (f ? <span>{f.region || "Global"}</span> : dash);
-      case "ef_lca":     return efMulti ? Multi : (f ? <span style={{ fontSize: 12 }}>{f.lca || "Cradle-to-gate"}</span> : dash);
+      case "ef_name":    return efCell(fa => fa.name, v => <span title={v} style={{ color: "var(--fe-fg-strong)" }}>{v}</span>);
+      case "ef_value":   return efCell(fa => fa.kg_per_unit, v => <span style={{ color: "var(--fe-fg-strong)" }}>{v}</span>);
+      case "ef_unit":    return efCell(fa => fa.unit, v => <span style={{ fontSize: 12 }}>{`kgCO₂e/${v}`}</span>);
+      case "ef_source":  return efCell(fa => fa.source, v => <span>{v}</span>);
+      case "ef_dataset": return efCell(fa => fa.dataset || fa.source, v => <span style={{ fontSize: 12 }}>{v}</span>);
+      case "ef_year":    return efCell(fa => fa.vintage, v => <span style={{ color: "var(--fe-fg-muted)" }}>{v}</span>);
+      case "ef_region":  return efCell(fa => fa.region || "Global", v => <span>{v}</span>);
+      case "ef_lca":     return efCell(fa => fa.lca || "Cradle-to-gate", v => <span style={{ fontSize: 12 }}>{v}</span>);
       case "custom_factor": return <span style={{ fontSize: 12, color: e.custom_factor && e.custom_factor !== "—" ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)" }}>{e.custom_factor || "—"}</span>;
       case "notes": return <span title={e.notes || ""} style={{ color: e.notes ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)", fontSize: 12 }}>{e.notes || "—"}</span>;
       case "bulk_import_ref": {

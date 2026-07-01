@@ -713,32 +713,34 @@ window.applyDataset = function (ds) {
     {
       id: "ex-s2-mktloc", entry_status: "confirmed", category: "electricity", site: "Frankfurt HQ",
       calc_relation: "alternative", supplier: "Mainova AG", product: "Grid electricity",
-      desc: "Example — Scope 2 electricity: location- vs market-based",
+      desc: "Example — Scope 2 electricity: location- + market-based + Scope 3.3",
       amount: 120000, unit: "kWh", spend: "EUR 28,800", bu: "Facilities", activity: "Purchased electricity", user: "Lena Hofer",
       date: "2026-06-28", start: "2026-04-01", end: "2026-06-30", s3cat: "—",
-      summary: "Example · Scope 2 location vs market-based",
+      summary: "Example · Scope 2 electricity (market + location + 3.3)",
       calcs: [
-        { summary: "Location-based", method: "Location-based", scope: 2, factor: mkFactor("DE grid electricity — location-based", 0.38, "AIB/UBA"),
+        { summary: "Location-based", method: "Location-based", scope: 2, category: "electricity", factor: { ...mkFactor("DE grid electricity — location-based", 0.38, "AIB/UBA"), lca: "Location-based" },
           amount: 120000, unit: "kWh", kgCO2e: 45600, calcStatus: "confirmed", confidence: 0.95 },
-        { summary: "Market-based", method: "Market-based", scope: 2, factor: mkFactor("Green tariff (GO-backed) — market-based", 0.0, "Supplier contract"),
+        { summary: "Market-based", method: "Market-based", scope: 2, category: "electricity", factor: { ...mkFactor("Green tariff (GO-backed) — market-based", 0.0, "Supplier contract"), lca: "Market-based" },
           amount: 120000, unit: "kWh", kgCO2e: 0, calcStatus: "confirmed", confidence: 0.92 },
+        { summary: "T&D + upstream (Scope 3.3)", method: "Activity-based", scope: 3, category: "electricity", factor: { ...mkFactor("Electricity — WTT & T&D losses", 0.049, "DEFRA"), lca: "Well-to-tank" },
+          amount: 120000, unit: "kWh", kgCO2e: 5880, calcStatus: "confirmed", confidence: 0.90 },
       ],
     },
     // 2 — Scope 3: spend-based (single calc, EXIOBASE €/spend)
     {
       id: "ex-s3-spend", entry_status: "confirmed", category: "purchased_goods", site: "Vienna HQ",
-      supplier: "Beratung & Partner GmbH", product: "Consulting services",
-      desc: "Example — Scope 3 spend-based (professional services)",
-      amount: 95000, unit: "€", spend: "EUR 95,000", bu: "Procurement", activity: "Purchased services", user: "Markus Reiter",
+      supplier: "Continental Components SE", product: "Manufactured goods",
+      desc: "Example — Scope 3 spend-based (supplier Scope 1/2/3 split)",
+      amount: 95000, unit: "€", spend: "EUR 95,000", bu: "Procurement", activity: "Purchased goods", user: "Markus Reiter",
       date: "2026-06-27", start: "2026-04-01", end: "2026-06-30", s3cat: "1 · Purchased goods & services",
-      summary: "Example · Scope 3 spend-based · 3 calculations",
+      summary: "Example · Scope 3 spend-based · supplier scope split",
       calcs: [
-        { summary: "Consulting services", method: "Spend-based", scope: 3, factor: mkFactor("Consulting services — spend-based", 0.21, "EXIOBASE"),
-          amount: 55000, unit: "€", kgCO2e: 11550, calcStatus: "confirmed", confidence: 0.72 },
-        { summary: "Legal & compliance", method: "Spend-based", scope: 3, factor: mkFactor("Legal services — spend-based", 0.16, "EXIOBASE"),
-          amount: 22000, unit: "€", kgCO2e: 3520, calcStatus: "confirmed", confidence: 0.70 },
-        { summary: "IT & software", method: "Spend-based", scope: 3, factor: mkFactor("IT services — spend-based", 0.30, "EXIOBASE"),
-          amount: 18000, unit: "€", kgCO2e: 5400, calcStatus: "confirmed", confidence: 0.68 },
+        { summary: "Supplier Scope 1", method: "Spend-based", scope: 3, factor: { ...mkFactor("Manufactured goods — spend-based", 0.08, "EXIOBASE"), lca: "Supplier Scope 1" },
+          amount: 95000, unit: "€", kgCO2e: 7600, calcStatus: "confirmed", confidence: 0.72 },
+        { summary: "Supplier Scope 2", method: "Spend-based", scope: 3, factor: { ...mkFactor("Manufactured goods — spend-based", 0.05, "EXIOBASE"), lca: "Supplier Scope 2" },
+          amount: 95000, unit: "€", kgCO2e: 4750, calcStatus: "confirmed", confidence: 0.72 },
+        { summary: "Supplier Scope 3", method: "Spend-based", scope: 3, factor: { ...mkFactor("Manufactured goods — spend-based", 0.09, "EXIOBASE"), lca: "Supplier Scope 3" },
+          amount: 95000, unit: "€", kgCO2e: 8550, calcStatus: "confirmed", confidence: 0.72 },
       ],
     },
     // 3 — Scope 3.7: employee commuting (activity/distance-based)
@@ -758,7 +760,26 @@ window.applyDataset = function (ds) {
           factor: mkFactor("Local bus", 0.10, "DEFRA"), amount: 70000, unit: "km", kgCO2e: 7000, calcStatus: "confirmed", confidence: 0.66 },
       ],
     },
-    // 4 — Scope 1 + 3.3: fuel burned (additive across scopes — combustion + WTT)
+    // 4 — Scope 3.4 upstream T&D, activity-based: one EF split into WTT + TTW legs
+    //     (worked example from DAM-7401). EF name shared, EF LCA "Multiple",
+    //     consumption shared (100 kg), CO2e summed (21.97 kg).
+    {
+      id: "ex-s34-upstream", entry_status: "confirmed", category: "upstream_transport", site: "Maia DC",
+      supplier: "Continental Components SE", product: "32 F. Cables Port. — Maia",
+      desc: "Example — Scope 3.4 upstream T&D, activity-based (WTT + TTW)",
+      amount: 100, unit: "kg", spend: "EUR 640", bu: "Logistics", activity: "Upstream transport", user: "Sofie Daan",
+      date: "2026-06-24", start: "2026-04-01", end: "2026-06-30", s3cat: "4 · Upstream transport & distribution",
+      summary: "Example · Scope 3.4 upstream T&D (WTT + TTW)",
+      calcs: [
+        { summary: "Well-to-tank (WTT)", method: "Activity-based", scope: 3, category: "upstream_transport", factor: { ...mkFactor("Artic truck up to 40t GVW, avg/mixed, Diesel", 0.050878, "DEFRA"), lca: "Well-to-tank (WTT)" },
+          amount: 100, unit: "kg", kgCO2e: 5.0878, calcStatus: "confirmed", confidence: 0.90 },
+        { summary: "Tank-to-wheel (TTW)", method: "Activity-based", scope: 3, category: "upstream_transport", factor: { ...mkFactor("Artic truck up to 40t GVW, avg/mixed, Diesel", 0.168822, "DEFRA"), lca: "Tank-to-wheel (TTW)" },
+          amount: 100, unit: "kg", kgCO2e: 16.8822, calcStatus: "confirmed", confidence: 0.90 },
+      ],
+    },
+    // 5 — Scope 1 + 3.3 fuel burned: one fuel EF, combustion (TTW, Scope 1) +
+    //     well-to-tank (WTT, Scope 3.3). Scope conflicts (1+3) → Scope + Scope 3
+    //     category "Multiple"; EF name shared, EF LCA "Multiple", CO2e summed.
     {
       id: "ex-s13-fuel", entry_status: "confirmed", category: "diesel", site: "Linz Plant",
       supplier: "OMV", product: "Diesel — generators & fleet",
@@ -767,10 +788,10 @@ window.applyDataset = function (ds) {
       date: "2026-06-25", start: "2026-04-01", end: "2026-06-30", s3cat: "3 · Fuel & energy-related",
       summary: "Example · Scope 1 + 3.3 fuel burned",
       calcs: [
-        { summary: "Combustion (Scope 1)", method: "Activity-based", scope: 1, category: "diesel",
-          factor: mkFactor("Diesel — combustion", 2.54, "DEFRA"), amount: 12000, unit: "litre", kgCO2e: 30480, calcStatus: "confirmed", confidence: 0.96 },
-        { summary: "Well-to-tank (Scope 3.3)", method: "Activity-based", scope: 3, category: "fuel_energy",
-          factor: mkFactor("Diesel — well-to-tank (WTT)", 0.61, "DEFRA"), amount: 12000, unit: "litre", kgCO2e: 7320, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Combustion (Scope 1, TTW)", method: "Activity-based", scope: 1, category: "diesel", factor: { ...mkFactor("Diesel (DEFRA 2023)", 2.54, "DEFRA"), lca: "Combustion (TTW)" },
+          amount: 12000, unit: "litre", kgCO2e: 30480, calcStatus: "confirmed", confidence: 0.96 },
+        { summary: "Well-to-tank (Scope 3.3, WTT)", method: "Activity-based", scope: 3, category: "diesel", factor: { ...mkFactor("Diesel (DEFRA 2023)", 0.61, "DEFRA"), lca: "Well-to-tank (WTT)" },
+          amount: 12000, unit: "litre", kgCO2e: 7320, calcStatus: "confirmed", confidence: 0.90 },
       ],
     },
   );
