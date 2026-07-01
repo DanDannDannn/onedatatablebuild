@@ -687,8 +687,7 @@ function AllData({
 
   const colCount = renderKeys.length + (selectionOn ? 1 : 0) + (hasExpandable ? 1 : 0) + 1;
 
-  return (
-    <>
+  const toolbar = (
       <div className="filter-bar">
         <ViewDirtyCluster dirty={dirty} view={view}
           onSave={() => onSaveView && onSaveView(view.id, workingState)}
@@ -720,6 +719,11 @@ function AllData({
           )}
         </div>
       </div>
+  );
+
+  return (
+    <>
+      {headerPortal ? ReactDOM.createPortal(toolbar, headerPortal) : toolbar}
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="table-scroll">

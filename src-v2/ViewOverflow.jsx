@@ -37,6 +37,13 @@ function useViewOverflow(rowRef, savedViews) {
         if (ch.classList.contains("ovf-seg") || ch.classList.contains("view-overflow-wrap")) return;
         fixedW += ch.offsetWidth + gap;
       });
+      // Sum any sibling chrome sharing the bar (e.g. the toolbar portaled onto
+      // the same row) so tabs overflow before colliding with it.
+      let outsideW = 0;
+      Array.from(bar.children).forEach(ch => {
+        if (ch === row) return;
+        outsideW += ch.offsetWidth + gap;
+      });
       const RESERVE = 124 + gap; // space the "N more" button needs
       const total = savedViews.length;
       const widthOf = (v) => widthCache.current[v.id] || 150;
@@ -48,7 +55,7 @@ function useViewOverflow(rowRef, savedViews) {
         }
         return n;
       };
-      const avail = bar.clientWidth - fixedW;
+      const avail = bar.clientWidth - fixedW - outsideW;
       let n = countFit(avail);
       if (n < total) n = countFit(avail - RESERVE);
       n = Math.max(0, Math.min(total, n));

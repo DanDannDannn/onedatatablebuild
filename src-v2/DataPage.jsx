@@ -234,6 +234,9 @@ function DataPage(props) {
 
   const [overflowOpen, setOverflowOpen] = React.useState(false);
   const viewRowRef = React.useRef(null);
+  // Portal target for the grid toolbar (Export/Columns/Filters) so it sits on
+  // the same row as the view tabs. Callback ref → re-renders once mounted.
+  const [toolsNode, setToolsNode] = React.useState(null);
   const visN = window.useViewOverflow ? window.useViewOverflow(viewRowRef, savedViews) : savedViews.length;
   const [visibleViews, hiddenViews] = window.splitViewsForOverflow
     ? window.splitViewsForOverflow(savedViews, visN, v => tab === "view:" + v.id)
@@ -304,11 +307,15 @@ function DataPage(props) {
           )}
           <button className="view-add" onClick={newBlankView} title="New view" aria-label="New view"><Icon name="plus" size={15}/><span>New view</span></button>
         </div>
+        {/* Toolbar (Export/Columns/Filters) is portaled in here by AllData so it
+            shares this row with the tabs; tabs overflow before reaching it. */}
+        <div className="view-bar-tools" ref={setToolsNode} />
       </div>
 
       {activeView && !isDeepdiveView && (
         <AllData
           view={activeView}
+          headerPortal={toolsNode}
           restoreTick={activeView.builtin && allDataPreset ? allDataPreset.tick : 0}
           preset={activeView.builtin ? allDataPreset : null}
           loading={loading}
