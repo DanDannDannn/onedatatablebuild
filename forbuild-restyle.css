@@ -193,6 +193,20 @@
 /* Body checkboxes adopt the purple accent */
 .data-table tbody .fe-cb { accent-color: var(--tbl-accent); }
 
+/* Freeze the checkbox + expand columns to the left on horizontal scroll
+   (mirrors the sticky row-actions column on the right). */
+.data-table th.cb-cell,  .data-table td.cb-cell  { position: sticky; left: 0; }
+.data-table th.exp-cell, .data-table td.exp-cell { position: sticky; left: 40px; }
+.data-table thead th.cb-cell, .data-table thead th.exp-cell { z-index: 7; background: var(--tbl-accent); }
+.data-table tbody td.cb-cell, .data-table tbody td.exp-cell { z-index: 4; background: inherit; }
+.data-table tbody tr:hover td.cb-cell,  .data-table tbody tr:hover td.exp-cell  { background: var(--tbl-tint); }
+.data-table tbody tr.sel td.cb-cell,    .data-table tbody tr.sel td.exp-cell    { background: var(--tbl-tint-sel); }
+.data-table tbody tr.sel:hover td.cb-cell, .data-table tbody tr.sel:hover td.exp-cell { background: var(--tbl-tint-sel-hover); }
+/* subtle right-edge shadow marking the frozen block (cb's is hidden behind exp
+   when the expand column is present, so only the block's right edge shows one) */
+.data-table th.cb-cell,  .data-table td.cb-cell,
+.data-table th.exp-cell, .data-table td.exp-cell { box-shadow: 6px 0 6px -6px rgba(11,16,49,0.12); }
+
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
   position: fixed; inset: 0; background: rgba(20,20,45,0.32);
