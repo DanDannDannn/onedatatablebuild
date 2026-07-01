@@ -199,11 +199,13 @@ function AllData({
     flight: "3.6 Business travel", purchased_goods: "3.1 Purchased goods and services",
     capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
     waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
+    employee_commuting: "3.7 Employee commuting", fuel_energy: "3.3 Fuel & energy-related activities",
   };
   const SCOPE3_CAT = {
     flight: "6 \u00b7 Business travel", purchased_goods: "1 \u00b7 Purchased goods & services",
     capital_goods: "2 \u00b7 Capital goods", upstream_transport: "4 \u00b7 Upstream transport & distribution",
     waste: "5 \u00b7 Waste generated in operations", business_travel: "6 \u00b7 Business travel",
+    employee_commuting: "7 \u00b7 Employee commuting", fuel_energy: "3 \u00b7 Fuel & energy-related",
   };
   const scope3CatOf = (c) => SCOPE3_CAT[c.category] || "3 \u00b7 Fuel & energy-related";
 

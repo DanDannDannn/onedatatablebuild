@@ -706,6 +706,60 @@ window.applyDataset = function (ds) {
       ],
     },
   );
+  // Illustrative scenario examples pinned to the very top (requested set).
+  // EF values here are plausible placeholders, not authoritative figures.
+  demoSpecs.unshift(
+    // 1 — Scope 2: location- vs market-based (alternative → no sum, EF "Multiple")
+    {
+      id: "ex-s2-mktloc", entry_status: "confirmed", category: "electricity", site: "Frankfurt HQ",
+      calc_relation: "alternative", supplier: "Mainova AG", product: "Grid electricity",
+      desc: "Example — Scope 2 electricity: location- vs market-based",
+      amount: 120000, unit: "kWh", spend: "EUR 28,800", bu: "Facilities", activity: "Purchased electricity", user: "Lena Hofer",
+      date: "2026-06-28", start: "2026-04-01", end: "2026-06-30", s3cat: "—",
+      summary: "Example · Scope 2 location vs market-based",
+      calcs: [
+        { summary: "Location-based", method: "Location-based", scope: 2, factor: mkFactor("DE grid electricity — location-based", 0.38, "AIB/UBA"),
+          amount: 120000, unit: "kWh", kgCO2e: 45600, calcStatus: "confirmed", confidence: 0.95 },
+        { summary: "Market-based", method: "Market-based", scope: 2, factor: mkFactor("Green tariff (GO-backed) — market-based", 0.0, "Supplier contract"),
+          amount: 120000, unit: "kWh", kgCO2e: 0, calcStatus: "confirmed", confidence: 0.92 },
+      ],
+    },
+    // 2 — Scope 3: spend-based (single calc, EXIOBASE €/spend)
+    {
+      id: "ex-s3-spend", entry_status: "confirmed", category: "purchased_goods", site: "Vienna HQ",
+      supplier: "Beratung & Partner GmbH", product: "Consulting services",
+      desc: "Example — Scope 3 spend-based (professional services)",
+      amount: 95000, unit: "€", spend: "EUR 95,000", bu: "Procurement", activity: "Purchased services", user: "Markus Reiter",
+      date: "2026-06-27", start: "2026-04-01", end: "2026-06-30", s3cat: "1 · Purchased goods & services",
+      summary: "Example · Scope 3 spend-based",
+      factor: mkFactor("Professional services — spend-based", 0.21, "EXIOBASE"), method: "Spend-based",
+      scope: 3, kgCO2e: 19950, calcStatus: "confirmed", confidence: 0.72 },
+    // 3 — Scope 3.7: employee commuting (activity/distance-based)
+    {
+      id: "ex-s3-commute", entry_status: "confirmed", category: "employee_commuting", site: "Berlin HQ",
+      supplier: "", product: "Employee commuting",
+      desc: "Example — Scope 3.7 employee commuting (survey-based)",
+      amount: 480000, unit: "km", spend: "—", bu: "People & Culture", activity: "Employee commuting", user: "Sofie Daan",
+      date: "2026-06-26", start: "2026-04-01", end: "2026-06-30", s3cat: "7 · Employee commuting",
+      summary: "Example · Scope 3.7 employee commuting",
+      factor: mkFactor("Average commuting mix (car/rail/bus)", 0.14, "DEFRA"), method: "Activity-based",
+      scope: 3, kgCO2e: 67200, calcStatus: "confirmed", confidence: 0.68 },
+    // 4 — Scope 1 + 3.3: fuel burned (additive across scopes — combustion + WTT)
+    {
+      id: "ex-s13-fuel", entry_status: "confirmed", category: "diesel", site: "Linz Plant",
+      supplier: "OMV", product: "Diesel — generators & fleet",
+      desc: "Example — fuel burned: Scope 1 combustion + Scope 3.3 well-to-tank",
+      amount: 12000, unit: "litre", spend: "EUR 19,200", bu: "Operations", activity: "Fuel combustion", user: "Tobias Brandt",
+      date: "2026-06-25", start: "2026-04-01", end: "2026-06-30", s3cat: "3 · Fuel & energy-related",
+      summary: "Example · Scope 1 + 3.3 fuel burned",
+      calcs: [
+        { summary: "Combustion (Scope 1)", method: "Activity-based", scope: 1, category: "diesel",
+          factor: mkFactor("Diesel — combustion", 2.54, "DEFRA"), amount: 12000, unit: "litre", kgCO2e: 30480, calcStatus: "confirmed", confidence: 0.96 },
+        { summary: "Well-to-tank (Scope 3.3)", method: "Activity-based", scope: 3, category: "fuel_energy",
+          factor: mkFactor("Diesel — well-to-tank (WTT)", 0.61, "DEFRA"), amount: 12000, unit: "litre", kgCO2e: 7320, calcStatus: "confirmed", confidence: 0.9 },
+      ],
+    },
+  );
   const demoEntries = [], demoCalcs = [];
   demoSpecs.forEach(o => {
     const e = mkDemoEntry(o); demoEntries.push(e);
