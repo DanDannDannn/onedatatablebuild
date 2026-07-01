@@ -214,6 +214,15 @@
 .data-table th.cb-cell,  .data-table td.cb-cell,
 .data-table th.exp-cell, .data-table td.exp-cell { box-shadow: 6px 0 6px -6px rgba(11,16,49,0.12); }
 
+/* Pinned columns should track the row background (like the frozen checkbox /
+   expand columns) instead of a hardcoded white — otherwise a pinned column
+   reads as a uniform white strip that ignores the row striping. */
+.data-table tbody td.td-pin { background: inherit; }
+.data-table tbody tr:hover td.td-pin { background: var(--tbl-tint); }
+.data-table tbody tr.sel td.td-pin { background: var(--tbl-tint-sel); }
+.data-table tbody tr.sel:hover td.td-pin { background: var(--tbl-tint-sel-hover); }
+.data-table thead th.td-pin { background: var(--tbl-accent); }
+
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
   position: fixed; inset: 0; background: rgba(20,20,45,0.32);
