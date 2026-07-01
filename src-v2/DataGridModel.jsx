@@ -28,7 +28,9 @@ const DATA_COLUMNS = [
   { k:"description",       label:"Description",              w:240, kind:"entry",   ro:true },
   { k:"business_unit",     label:"Business unit",            w:128, kind:"entry" },
   { k:"business_activity", label:"Business activity",        w:180, kind:"entry" },
-  { k:"data_input_type",   label:"Data input type",          w:130, kind:"entry",   ro:true },
+  { k:"data_input_type",   label:"Data input type",          w:140, kind:"derived", ro:true },
+  { k:"consumption_data_type", label:"Consumption data type", w:150, kind:"calc",  ro:true },
+  { k:"selection_type",    label:"Selection type",           w:150, kind:"derived", ro:true },
   { k:"start_date",        label:"Start date",               w:104, kind:"entry" },
   { k:"end_date",          label:"End date",                 w:104, kind:"entry" },
   { k:"calcs_count",       label:"Related calculations",     w:118, kind:"derived", ro:true },
@@ -67,7 +69,7 @@ const EF_GROUP_KEYS = DATA_COLUMNS.filter(c => c.group === "ef").map(c => c.k);
 // Columns that vary per calculation — they split into sub-rows when a data
 // entry is expanded. Everything else is constant per entry and merges (rowSpan).
 const PER_CALC_KEYS = new Set([
-  "emission_source","scope","scope2_method","scope3_category","calc_basis",
+  "emission_source","scope","scope2_method","scope3_category","calc_basis","consumption_data_type",
   "co2e_value","co2e_unit","co2e_method",
   "consumption_value","consumption_unit",
   "ef_name","ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
@@ -87,8 +89,8 @@ const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind 
 // spec (Combined Data Table). Columns the spec doesn't list (quality,
 // calc_basis, calcs_count) are kept in the catalog but parked at the end, hidden.
 const ENTRY_ORDER = [
-  "status","supplier","description","ef_name","co2e_value","co2e_unit",
-  "consumption_value","consumption_unit","business_unit","data_input_type",
+  "status","supplier","description","selection_type","ef_name","co2e_value","co2e_unit",
+  "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
   "scope","scope2_method","scope3_category","business_activity","user_assigned",
   "emission_source","start_date","end_date","last_updated","id",
   "ef_value","ef_source","ef_unit","ef_dataset","ef_year","ef_region","ef_lca",
@@ -98,14 +100,14 @@ const ENTRY_ORDER = [
 ];
 const ENTRY_VISIBLE = [
   "status","supplier","description","ef_name","co2e_value","co2e_unit",
-  "consumption_value","consumption_unit","business_unit","data_input_type",
+  "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
   "scope","scope3_category","business_activity","user_assigned","emission_source",
   "start_date","end_date","last_updated","id","ef_lca","files","bulk_import_ref","created_on",
 ];
 const CALC_ORDER = [
   "id","status","quality","calc_basis","co2e_value","co2e_unit","scope","emission_source","ef_name",
   "calcs_count","business_unit","business_activity","consumption_value","consumption_unit",
-  "start_date","end_date","data_input_type","user_assigned","last_updated",
+  "start_date","end_date","data_input_type","consumption_data_type","selection_type","user_assigned","last_updated",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
 ];

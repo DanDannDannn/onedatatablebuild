@@ -13,9 +13,10 @@
 // The two shipped views (All data + Calculations) are seeded on first load via
 // seedDataViews(); thereafter the list is whatever the user has saved.
 
-// Bumped v7 → v8 to re-seed the built-in "All data" view with the new default
-// column order + visibility (Confluence unified column map).
-const FE_DATA_VIEWS_KEY = "fe-data-views-v8";
+// Bumped to v9 to re-seed the built-in "All data" view with the new default
+// column order + visibility (Confluence unified column map + new Consumption
+// data type / Selection type columns).
+const FE_DATA_VIEWS_KEY = "fe-data-views-v9";
 const FE_DATA_VIEWS_EVT = "fe-data-views-changed";
 
 function loadDataViews() {

@@ -240,7 +240,24 @@ function AllData({
       case "user_assigned": return e.user_assigned;
       case "start_date": return e.start_date;
       case "end_date": return e.end_date;
-      case "data_input_type": return e.data_input_type;
+      case "data_input_type": {
+        // Spec: "Consumption data" vs "Precalculated" (was the ingestion source).
+        const bases = [...new Set(mine.map(efBasisOf))].filter(Boolean);
+        if (bases.length === 0) return "Consumption data";
+        const hasPre = bases.includes("Precalculated");
+        const hasOther = bases.some(b => b !== "Precalculated");
+        return hasPre && hasOther ? "multiple" : hasPre ? "Precalculated" : "Consumption data";
+      }
+      case "consumption_data_type": {
+        // Spec: "Activity" / "Spend" (from the EF matching basis).
+        const vals = [...new Set(mine.map(c => { const b = efBasisOf(c); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }).filter(Boolean))];
+        return vals.length === 0 ? "" : vals.length === 1 ? vals[0] : "multiple";
+      }
+      case "selection_type": {
+        // NEW column — no source field yet; deterministic 80% auto-selected.
+        let x = 0; const s = e.id || ""; for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0;
+        return (Math.abs(x) % 5 === 0) ? "Manually selected" : "Auto-selected";
+      }
       case "consumption_value": return cons.v;
       case "consumption_unit": return cons.u;
       case "ef_value": return f?.kg_per_unit ?? null;
@@ -293,7 +310,9 @@ function AllData({
     ] },
     emission_source: { options: [...Object.entries(CATEGORY_LABELS).map(([k, l]) => ({ k, l })), { k: "multiple", l: "Multiple" }] },
     user_assigned:   { options: uniqueOpts("user_assigned") },
-    data_input_type: { options: uniqueOpts("data_input_type") },
+    data_input_type: { options: [{ k: "Consumption data", l: "Consumption data" }, { k: "Precalculated", l: "Precalculated" }, { k: "multiple", l: "Multiple" }] },
+    consumption_data_type: { options: [{ k: "Activity", l: "Activity" }, { k: "Spend", l: "Spend" }, { k: "multiple", l: "Multiple" }] },
+    selection_type: { options: [{ k: "Auto-selected", l: "Auto-selected" }, { k: "Manually selected", l: "Manually selected" }] },
     ef_source:       { options: uniqueOpts("ef_source") },
     ef_year:         { options: uniqueOpts("ef_year") },
     ef_region:       { options: uniqueOpts("ef_region") },
@@ -421,7 +440,20 @@ function AllData({
       case "description": { const t = (e.details && (e.details.description || e.details.product_service)) || e.summary || ""; return t ? <span title={t}>{t}</span> : dash; }
       case "business_unit": return <span style={{ color: "var(--fe-fg-strong)" }}>{e.business_unit}</span>;
       case "business_activity": return <span title={e.business_activity} style={{ color: "var(--fe-fg-strong)" }}>{e.business_activity}</span>;
-      case "data_input_type": return <span className="chip"><span className="dot"></span>{e.data_input_type}</span>;
+      case "data_input_type": {
+        const v = getCol(e, "data_input_type");
+        if (v === "multiple") return Multi;
+        return <span className="chip"><span className="dot"></span>{v}</span>;
+      }
+      case "consumption_data_type": {
+        const toVal = (x) => { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; };
+        if (c) { const v = toVal(c); return v ? <span>{v}</span> : dash; }
+        const vals = [...new Set(r.mine.map(toVal).filter(Boolean))];
+        if (vals.length === 0) return dash;
+        if (vals.length > 1) return Multi;
+        return <span>{vals[0]}</span>;
+      }
+      case "selection_type": return <span>{getCol(e, "selection_type")}</span>;
       case "start_date": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.start_date}</span>;
       case "end_date": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.end_date}</span>;
       case "user_assigned": return <span>{e.user_assigned}</span>;
