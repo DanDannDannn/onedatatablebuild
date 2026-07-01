@@ -145,7 +145,14 @@ function ColumnsPanel({ columns, onChange, defaultOrder, selectionOn, onToggleSe
   const toggle = (k) => setVisible(visSet.has(k) ? visible.filter(x => x !== k) : [...visible, k]);
   const query = q.trim().toLowerCase();
   const match = (label) => !query || label.toLowerCase().includes(query);
-  const rows = order.filter(k => colOf(k) && match(colOf(k).label));
+  // List every column in the ACTUAL column order (so hidden columns stay in
+  // their slot between visible ones). Any catalog column missing from this
+  // view's order (e.g. added after the view was saved) is appended in the
+  // canonical default order so the panel never silently drops a column.
+  const inView = new Set(order);
+  const canonical = defaultOrder || window.DATA_COLUMNS.map(c => c.k);
+  const fullOrder = [...order, ...canonical.filter(k => !inView.has(k))];
+  const rows = fullOrder.filter(k => colOf(k) && match(colOf(k).label));
   const showSelection = typeof onToggleSelection === "function" && match("checkbox selection");
 
   return (
