@@ -731,9 +731,16 @@ window.applyDataset = function (ds) {
       desc: "Example — Scope 3 spend-based (professional services)",
       amount: 95000, unit: "€", spend: "EUR 95,000", bu: "Procurement", activity: "Purchased services", user: "Markus Reiter",
       date: "2026-06-27", start: "2026-04-01", end: "2026-06-30", s3cat: "1 · Purchased goods & services",
-      summary: "Example · Scope 3 spend-based",
-      factor: mkFactor("Professional services — spend-based", 0.21, "EXIOBASE"), method: "Spend-based",
-      scope: 3, kgCO2e: 19950, calcStatus: "confirmed", confidence: 0.72 },
+      summary: "Example · Scope 3 spend-based · 3 calculations",
+      calcs: [
+        { summary: "Consulting services", method: "Spend-based", scope: 3, factor: mkFactor("Consulting services — spend-based", 0.21, "EXIOBASE"),
+          amount: 55000, unit: "€", kgCO2e: 11550, calcStatus: "confirmed", confidence: 0.72 },
+        { summary: "Legal & compliance", method: "Spend-based", scope: 3, factor: mkFactor("Legal services — spend-based", 0.16, "EXIOBASE"),
+          amount: 22000, unit: "€", kgCO2e: 3520, calcStatus: "confirmed", confidence: 0.70 },
+        { summary: "IT & software", method: "Spend-based", scope: 3, factor: mkFactor("IT services — spend-based", 0.30, "EXIOBASE"),
+          amount: 18000, unit: "€", kgCO2e: 5400, calcStatus: "confirmed", confidence: 0.68 },
+      ],
+    },
     // 3 — Scope 3.7: employee commuting (activity/distance-based)
     {
       id: "ex-s3-commute", entry_status: "confirmed", category: "employee_commuting", site: "Berlin HQ",
@@ -741,9 +748,16 @@ window.applyDataset = function (ds) {
       desc: "Example — Scope 3.7 employee commuting (survey-based)",
       amount: 480000, unit: "km", spend: "—", bu: "People & Culture", activity: "Employee commuting", user: "Sofie Daan",
       date: "2026-06-26", start: "2026-04-01", end: "2026-06-30", s3cat: "7 · Employee commuting",
-      summary: "Example · Scope 3.7 employee commuting",
-      factor: mkFactor("Average commuting mix (car/rail/bus)", 0.14, "DEFRA"), method: "Activity-based",
-      scope: 3, kgCO2e: 67200, calcStatus: "confirmed", confidence: 0.68 },
+      summary: "Example · Scope 3.7 employee commuting · 3 calculations",
+      calcs: [
+        { summary: "Car (petrol/diesel)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: mkFactor("Passenger car — average", 0.17, "DEFRA"), amount: 260000, unit: "km", kgCO2e: 44200, calcStatus: "confirmed", confidence: 0.70 },
+        { summary: "Rail", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: mkFactor("National rail", 0.035, "DEFRA"), amount: 150000, unit: "km", kgCO2e: 5250, calcStatus: "confirmed", confidence: 0.72 },
+        { summary: "Bus", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: mkFactor("Local bus", 0.10, "DEFRA"), amount: 70000, unit: "km", kgCO2e: 7000, calcStatus: "confirmed", confidence: 0.66 },
+      ],
+    },
     // 4 — Scope 1 + 3.3: fuel burned (additive across scopes — combustion + WTT)
     {
       id: "ex-s13-fuel", entry_status: "confirmed", category: "diesel", site: "Linz Plant",
