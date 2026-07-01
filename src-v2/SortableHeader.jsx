@@ -31,7 +31,7 @@ function SortableHeader({
     <div className={"sh " + (align === "right" ? "right " : "") + (active ? "active " : "") + (filtered ? "filtered " : "")}
          onClick={toggleSort}
          title={disableSort ? label : `Click to sort · Shift-click to add a secondary sort`}>
-      <span className="sh-label">{label}</span>
+      <span className="sh-label" title={label}>{label}</span>
       {sortRank && <span className="sh-rank" title={`Sort priority ${sortRank}`}>{sortRank}</span>}
       {!disableSort && (
         <span className="sh-sort-ind">
