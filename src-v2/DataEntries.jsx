@@ -718,93 +718,10 @@ function EntryDrawer({ entry, calcs, onClose }) {
   const activityName = entry.business_activity || (window.CatLabel ? null : entry.category) || entry.category;
   const period = `${entry.start_date} → ${entry.end_date}`;
 
-  // ── Provenance drawer (draft / ready / review) ──────────────────────────
+  // Non-submitted (draft / ready / review) or a brand-new entry → the editable
+  // "New entry" form modal (centred), populated from the entry (empty for new).
   if (!isSubmitted) {
-    const Field = (k, v, cls) => (
-      <div className="fwe-field" key={k}><span className="k">{k}</span><span className={"v " + (cls || "")}>{v}</span></div>
-    );
-    const f = first && first.factor;
-    const conf = first && first.confidence != null ? first.confidence : null;
-    return (
-      <>
-        <div className="fwe-scrim" onClick={onClose} />
-        <aside className="fwe-drawer" role="dialog" aria-label="Entry detail">
-          <div className="fwe-drawer__head">
-            <div style={{ minWidth: 0 }}>
-              <h2>{activityName}{entry.business_unit ? " — " + entry.business_unit : ""}</h2>
-              <span className="sub">Entry {entry.id}</span>
-            </div>
-            <button className="fwe-drawer__close" onClick={onClose} aria-label="Close">
-              <Icon name="close" size={18} />
-            </button>
-          </div>
-
-          <div className="fwe-drawer__body">
-            <div className="fwe-group">
-              <p className="fwe-group__title">Overview</p>
-              {Field("Status", <window.StatusChip status={wf} />)}
-              {Field("Business unit", entry.business_unit || "—")}
-              {Field("User assigned", entry.user_assigned || "—")}
-              {Field("Reporting period", period)}
-            </div>
-
-            <div className="fwe-group">
-              <p className="fwe-group__title">Activity data</p>
-              {Field("Data input type", entry.data_input_type || "—")}
-              {Field("Matching method", (first && first.method) || "—")}
-              {Field("Consumption", `${num(cons.v)} ${cons.u}`.trim(), "num")}
-            </div>
-
-            <div className="fwe-group">
-              <p className="fwe-group__title">Emission factor</p>
-              {f ? (
-                <div className="fwe-ef-callout">
-                  <div className="ef-top">
-                    <span className="ef-name">{f.source}{f.name ? " — " + f.name : ""}</span>
-                    {conf != null && <span className="fwe-conf">{conf >= 0.8 ? "High match" : "Needs review"}</span>}
-                  </div>
-                  <div className="ef-meta">
-                    {f.kg_per_unit} kgCO₂e per {f.unit} · {first.method || "auto-selected"}
-                  </div>
-                </div>
-              ) : (
-                <div className="fwe-ef-callout"><div className="ef-meta">Not matched yet — emission factor assigned once the entry is submitted.</div></div>
-              )}
-            </div>
-
-            <div className="fwe-group">
-              <p className="fwe-group__title">Result</p>
-              {mine.length === 0 ? (
-                <div className="ef-meta" style={{ fontSize: 13, color: "var(--fe-fg-muted)" }}>Pending calculation.</div>
-              ) : total == null ? (
-                <div className="ef-meta" style={{ fontSize: 13, color: "var(--fe-fg-muted)" }}>{mine.length} alternative methods — no combined total.</div>
-              ) : (
-                <>
-                  <div className="fwe-result-big"><span className="n">{window.fmtKgSmart(total)}</span><span className="u">kgCO₂e</span></div>
-                  {mine.length === 1 && f ? (
-                    <div className="fwe-field" style={{ marginTop: 8 }}>
-                      <span className="k">Calculation</span>
-                      <span className="v num">{num(first.quantity)} {first.unit} × {f.kg_per_unit} = {window.fmtKgSmart(first.kgCO2e)} kg</span>
-                    </div>
-                  ) : (
-                    <div className="fwe-field" style={{ marginTop: 8 }}>
-                      <span className="k">Calculation</span><span className="v num">Sum of {mine.length} calculations</span>
-                    </div>
-                  )}
-                </>
-              )}
-              {entry.notes && Field("Notes", entry.notes)}
-            </div>
-          </div>
-
-          <div className="fwe-drawer__foot">
-            <button className="fwe-btn-secondary" onClick={onClose}>Close</button>
-            <div className="grow" />
-            <button className="fwe-btn-primary" onClick={() => toast("Editing — not built in this prototype")}>Edit entry</button>
-          </div>
-        </aside>
-      </>
-    );
+    return <NewEntryModal entry={entry} onClose={onClose} />;
   }
 
   // ── Submitted-entry modal (read-only form) ──────────────────────────────
@@ -1002,4 +919,122 @@ function EntryActions({ entry, editing, dirty, remainingMissing, onSave, onDisca
   </>;
 }
 
-Object.assign(window, { DataEntries, EntryDrawer });
+// Editable "New entry" form modal — mirrors the reference HTML's New entry form.
+// Used both for creating a new entry (no `entry` → empty fields) and for opening
+// a non-submitted (draft / ready / review) entry (populated). Inputs are
+// uncontrolled; Save/Submit just close (the prototype doesn't persist edits).
+function NewEntryModal({ entry, onClose }) {
+  const toast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { detail: msg }));
+  React.useEffect(() => {
+    const onKey = (ev) => { if (ev.key === "Escape") onClose && onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const e = entry || {};
+  const d = e.details || {};
+  const isNew = !entry || e._isNew;
+  const BUS = window.BUSINESS_UNITS || [];
+  const USERS = window.USERS || [];
+  const UNITS = ["kg", "tn", "litre", "kWh", "m³", "USD", "EUR", "GBP", "km", "t·km"];
+  const v = (x) => (x == null ? "" : String(x));
+  const withCur = (list, cur) => (cur && !list.includes(cur)) ? [cur, ...list] : list;
+
+  const Fld = ({ label, opt, span, children }) => (
+    <div className="fwe-fld" style={span ? { gridColumn: "1 / -1" } : undefined}>
+      <span className="lab">{label}{opt && <span className="opt"> (optional)</span>}</span>
+      {children}
+    </div>
+  );
+  const Sel = (defVal, opts) => (
+    <select className="control select" defaultValue={defVal || ""}>
+      <option value="" disabled>Select…</option>
+      {opts.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+
+  return (
+    <>
+      <div className="fwe-scrim" onClick={onClose} />
+      <div className="fwe-modal-wrap" role="dialog" aria-modal="true" onClick={(ev) => { if (ev.target === ev.currentTarget) onClose(); }}>
+        <div className="fwe-modal">
+          <div className="fwe-modal__head">
+            <h2 className="trunc">{isNew ? "New entry" : (e.business_activity || "Edit entry")}</h2>
+            <span className="fwe-badge-draft">Draft</span>
+            <button className="close" aria-label="Close" onClick={onClose}><Icon name="close" size={18} /></button>
+          </div>
+
+          <div className="fwe-modal__body">
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">General information</h3>
+              <div className="fwe-form-grid">
+                <Fld label="Business activity"><input className="control" defaultValue={v(e.business_activity)} placeholder="e.g. Purchased electricity" /></Fld>
+                <Fld label="Business unit">{Sel(e.business_unit, withCur(BUS, e.business_unit))}</Fld>
+                <Fld label="User assigned">{Sel(e.user_assigned, withCur(USERS, e.user_assigned))}</Fld>
+                <div className="fwe-form-grid two">
+                  <Fld label="Start date"><input className="control" defaultValue={v(e.start_date)} placeholder="MM/DD/YYYY" /></Fld>
+                  <Fld label="End date"><input className="control" defaultValue={v(e.end_date)} placeholder="MM/DD/YYYY" /></Fld>
+                </div>
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Data entry type</h3>
+              <p className="fwe-form-card__sub">Choose how you want to provide the data in this data entry</p>
+              <div className="fwe-form-grid">
+                <Fld label="Data input type">{Sel("Consumption data", ["Consumption data", "Spend data", "Precalculated"])}</Fld>
+                <Fld label="Consumption data type">{Sel("Activity", ["Activity", "Spend", "Energy", "Distance"])}</Fld>
+                <Fld label="Emission factor type">{Sel("Auto-selected emission factor", ["Auto-selected emission factor", "Manually selected emission factor"])}</Fld>
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Consumption details</h3>
+              <div className="fwe-form-grid">
+                <Fld label="Description" opt><input className="control" defaultValue={v(d.description || d.product_service)} /></Fld>
+                <div className="fwe-form-grid two">
+                  <Fld label="Material/service quantity"><input className="control" defaultValue={v(d.activity_amount)} placeholder="0" /></Fld>
+                  <Fld label="Material/service unit">{Sel(d.activity_unit, withCur(UNITS, d.activity_unit))}</Fld>
+                </div>
+                <Fld label="Supplier name" opt><input className="control" defaultValue={v(d.supplier)} /></Fld>
+                <Fld label="Additional description" opt><input className="control" defaultValue="" /></Fld>
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Emission factor details</h3>
+              <div className="fwe-form-grid two">
+                <Fld label="Emission factor source"><input className="control" defaultValue="" placeholder="Ecoinvent" /></Fld>
+                <Fld label="Emission factor name"><input className="control" defaultValue="" placeholder="Auto-matched on submit" /></Fld>
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Note <span className="opt">(optional)</span></h3>
+              <p className="fwe-form-card__sub">Add any notes here for future reference. This can help other users understand your entries and is useful for auditing.</p>
+              <div className="fwe-fld"><span className="lab">Notes</span><textarea className="control" rows="3" defaultValue={v(e.notes)} /></div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Attachments <span className="opt">(optional)</span></h3>
+              <p className="fwe-form-card__sub">Upload supporting documents (images or PDFs, max 2MB) as proof of your entries</p>
+              <div className="fwe-dropzone">
+                <div className="fwe-dropzone__drop fwe-dropzone__drop--active" onClick={() => toast("File upload — not built in this prototype")}>
+                  <Icon name="upload" size={18} /><span><b>Drag or upload</b> up to 3 files</span>
+                </div>
+                <div className="fwe-dropzone__files"><h4>Uploaded files</h4><p>Files have not been uploaded yet</p></div>
+              </div>
+            </section>
+          </div>
+
+          <div className="fwe-modal__foot">
+            <button className="fwe-btn-secondary" onClick={() => { toast("Draft saved"); onClose && onClose(); }}>Save draft</button>
+            <button className="fwe-btn-primary" onClick={() => { toast(isNew ? "Submitted — matching emission factor…" : (e.id + " updated")); onClose && onClose(); }}>Submit to start calculation</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, { DataEntries, EntryDrawer, NewEntryModal });

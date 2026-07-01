@@ -361,3 +361,32 @@
 .fwe-dropzone__files { flex: 1; padding-top: 4px; }
 .fwe-dropzone__files h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; color: var(--fe-fg-strong); }
 .fwe-dropzone__files p { margin: 0; font-size: 13px; color: var(--fe-fg-muted); }
+
+/* ─────────── Editable "New entry" form modal (create + edit draft) ─────────── */
+/* The read-only .control above is a <div>; these target the real form elements. */
+.fwe-fld input.control, .fwe-fld select.control, .fwe-fld textarea.control {
+  display: block; color: var(--fe-fg-strong); background: #fff; cursor: text; outline: none;
+}
+.fwe-fld input.control::placeholder, .fwe-fld textarea.control::placeholder { color: var(--fe-fg-subtle); }
+.fwe-fld input.control:hover, .fwe-fld select.control:hover, .fwe-fld textarea.control:hover { border-color: var(--fe-border-strong); }
+.fwe-fld input.control:focus, .fwe-fld select.control:focus, .fwe-fld textarea.control:focus {
+  border-color: var(--fe-accent-primary); box-shadow: 0 0 0 3px rgba(90,77,255,0.16);
+}
+.fwe-fld select.control {
+  cursor: pointer; appearance: none; -webkit-appearance: none; padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%237a7a91' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.fwe-fld textarea.control { min-height: 84px; resize: vertical; line-height: 1.5; }
+
+.fwe-badge-draft {
+  font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 6px;
+  background: var(--fe-primary-50, #ecefff); color: var(--fe-primary-600, #5336f5);
+  border: 1px solid var(--fe-primary-100, #dde2ff);
+}
+.fwe-dropzone__drop--active {
+  border-color: var(--fe-primary-300, #9ca5ff); background: var(--fe-primary-50, #f5f3ff);
+  color: var(--fe-fg-muted); cursor: pointer;
+}
+.fwe-dropzone__drop--active b { color: var(--fe-accent-primary); font-weight: 500; }
+.fwe-dropzone__drop--active:hover { border-color: var(--fe-accent-primary); }

@@ -190,6 +190,7 @@ function App() {
   const [calcs, setCalcs] = useState(() => window.CALCS);
   const [entries, setEntries] = useState(() => window.ENTRIES);
   const [toast, setToast] = useState(null);
+  const [showNewEntry, setShowNewEntry] = useState(false);
   const [showCreateReport, setShowCreateReport] = useState(false);
   // Reports/boards feature removed in this table-only build — inert defaults.
   const reports = []; const createReport = () => {};
@@ -651,12 +652,9 @@ function App() {
               }}
               onBack={(r, anchor) => go(r, anchor ? { scrollToAnchor: anchor } : {})}
               onAddData={() => {
-                // Notion-style: open the detail drawer for a new blank draft
-                // entry (all fields editable) instead of a separate page.
-                const e = window.makeDraftEntry();
-                setEntries(es => { const next = [e, ...es]; window.ENTRIES = next; return next; });
-                setSelCalcId(null);
-                setSelEntryId(e.id);
+                // Open the centred "New entry" form modal (empty, no pre-fill).
+                // No row is added until the user saves — mirrors the reference.
+                setShowNewEntry(true);
               }}
               onApplySavedView={(view) => {
                 if (view.kind === "alldata") {
@@ -749,6 +747,11 @@ function App() {
           onSwapCalc={swapCalc}
           onViewImport={(batchId) => { setSelEntryId(null); setSelCalcId(null); go("import"); bulkToast(`Would open Bulk imports · ${batchId}`); }}
         />
+      )}
+
+      {/* "Add new entry" → centred editable form modal (empty, no pre-fill). */}
+      {route === "data" && showNewEntry && (
+        <NewEntryModal onClose={() => setShowNewEntry(false)} />
       )}
 
       {showCreateReport && (
