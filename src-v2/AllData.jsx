@@ -207,13 +207,13 @@ function AllData({
     fuel: "Fuel",
   };
   const SCOPE3_CAT = {
-    flight: "6 \u00b7 Business travel", purchased_goods: "1 \u00b7 Purchased goods & services",
-    capital_goods: "2 \u00b7 Capital goods", upstream_transport: "4 \u00b7 Upstream transport & distribution",
-    waste: "5 \u00b7 Waste generated in operations", business_travel: "6 \u00b7 Business travel",
-    employee_commuting: "7 \u00b7 Employee commuting", fuel_energy: "3 \u00b7 Fuel & energy-related",
-    fuel: "3 \u00b7 Fuel & energy-related",
+    flight: "3.6 Business travel", purchased_goods: "3.1 Purchased goods and services",
+    capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
+    waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
+    employee_commuting: "3.7 Employee commuting", fuel_energy: "3.3 Fuel- and energy-related activities",
+    fuel: "3.3 Fuel- and energy-related activities",
   };
-  const scope3CatOf = (c) => SCOPE3_CAT[c.category] || "3 \u00b7 Fuel & energy-related";
+  const scope3CatOf = (c) => SCOPE3_CAT[c.category] || "3.3 Fuel- and energy-related activities";
 
   // Single rolled-up Status. Precedence (high→low):
   //   Calculation failed > Processing > Draft > Ready to Submit > Approved.
@@ -311,12 +311,13 @@ function AllData({
       { k: "Precalculated", l: "Precalculated" }, { k: "multiple", l: "Multiple" },
     ] },
     scope3_category: { options: [
-      { k: "1 \u00b7 Purchased goods & services", l: "1 · Purchased goods & services" },
-      { k: "2 \u00b7 Capital goods", l: "2 · Capital goods" },
-      { k: "3 \u00b7 Fuel & energy-related", l: "3 · Fuel & energy-related" },
-      { k: "4 \u00b7 Upstream transport & distribution", l: "4 · Upstream transport & distribution" },
-      { k: "5 \u00b7 Waste generated in operations", l: "5 · Waste generated in operations" },
-      { k: "6 \u00b7 Business travel", l: "6 · Business travel" }, { k: "multiple", l: "Multiple" },
+      { k: "3.1 Purchased goods and services", l: "3.1 Purchased goods and services" },
+      { k: "3.2 Capital goods", l: "3.2 Capital goods" },
+      { k: "3.3 Fuel- and energy-related activities", l: "3.3 Fuel- and energy-related activities" },
+      { k: "3.4 Upstream transportation and distribution", l: "3.4 Upstream transportation and distribution" },
+      { k: "3.5 Waste generated in operations", l: "3.5 Waste generated in operations" },
+      { k: "3.6 Business travel", l: "3.6 Business travel" },
+      { k: "3.7 Employee commuting", l: "3.7 Employee commuting" }, { k: "multiple", l: "Multiple" },
     ] },
     emission_source: { options: [...Object.entries(CATEGORY_LABELS).map(([k, l]) => ({ k, l })), { k: "multiple", l: "Multiple" }] },
     user_assigned:   { options: uniqueOpts("user_assigned") },

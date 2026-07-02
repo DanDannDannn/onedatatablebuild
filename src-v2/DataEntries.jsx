@@ -741,11 +741,11 @@ function EntryDrawer({ entry, calcs, onClose }) {
     );
   };
   const S3 = {
-    flight: "6 · Business travel", business_travel: "6 · Business travel",
-    purchased_goods: "1 · Purchased goods & services", capital_goods: "2 · Capital goods",
-    upstream_transport: "4 · Upstream transport & distribution", waste: "5 · Waste generated in operations",
+    flight: "3.6 Business travel", business_travel: "3.6 Business travel",
+    purchased_goods: "3.1 Purchased goods and services", capital_goods: "3.2 Capital goods",
+    upstream_transport: "3.4 Upstream transportation and distribution", waste: "3.5 Waste generated in operations",
   };
-  const scope3Of = (c) => S3[c.category] || (entry.extra_meta && entry.extra_meta["Scope & category"]) || "3 · Fuel & energy-related";
+  const scope3Of = (c) => S3[c.category] || (entry.extra_meta && entry.extra_meta["Scope & category"]) || "3.3 Fuel- and energy-related activities";
   const CUR = { USD: "USD – US dollar", EUR: "EUR – Euro", GBP: "GBP – Pound sterling" };
 
   const consumptionFields = isSpend
