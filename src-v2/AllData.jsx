@@ -277,7 +277,7 @@ function AllData({
       case "ef_year": return f?.vintage || "";
       case "ef_region": return f?.region || (f ? "Global" : "");
       case "ef_lca": return f?.lca || (f ? "Cradle-to-gate" : "");
-      case "co2e_unit": return mine.length ? "tCO₂e" : "";
+      case "co2e_unit": return mine.length ? "kgCO₂e" : "";
       case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : "multiple"; }
       case "calc_basis": { const bs = [...new Set(mine.map(efBasisOf))].filter(Boolean); return bs.length === 0 ? "" : bs.length === 1 ? bs[0] : "multiple"; }
       case "calcs_count": return mine.length;
@@ -328,7 +328,7 @@ function AllData({
     ef_year:         { options: uniqueOpts("ef_year") },
     ef_region:       { options: uniqueOpts("ef_region") },
     consumption_unit:{ options: uniqueOpts("consumption_unit") },
-    co2e_unit:       { options: [{ k: "tCO₂e", l: "tCO₂e" }] },
+    co2e_unit:       { options: [{ k: "kgCO₂e", l: "kgCO₂e" }] },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [entries, calcsByEntry]);
 
@@ -527,9 +527,10 @@ function AllData({
         // Alternative methods (e.g. location- vs market-based) aren't additive →
         // "Multiple" (DAM-7401); the per-method values live in the expand.
         if (v == null) return Multi;
-        return <span style={{ color: "var(--fe-fg-strong)" }}>{(v / 1000).toLocaleString(undefined, { maximumFractionDigits: v < 100 ? 3 : 2 })}</span>;
+        // Always kg CO2e (PRD OQ6 — the unit is confirmed always kg).
+        return <span style={{ color: "var(--fe-fg-strong)" }}>{v.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
       }
-      case "co2e_unit": { if (r.count === 0) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>tCO₂e</span>; }
+      case "co2e_unit": { if (r.count === 0) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>kgCO₂e</span>; }
       // CO2e calculation method is the GHG accounting method (GWP100 in the
       // export), not the EF matching method — prefer calc_method when present.
       case "co2e_method": { const mOf = (x) => x.calc_method || x.method; if (c) return <span style={{ fontSize: 12 }}>{mOf(c)}</span>; const ms = [...new Set(r.mine.map(mOf))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
@@ -565,6 +566,45 @@ function AllData({
   };
 
   // ── Grouping ──────────────────────────────────────────────────────────────
+  // ── Child-row display rule (expandable entries) ────────────────────────────
+  // If every calculation shares the same value, it is shown ONCE on the summary
+  // row and the child rows leave the cell blank. Exceptions that ALWAYS render
+  // per child: CO2e emission (the key per-calc number) and its unit (kgCO₂e).
+  // Scope-dependent fields also render per child whenever scope conflicts,
+  // since the summary is forced to "Multiple" in that case.
+  const calcColVal = (x, k) => {
+    const f = x.factor || {};
+    switch (k) {
+      case "emission_source": return x.category;
+      case "scope": return x.scope;
+      case "scope2_method": return x.scope === 2 ? x.method : null;
+      case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
+      case "calc_basis": return efBasisOf(x);
+      case "consumption_data_type": { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }
+      case "co2e_method": return x.calc_method || x.method;
+      case "consumption_value": return x.quantity;
+      case "consumption_unit": return x.unit;
+      case "ef_name": return f.name;
+      case "ef_value": return f.kg_per_unit;
+      case "ef_unit": return f.unit;
+      case "ef_source": return f.source;
+      case "ef_dataset": return f.dataset || f.source;
+      case "ef_year": return f.vintage;
+      case "ef_region": return f.region || "Global";
+      case "ef_lca": return f.lca || "Cradle-to-gate";
+      default: return undefined;
+    }
+  };
+  const CHILD_ALWAYS = new Set(["co2e_value", "co2e_unit"]);
+  const childShows = (k, mine) => {
+    if (CHILD_ALWAYS.has(k)) return true;
+    if (k === "scope2_method" || k === "scope3_category") {
+      if ([...new Set(mine.map(x => x.scope))].length > 1) return true;
+    }
+    const vals = [...new Set(mine.map(x => calcColVal(x, k)).filter(v => v != null && v !== ""))];
+    return vals.length > 1;
+  };
+
   const GROUP_OPTS = [
     { k: "status", label: "Data entry status" }, { k: "scope", label: "Scope" },
     { k: "emission_source", label: "Emission source" }, { k: "business_unit", label: "Business unit" },
@@ -711,7 +751,9 @@ function AllData({
               // Data entry ID is entry-level — shown once on the parent row;
               // calculation ids are intentionally not surfaced in the grid.
               if (k === "id") return <td key="id" className={[lead, tdPinClass("id")].filter(Boolean).join(" ") || undefined} style={tdPinStyle("id")}></td>;
-              if (PER_CALC.has(k)) return <td key={k} className={[window.WRAP_KEYS.has(k) ? "wrap" : "", lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, c)}</td>;
+              // Shared values are shown once on the summary row — child cells
+              // stay blank unless the value differs (or is a CHILD_ALWAYS col).
+              if (PER_CALC.has(k)) return <td key={k} className={[window.WRAP_KEYS.has(k) ? "wrap" : "", lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{childShows(k, r.mine) ? dataCell(k, e, r, c) : null}</td>;
               // entry-level column → blank on the child (the parent already shows it)
               return <td key={k} className={[lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={tdPinStyle(k)}></td>;
             })}
