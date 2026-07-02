@@ -63,6 +63,51 @@ const DATA_COLUMNS = [
   { k:"created_on",        label:"Created on",               w:100, kind:"entry",  ro:true },
 ];
 
+// Short per-column descriptions, shown in the styled header tooltip so a
+// truncated title is always readable and each column's meaning is one hover away.
+const COLUMN_TIPS = {
+  id: "Unique identifier of the data entry",
+  status: "Workflow status of the data entry",
+  quality: "Review status of the entry's calculations",
+  calc_basis: "Emission factor matching basis: activity, spend or precalculated",
+  supplier: "Vendor providing the good or service",
+  description: "Line description from the entry's consumption details",
+  business_unit: "Organizational unit the entry belongs to",
+  business_activity: "Business activity that generated the entry",
+  data_input_type: "How the data was provided: consumption data or precalculated",
+  consumption_data_type: "Activity- or spend-based consumption data",
+  selection_type: "Whether the emission factor was auto-matched or manually selected",
+  start_date: "Reporting period start",
+  end_date: "Reporting period end",
+  calcs_count: "Number of calculations linked to this entry",
+  emission_source: "Emission source category of the entry (shared across its calculations)",
+  scope: "GHG Protocol scope of the calculation(s); 'Multiple' when legs span scopes",
+  consumption_value: "Activity amount or spend driving the calculation",
+  consumption_unit: "Unit of the consumption value",
+  co2e_value: "CO₂e emission in kgCO₂e — summed across additive calculations; 'Multiple' when methods are alternatives (e.g. market vs location)",
+  co2e_unit: "Always kgCO₂e",
+  user_assigned: "Owner responsible for this entry",
+  last_updated: "Last modification date",
+  ef_name: "Matched emission factor; 'Multiple' when calculations use different factors",
+  ef_value: "Factor value applied per unit of consumption",
+  ef_unit: "Unit of the emission factor",
+  ef_source: "Factor database or publisher",
+  ef_dataset: "Dataset or version within the source",
+  ef_year: "Reference year of the factor",
+  ef_region: "Geography the factor represents",
+  ef_lca: "Life-cycle stage or leg (e.g. WTT, TTW, supplier scope 1/2/3)",
+  co2e_method: "GHG accounting method (GWP100)",
+  scope2_method: "Market- or location-based (Scope 2 calculations only)",
+  scope3_category: "GHG Protocol Scope 3 category (3.1–3.7)",
+  custom_factor: "Company-specific factor override",
+  notes: "Free-text note for auditing",
+  files: "Attached supporting documents",
+  bulk_import_ref: "Import batch that created the entry",
+  bulk_import_file: "Original file name from the bulk import",
+  created_on: "Creation date",
+};
+DATA_COLUMNS.forEach(c => { if (COLUMN_TIPS[c.k]) c.tip = COLUMN_TIPS[c.k]; });
+
 const DATA_COL_BY_KEY = Object.fromEntries(DATA_COLUMNS.map(c => [c.k, c]));
 const EF_GROUP_KEYS = DATA_COLUMNS.filter(c => c.group === "ef").map(c => c.k);
 

@@ -35,23 +35,65 @@ function efBasisOf(c) {
   if (m.includes("precalc") || (c && c.precalculated)) return "Precalculated";
   return "Activity-based";
 }
-// Show a native tooltip on a grid cell only when its text is actually clipped.
-// Delegated on the table's mouseover so it covers every (current + future) cell
-// without each renderer having to opt in. Cells whose renderer already set a
-// `title` keep it; we only manage the ones we add (data-auto-title).
-function autoTitleOnOverflow(e) {
-  const td = e.target.closest && e.target.closest("td");
-  if (!td) return;
-  const overflowing = td.scrollWidth > td.clientWidth + 1;
-  if (overflowing) {
-    if (!td.getAttribute("title")) {
-      const t = (td.innerText || "").replace(/\s+/g, " ").trim();
-      if (t) { td.setAttribute("title", t); td.dataset.autoTitle = "1"; }
-    }
-  } else if (td.dataset.autoTitle) {
-    td.removeAttribute("title");
-    delete td.dataset.autoTitle;
+// ── Styled grid tooltip ─────────────────────────────────────────────────────
+// One floating tooltip for the whole grid, delegated on the table's mouseover:
+//   · column headers → full title + column description + interaction hints
+//   · body cells     → renderer-provided detail, or the full text when clipped
+// Any native `title` attributes inside a hovered cell are moved onto data-tip
+// so the delayed OS tooltip can never double up with the styled one.
+let _tipEl = null, _tipTimer = null, _tipAnchor = null;
+function gridTipHide() {
+  clearTimeout(_tipTimer); _tipTimer = null; _tipAnchor = null;
+  if (_tipEl) _tipEl.style.display = "none";
+}
+function gridTipShow(anchor, text) {
+  if (!_tipEl) {
+    _tipEl = document.createElement("div");
+    _tipEl.className = "fwe-tip";
+    document.body.appendChild(_tipEl);
+    // Any scroll (incl. the table's own scroller) invalidates the position.
+    document.addEventListener("scroll", gridTipHide, true);
+    // Hovering anything outside the anchored cell hides the tip (covers leaving
+    // the table entirely — mouseleave alone is unreliable across re-renders).
+    document.addEventListener("mouseover", (ev) => {
+      if (_tipAnchor && !(ev.target && _tipAnchor.contains(ev.target))) gridTipHide();
+    }, true);
   }
+  _tipEl.textContent = text;
+  _tipEl.style.display = "block";
+  _tipEl.style.left = "0px"; _tipEl.style.top = "0px";  // reset to measure
+  const r = anchor.getBoundingClientRect();
+  const w = _tipEl.offsetWidth, h = _tipEl.offsetHeight;
+  const x = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
+  let y = r.bottom + 6;
+  if (y + h > window.innerHeight - 8) y = r.top - h - 6;
+  _tipEl.style.left = x + "px"; _tipEl.style.top = y + "px";
+}
+function autoTitleOnOverflow(e) {  // name kept — same delegation point as before
+  const cell = e.target.closest && e.target.closest("td, th");
+  if (!cell) return;
+  if (cell === _tipAnchor) return;  // still on the same cell — keep pending/shown tip
+  gridTipHide();
+  _tipAnchor = cell;
+  // Harvest native titles → data-tip (re-done per hover; React may restore them
+  // on re-render, but harvesting always beats the ~1s native tooltip delay).
+  if (cell.getAttribute("title")) { cell.dataset.tip = cell.getAttribute("title"); cell.removeAttribute("title"); }
+  cell.querySelectorAll("[title]").forEach(el => {
+    if (el.classList.contains("col-resize")) return;  // tiny handle keeps its native hint
+    el.dataset.tip = el.getAttribute("title"); el.removeAttribute("title");
+  });
+  let text = null;
+  if (cell.tagName === "TH") {
+    const sh = cell.querySelector(".sh[data-tip]");
+    text = (sh && sh.dataset.tip) || null;
+  } else {
+    const inner = e.target.closest && e.target.closest("[data-tip]");
+    text = (inner && cell.contains(inner) && inner.dataset.tip)
+        || cell.dataset.tip
+        || (cell.scrollWidth > cell.clientWidth + 1 ? (cell.innerText || "").replace(/\s+/g, " ").trim() : null);
+  }
+  if (!text) return;
+  _tipTimer = setTimeout(() => { if (_tipAnchor === cell) gridTipShow(cell, text); }, 250);
 }
 const _facetCache = new Map(); // entries ref → Map(colKey → options[])
 function uniqueOptsFor(entries, calcsByEntry, key, getColFn, labelize) {
@@ -809,7 +851,7 @@ function AllData({
           {loading ? (
             <SkeletonTable cols={Math.min(colCount, 8)} />
           ) : (
-            <table className={"data-table data-grid-fixed density-comfortable" + (pinnedSet.size ? " has-pinned" : "")} onMouseOver={autoTitleOnOverflow}>
+            <table className={"data-table data-grid-fixed density-comfortable" + (pinnedSet.size ? " has-pinned" : "")} onMouseOver={autoTitleOnOverflow} onMouseLeave={gridTipHide}>
               <colgroup>
                 {selectionOn && <col style={{ width: 40 }} />}
                 {hasExpandable && <col style={{ width: 30 }} />}
@@ -834,8 +876,7 @@ function AllData({
                         onDragOver={(e) => { if (dragCol && dragCol !== k) { e.preventDefault(); setOverCol(k); } }}
                         onDragLeave={() => { if (overCol === k) setOverCol(null); }}
                         onDrop={(e) => { e.preventDefault(); moveColumn(dragCol, k); setDragCol(null); setOverCol(null); }}
-                        onDragEnd={() => { setDragCol(null); setOverCol(null); }}
-                        title="Drag to reorder column">
+                        onDragEnd={() => { setDragCol(null); setOverCol(null); }}>
                         <SortableHeader
                           label={COL[k].label} colKey={k} align={align(k)}
                           sort={sLevel >= 0 ? { key: k, dir: sort[sLevel].dir } : null}

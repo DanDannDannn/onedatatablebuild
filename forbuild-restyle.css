@@ -53,6 +53,18 @@
    them to the button's right edge so they expand leftward and stay on-screen. */
 .filter-bar-controls .tb-pop { left: auto; right: 0; }
 
+/* Styled grid tooltip — headers (title + description + hints) and truncated
+   cell values. Singleton div positioned by AllData's gridTipShow. */
+.fwe-tip {
+  position: fixed; z-index: 3000; display: none;
+  max-width: 340px; padding: 8px 11px;
+  background: var(--fe-gray-900, #1a1a26); color: #fff;
+  font-size: 12px; line-height: 1.5; border-radius: 6px;
+  box-shadow: 0 8px 24px -8px rgba(16,16,25,0.45);
+  white-space: pre-line; pointer-events: none;
+}
+.fwe-tip::first-line { font-weight: 600; }
+
 /* ── Exploration: view tabs + "New view" as a segmented pill control ────────
    Reshapes the underline tab strip into a single rounded track where the active
    view is a filled pill and "+ New view" is the trailing pill. Override-only,
