@@ -194,12 +194,16 @@ function AllData({
 
   // GHG Protocol Scope 3 category labels (e.g. "3.1 Purchased goods and services").
   // Non-Scope-3 sources keep a scope-prefixed label.
+  // Emission source is the plain source name (per the export: ELECTRICITY,
+  // PURCHASED_GOODS_AND_SERVICES, …). Scope and Scope 3 category are separate
+  // columns — baking them into this label double-encodes and turns wrong on
+  // mixed-scope entries (e.g. a "Scope 2 · Electricity" label on the 3.3 leg).
   const CATEGORY_LABELS = {
-    electricity: "Scope 2 · Electricity", natural_gas: "Scope 1 · Stationary combustion", diesel: "Scope 1 · Mobile combustion",
-    flight: "3.6 Business travel", purchased_goods: "3.1 Purchased goods and services",
-    capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
-    waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
-    employee_commuting: "3.7 Employee commuting", fuel_energy: "3.3 Fuel & energy-related activities",
+    electricity: "Electricity", natural_gas: "Natural gas", diesel: "Diesel",
+    flight: "Business travel", purchased_goods: "Purchased goods and services",
+    capital_goods: "Capital goods", upstream_transport: "Upstream transportation and distribution",
+    waste: "Waste", business_travel: "Business travel",
+    employee_commuting: "Employee commuting", fuel_energy: "Fuel & energy-related activities",
     fuel: "Fuel",
   };
   const SCOPE3_CAT = {
