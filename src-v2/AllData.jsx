@@ -463,7 +463,7 @@ function AllData({
       case "data_input_type": {
         const v = getCol(e, "data_input_type");
         if (v === "multiple") return Multi;
-        return <span className="chip"><span className="dot"></span>{v}</span>;
+        return <span>{v}</span>;
       }
       case "consumption_data_type": {
         const toVal = (x) => { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; };
@@ -701,7 +701,9 @@ function AllData({
             {hasExpandable && <td className="exp-cell exp-cell--rail"></td>}
             {renderKeys.map(k => {
               const lead = k === firstContentKey ? "child-lead" : "";
-              if (k === "id") return <td key="id" className={["calc-child-id", lead, tdPinClass("id")].filter(Boolean).join(" ") || undefined} style={tdPinStyle("id")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}><span style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-muted)" }}>{c.id}</span></td>;
+              // Data entry ID is entry-level — shown once on the parent row;
+              // calculation ids are intentionally not surfaced in the grid.
+              if (k === "id") return <td key="id" className={[lead, tdPinClass("id")].filter(Boolean).join(" ") || undefined} style={tdPinStyle("id")}></td>;
               if (PER_CALC.has(k)) return <td key={k} className={[window.WRAP_KEYS.has(k) ? "wrap" : "", lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, c)}</td>;
               // entry-level column → blank on the child (the parent already shows it)
               return <td key={k} className={[lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={tdPinStyle(k)}></td>;
