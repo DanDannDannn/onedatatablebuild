@@ -278,7 +278,7 @@ function AllData({
       case "ef_region": return f?.region || (f ? "Global" : "");
       case "ef_lca": return f?.lca || (f ? "Cradle-to-gate" : "");
       case "co2e_unit": return mine.length ? "tCO₂e" : "";
-      case "co2e_method": { const ms = [...new Set(mine.map(c => c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : "multiple"; }
+      case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : "multiple"; }
       case "calc_basis": { const bs = [...new Set(mine.map(efBasisOf))].filter(Boolean); return bs.length === 0 ? "" : bs.length === 1 ? bs[0] : "multiple"; }
       case "calcs_count": return mine.length;
       case "custom_factor": return e.custom_factor || "";
@@ -529,7 +529,9 @@ function AllData({
         return <span style={{ color: "var(--fe-fg-strong)" }}>{(v / 1000).toLocaleString(undefined, { maximumFractionDigits: v < 100 ? 3 : 2 })}</span>;
       }
       case "co2e_unit": { if (r.count === 0) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>tCO₂e</span>; }
-      case "co2e_method": { if (c) return <span style={{ fontSize: 12 }}>{c.method}</span>; const ms = [...new Set(r.mine.map(x => x.method))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
+      // CO2e calculation method is the GHG accounting method (GWP100 in the
+      // export), not the EF matching method — prefer calc_method when present.
+      case "co2e_method": { const mOf = (x) => x.calc_method || x.method; if (c) return <span style={{ fontSize: 12 }}>{mOf(c)}</span>; const ms = [...new Set(r.mine.map(mOf))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
       case "calc_basis": {
         const src = c ? [c] : r.mine;
         const bs = [...new Set(src.map(efBasisOf))].filter(Boolean);

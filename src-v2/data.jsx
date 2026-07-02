@@ -551,7 +551,7 @@ window.applyDataset = function (ds) {
   });
   const mkDemoCalc = (e, o) => ({
     id: o.id || ("C-" + e.id), entryId: e.id, date: e.date, site: e.site, category: o.category || e.category, scope: o.scope || 3,
-    activity: o.summary, gas: "CO₂e", method: o.method, factor: o.factor,
+    activity: o.summary, gas: "CO₂e", method: o.method, calc_method: o.calc_method || "GWP100", factor: o.factor,
     quantity: o.amount, unit: o.unit, kgCO2e: o.kgCO2e, status: o.calcStatus, confidence: o.confidence,
     reason: o.reason || ("Matched to " + (o.factor ? o.factor.name : "—") + "."),
     business_unit: e.business_unit, business_activity: e.business_activity, user_assigned: e.user_assigned,
@@ -723,20 +723,20 @@ window.applyDataset = function (ds) {
       id: "a219af03-6509-4552-9044-f7fa735b1485", entry_status: "confirmed", category: "electricity", site: "1O Taicang",
       calc_relation: "alternative",
       supplier: "Test Electricity Case - Berlin Office", product: "Grid electricity",
-      desc: "Grid electricity, 12,000 kWh — market vs location + Scope 3.3 upstream",
+      desc: "",  // CSV consumption details carry no description for this entry
       amount: 12000, unit: "kWh", spend: "—", bu: "1O Taicang", activity: "Electricity", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "—",
       ef_selection: "Auto-selected",
       summary: "Electricity · market + location + Scope 3.3",
       calcs: [
         { summary: "Market-based (Scope 2)", method: "Market-based", scope: 2, category: "electricity",
-          factor: FX("electricity, low voltage, residual mix", 0.7195, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2024", "DE", "scope-2 · market-based", "kWh"),
+          factor: FX("electricity, low voltage, residual mix", 0.7195, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2024", "DE", "scope-2", "kWh"),
           amount: 12000, unit: "kWh", kgCO2e: 8634.5515, calcStatus: "confirmed", confidence: 0.95 },
         { summary: "Upstream emissions (Scope 3.3)", method: "Activity-based", scope: 3, category: "electricity",
           factor: FX("market for electricity, low voltage", 0.0848, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2022", "DE", "scope-3-upstream-emissions", "kWh"),
           amount: 12000, unit: "kWh", kgCO2e: 1017.6038, calcStatus: "confirmed", confidence: 0.9 },
         { summary: "Location-based (Scope 2)", method: "Location-based", scope: 2, category: "electricity",
-          factor: FX("market for electricity, low voltage", 0.3632, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2022", "DE", "scope-2 · location-based", "kWh"),
+          factor: FX("market for electricity, low voltage", 0.3632, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2022", "DE", "scope-2", "kWh"),
           amount: 12000, unit: "kWh", kgCO2e: 4358.0172, calcStatus: "confirmed", confidence: 0.95 },
       ],
     },
@@ -767,7 +767,7 @@ window.applyDataset = function (ds) {
     {
       id: "dabbf969-3caa-42ac-a8bd-055b6500180c", entry_status: "confirmed", category: "employee_commuting", site: "1O Taicang",
       supplier: "", product: "Employee commuting — HQ",
-      desc: "Test Employee Commuting Case - HQ",
+      desc: "", notes: "Test Employee Commuting Case - HQ",  // CSV: text is in Notes, no description
       amount: null, unit: "", spend: "—", bu: "1O Taicang", activity: "Employee commuting", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "7 · Employee commuting",
       ef_selection: "Auto-selected",
@@ -891,7 +891,7 @@ window.applyDataset = function (ds) {
     {
       id: "39eecd54-d3a2-42c9-824d-356df140b69c", entry_status: "confirmed", category: "fuel", site: "1O Taicang",
       supplier: "", product: "Diesel (average biofuel blend)",
-      desc: "Test Fuel Burned Case - Diesel Combustion (Scope 1 + 3.3)",
+      desc: "", notes: "Test Fuel Burned Case - Diesel Combustion (Scope 1 + 3.3)",  // CSV: text is in Notes, no description
       amount: 500, unit: "kWh", spend: "—", bu: "1O Taicang", activity: "Fuel", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3 · Fuel & energy-related",
       ef_selection: "Auto-selected",
