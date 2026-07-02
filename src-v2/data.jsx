@@ -722,7 +722,7 @@ window.applyDataset = function (ds) {
     {
       id: "a219af03-6509-4552-9044-f7fa735b1485", entry_status: "confirmed", category: "electricity", site: "1O Taicang",
       calc_relation: "alternative",
-      supplier: "Test Electricity Case - Berlin Office", product: "Grid electricity",
+      supplier: "Vattenfall Europe Sales GmbH" /* CSV supplierName held a test label; realistic Berlin utility for the demo */, product: "Grid electricity",
       desc: "",  // CSV consumption details carry no description for this entry
       amount: 12000, unit: "kWh", spend: "—", bu: "1O Taicang", activity: "Electricity", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "—",
@@ -871,7 +871,7 @@ window.applyDataset = function (ds) {
     //     EF name shared · LCA Multiple · scope/cat shared · CO2e summed (21.98).
     {
       id: "668b6935-d35b-485a-bc9f-f3e7620d3a01", entry_status: "confirmed", category: "upstream_transport", site: "1O Taicang",
-      supplier: "TransIberia Cargo SL" /* prototype enrichment — no supplier in the export */, product: "Road freight, Lisbon → Berlin",
+      supplier: "Luís Simões Logística" /* prototype enrichment — no supplier in the export */, product: "Road freight, Lisbon → Berlin",
       desc: "Test Upstream T&D Activity Case - Road Freight WTT-TTW",
       amount: 100, unit: "kg", spend: "—", bu: "1O Taicang", activity: "Upstream transportation and distribution", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.4 Upstream transportation and distribution",
