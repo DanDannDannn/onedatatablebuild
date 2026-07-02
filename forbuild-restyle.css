@@ -185,9 +185,11 @@
 /* Header checkbox: white outline on purple */
 .data-table thead th .fe-cb { accent-color: #fff; }
 
-/* Rows: alternation + purple hover / selection */
-.data-table tbody tr:nth-child(odd)  { background: #fff; }
-.data-table tbody tr:nth-child(even) { background: var(--fe-bg-subtle); }
+/* Rows: alternation + purple hover / selection. Stripe by position among
+   NON-child rows (`nth-child … of`), so expanding an entry's calc sub-rows
+   doesn't shift the parity of the rows below it. */
+.data-table tbody tr:nth-child(odd of :not(.calc-childrow))  { background: #fff; }
+.data-table tbody tr:nth-child(even of :not(.calc-childrow)) { background: var(--fe-bg-subtle); }
 .data-table tr:hover td { background: var(--tbl-tint); }
 .data-table tbody tr.sel > td,
 .data-table tr.sel td,

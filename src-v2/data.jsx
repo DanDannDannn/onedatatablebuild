@@ -743,7 +743,7 @@ window.applyDataset = function (ds) {
     // 2 — Spend-based purchased goods: €4,500 office supplies → 3 EXIOBASE rows.
     {
       id: "13929f61-3440-442d-9605-a1d9844c7633", entry_status: "confirmed", category: "purchased_goods", site: "1O Taicang",
-      supplier: "", product: "Office supplies",
+      supplier: "Bürobedarf Berlin GmbH" /* prototype enrichment — no supplier in the export */, product: "Office supplies",
       desc: "Test Spend-based Case - Office Supplies",
       amount: 4500, unit: "€", spend: "EUR 4,500", bu: "1O Taicang", activity: "Purchased goods and services", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.1 Purchased goods and services",
@@ -808,7 +808,7 @@ window.applyDataset = function (ds) {
     // 4 — Business travel, spend-based: €800 flight booking → 3 EXIOBASE rows.
     {
       id: "5d2857c6-6e32-4671-9966-305b8ac17932", entry_status: "confirmed", category: "business_travel", site: "1O Taicang",
-      supplier: "", product: "Flight booking",
+      supplier: "BCD Travel" /* prototype enrichment — no supplier in the export */, product: "Flight booking",
       desc: "Test Business Travel Spend Case - Flight Booking",
       amount: 800, unit: "€", spend: "EUR 800", bu: "1O Taicang", activity: "Business travel", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.6 Business travel",
@@ -830,7 +830,7 @@ window.applyDataset = function (ds) {
     //     EF name shared · LCA Multiple · CO2e summed (1,190.43).
     {
       id: "f5de0044-6883-4a5b-9980-21148a0544fd", entry_status: "confirmed", category: "business_travel", site: "1O Taicang",
-      supplier: "", product: "Flight BER → JFK",
+      supplier: "Lufthansa" /* prototype enrichment — no supplier in the export */, product: "Flight BER → JFK",
       desc: "Test Business Travel Activity Case - Flight WTT-TTW",
       amount: 6389.8693, unit: "km", spend: "—", bu: "1O Taicang", activity: "Business travel", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.6 Business travel",
@@ -849,7 +849,7 @@ window.applyDataset = function (ds) {
     //     (LCA scope-1/2/3). EF name shared · LCA Multiple · CO2e summed (251.85).
     {
       id: "50367a7b-95c6-4e74-968c-0f5c37d07769", entry_status: "confirmed", category: "upstream_transport", site: "1O Taicang",
-      supplier: "", product: "Freight invoice",
+      supplier: "DB Schenker" /* prototype enrichment — no supplier in the export */, product: "Freight invoice",
       desc: "Test Upstream T&D Spend Case - Freight Invoice",
       amount: 1200, unit: "€", spend: "EUR 1,200", bu: "1O Taicang", activity: "Upstream transportation and distribution", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.4 Upstream transportation and distribution",
@@ -871,7 +871,7 @@ window.applyDataset = function (ds) {
     //     EF name shared · LCA Multiple · scope/cat shared · CO2e summed (21.98).
     {
       id: "668b6935-d35b-485a-bc9f-f3e7620d3a01", entry_status: "confirmed", category: "upstream_transport", site: "1O Taicang",
-      supplier: "", product: "Road freight, Lisbon → Berlin",
+      supplier: "TransIberia Cargo SL" /* prototype enrichment — no supplier in the export */, product: "Road freight, Lisbon → Berlin",
       desc: "Test Upstream T&D Activity Case - Road Freight WTT-TTW",
       amount: 100, unit: "kg", spend: "—", bu: "1O Taicang", activity: "Upstream transportation and distribution", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.4 Upstream transportation and distribution",
@@ -890,7 +890,7 @@ window.applyDataset = function (ds) {
     //     EF name shared · LCA Multiple · Scope Multiple(1+3) → S3 cat Multiple · CO2e summed.
     {
       id: "39eecd54-d3a2-42c9-824d-356df140b69c", entry_status: "confirmed", category: "fuel", site: "1O Taicang",
-      supplier: "", product: "Diesel (average biofuel blend)",
+      supplier: "OMV Deutschland GmbH" /* prototype enrichment — no supplier in the export */, product: "Diesel (average biofuel blend)",
       desc: "", notes: "Test Fuel Burned Case - Diesel Combustion (Scope 1 + 3.3)",  // CSV: text is in Notes, no description
       amount: 500, unit: "kWh", spend: "—", bu: "1O Taicang", activity: "Fuel", user: "Ruben Korenke",
       date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3.3 Fuel- and energy-related activities",
