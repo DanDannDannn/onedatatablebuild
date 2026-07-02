@@ -200,12 +200,14 @@ function AllData({
     capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
     waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
     employee_commuting: "3.7 Employee commuting", fuel_energy: "3.3 Fuel & energy-related activities",
+    fuel: "Fuel",
   };
   const SCOPE3_CAT = {
     flight: "6 \u00b7 Business travel", purchased_goods: "1 \u00b7 Purchased goods & services",
     capital_goods: "2 \u00b7 Capital goods", upstream_transport: "4 \u00b7 Upstream transport & distribution",
     waste: "5 \u00b7 Waste generated in operations", business_travel: "6 \u00b7 Business travel",
     employee_commuting: "7 \u00b7 Employee commuting", fuel_energy: "3 \u00b7 Fuel & energy-related",
+    fuel: "3 \u00b7 Fuel & energy-related",
   };
   const scope3CatOf = (c) => SCOPE3_CAT[c.category] || "3 \u00b7 Fuel & energy-related";
 
@@ -256,7 +258,9 @@ function AllData({
         return vals.length === 0 ? "" : vals.length === 1 ? vals[0] : "multiple";
       }
       case "selection_type": {
-        // NEW column — no source field yet; deterministic 80% auto-selected.
+        // Real EF-details flag when present (AUTO/MANUALLY from the export);
+        // otherwise deterministic ~80% auto-selected placeholder.
+        if (e.ef_selection) return e.ef_selection;
         let x = 0; const s = e.id || ""; for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0;
         return (Math.abs(x) % 5 === 0) ? "Manually selected" : "Auto-selected";
       }

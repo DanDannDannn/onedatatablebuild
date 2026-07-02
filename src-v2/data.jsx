@@ -538,6 +538,7 @@ window.applyDataset = function (ds) {
     created_on: o.date, last_updated: o.date, files_count: 0,
     notes: o.notes || "", bulk_import_ref: "—", bulk_import_file: "—", custom_factor: "—", entry_status: o.entry_status,
     calc_relation: o.calc_relation || "additive",
+    ef_selection: o.ef_selection,
     extra_meta: {
       "Supplier / vendor": o.supplier || "—",
       "Spend": o.spend || "—",
@@ -706,92 +707,202 @@ window.applyDataset = function (ds) {
       ],
     },
   );
-  // Illustrative scenario examples pinned to the very top (requested set).
-  // EF values here are plausible placeholders, not authoritative figures.
+  // ── Multi-calc examples from the PM's real export (2026-07-01) ─────────────
+  // Source: data-entries-2026-07-01.csv + Calculation-GHG-results-2026-07-01.csv
+  // (8 test data entries / 29 calc rows — the set Ruben verified the PRD's
+  // "Expandable Row Logic" against). Values are verbatim from the export.
+  // Summary-row behaviour follows the PRD deconfliction table:
+  //   Shared → show once · Summed → total · Conflicting → "Multiple".
+  const FX = (name, value, src, dataset, year, region, lca, unit) =>
+    ({ ...mkFactor(name, value, src), dataset, vintage: year, region, lca, unit });
   demoSpecs.unshift(
-    // 1 — Scope 2: location- vs market-based (alternative → no sum, EF "Multiple")
+    // 1 — Fuel burned (Scope 1 + 3.3): diesel 500 kWh, WTT (S3.3) + TTW (S1).
+    //     EF name shared · LCA Multiple · Scope Multiple(1+3) → S3 cat Multiple · CO2e summed.
     {
-      id: "ex-s2-mktloc", entry_status: "confirmed", category: "electricity", site: "Frankfurt HQ",
-      calc_relation: "alternative", supplier: "Mainova AG", product: "Grid electricity",
-      desc: "Example — Scope 2 electricity: location- + market-based + Scope 3.3",
-      amount: 120000, unit: "kWh", spend: "EUR 28,800", bu: "Facilities", activity: "Purchased electricity", user: "Lena Hofer",
-      date: "2026-06-28", start: "2026-04-01", end: "2026-06-30", s3cat: "—",
-      summary: "Example · Scope 2 electricity (market + location + 3.3)",
+      id: "39eecd54-d3a2-42c9-824d-356df140b69c", entry_status: "confirmed", category: "fuel", site: "1O Taicang",
+      supplier: "", product: "Diesel (average biofuel blend)",
+      desc: "Test Fuel Burned Case - Diesel Combustion (Scope 1 + 3.3)",
+      amount: 500, unit: "kWh", spend: "—", bu: "1O Taicang", activity: "Fuel", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "3 · Fuel & energy-related",
+      ef_selection: "Auto-selected",
+      summary: "Fuel burned · Scope 1 + 3.3 (WTT + TTW)",
       calcs: [
-        { summary: "Location-based", method: "Location-based", scope: 2, category: "electricity", factor: { ...mkFactor("DE grid electricity — location-based", 0.38, "AIB/UBA"), lca: "Location-based" },
-          amount: 120000, unit: "kWh", kgCO2e: 45600, calcStatus: "confirmed", confidence: 0.95 },
-        { summary: "Market-based", method: "Market-based", scope: 2, category: "electricity", factor: { ...mkFactor("Green tariff (GO-backed) — market-based", 0.0, "Supplier contract"), lca: "Market-based" },
-          amount: 120000, unit: "kWh", kgCO2e: 0, calcStatus: "confirmed", confidence: 0.92 },
-        { summary: "T&D + upstream (Scope 3.3)", method: "Activity-based", scope: 3, category: "electricity", factor: { ...mkFactor("Electricity — WTT & T&D losses", 0.049, "DEFRA"), lca: "Well-to-tank" },
-          amount: 120000, unit: "kWh", kgCO2e: 5880, calcStatus: "confirmed", confidence: 0.90 },
+        { summary: "Well-to-tank (Scope 3.3)", method: "Activity-based", scope: 3, category: "fuel",
+          factor: FX("Diesel (average biofuel blend)", 0.05816, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2025 v1.0", "2025", "GB", "wtt", "kWh"),
+          amount: 500, unit: "kWh", kgCO2e: 29.08, calcStatus: "confirmed", confidence: 0.92 },
+        { summary: "Combustion / tank-to-wheel (Scope 1)", method: "Activity-based", scope: 1, category: "fuel",
+          factor: FX("Diesel (average biofuel blend)", 0.2441, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2025 v1.0", "2025", "GB", "ttw", "kWh"),
+          amount: 500, unit: "kWh", kgCO2e: 122.055, calcStatus: "confirmed", confidence: 0.92 },
       ],
     },
-    // 2 — Scope 3: spend-based (single calc, EXIOBASE €/spend)
+    // 2 — Upstream T&D, activity-based (WTT/TTW): 100 kg road freight Lisbon → Berlin.
+    //     EF name shared · LCA Multiple · scope/cat shared · CO2e summed (21.98).
     {
-      id: "ex-s3-spend", entry_status: "confirmed", category: "purchased_goods", site: "Vienna HQ",
-      supplier: "Continental Components SE", product: "Manufactured goods",
-      desc: "Example — Scope 3 spend-based (supplier Scope 1/2/3 split)",
-      amount: 95000, unit: "€", spend: "EUR 95,000", bu: "Procurement", activity: "Purchased goods", user: "Markus Reiter",
-      date: "2026-06-27", start: "2026-04-01", end: "2026-06-30", s3cat: "1 · Purchased goods & services",
-      summary: "Example · Scope 3 spend-based · supplier scope split",
+      id: "668b6935-d35b-485a-bc9f-f3e7620d3a01", entry_status: "confirmed", category: "upstream_transport", site: "1O Taicang",
+      supplier: "", product: "Road freight, Lisbon → Berlin",
+      desc: "Test Upstream T&D Activity Case - Road Freight WTT-TTW",
+      amount: 100, unit: "kg", spend: "—", bu: "1O Taicang", activity: "Upstream transportation and distribution", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "4 · Upstream transport & distribution",
+      ef_selection: "Auto-selected",
+      summary: "Upstream T&D · activity-based (WTT + TTW)",
       calcs: [
-        { summary: "Supplier Scope 1", method: "Spend-based", scope: 3, factor: { ...mkFactor("Manufactured goods — spend-based", 0.08, "EXIOBASE"), lca: "Supplier Scope 1" },
-          amount: 95000, unit: "€", kgCO2e: 7600, calcStatus: "confirmed", confidence: 0.72 },
-        { summary: "Supplier Scope 2", method: "Spend-based", scope: 3, factor: { ...mkFactor("Manufactured goods — spend-based", 0.05, "EXIOBASE"), lca: "Supplier Scope 2" },
-          amount: 95000, unit: "€", kgCO2e: 4750, calcStatus: "confirmed", confidence: 0.72 },
-        { summary: "Supplier Scope 3", method: "Spend-based", scope: 3, factor: { ...mkFactor("Manufactured goods — spend-based", 0.09, "EXIOBASE"), lca: "Supplier Scope 3" },
-          amount: 95000, unit: "€", kgCO2e: 8550, calcStatus: "confirmed", confidence: 0.72 },
+        { summary: "Well-to-tank (WTT)", method: "Activity-based", scope: 3, category: "upstream_transport",
+          factor: FX("Artic truck up to 40 t GVW, Average/mixed, Diesel", 22, "GLEC", "GLEC Framework v3.0", "2023", "europe", "WTT", "kg"),
+          amount: 100, unit: "kg", kgCO2e: 5.0891, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Tank-to-wheel (TTW)", method: "Activity-based", scope: 3, category: "upstream_transport",
+          factor: FX("Artic truck up to 40 t GVW, Average/mixed, Diesel", 73, "GLEC", "GLEC Framework v3.0", "2023", "europe", "TTW", "kg"),
+          amount: 100, unit: "kg", kgCO2e: 16.8865, calcStatus: "confirmed", confidence: 0.9 },
       ],
     },
-    // 3 — Scope 3.7: employee commuting (activity/distance-based)
+    // 3 — Upstream T&D, spend-based: €1,200 freight invoice → 3 EXIOBASE rows
+    //     (LCA scope-1/2/3). EF name shared · LCA Multiple · CO2e summed (251.85).
     {
-      id: "ex-s3-commute", entry_status: "confirmed", category: "employee_commuting", site: "Berlin HQ",
-      supplier: "", product: "Employee commuting",
-      desc: "Example — Scope 3.7 employee commuting (survey-based)",
-      amount: 480000, unit: "km", spend: "—", bu: "People & Culture", activity: "Employee commuting", user: "Sofie Daan",
-      date: "2026-06-26", start: "2026-04-01", end: "2026-06-30", s3cat: "7 · Employee commuting",
-      summary: "Example · Scope 3.7 employee commuting · 3 calculations",
+      id: "50367a7b-95c6-4e74-968c-0f5c37d07769", entry_status: "confirmed", category: "upstream_transport", site: "1O Taicang",
+      supplier: "", product: "Freight invoice",
+      desc: "Test Upstream T&D Spend Case - Freight Invoice",
+      amount: 1200, unit: "€", spend: "EUR 1,200", bu: "1O Taicang", activity: "Upstream transportation and distribution", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "4 · Upstream transport & distribution",
+      ef_selection: "Manually selected",
+      summary: "Upstream T&D · spend-based (supplier scope split)",
       calcs: [
-        { summary: "Car (petrol/diesel)", method: "Activity-based", scope: 3, category: "employee_commuting",
-          factor: mkFactor("Passenger car — average", 0.17, "DEFRA"), amount: 260000, unit: "km", kgCO2e: 44200, calcStatus: "confirmed", confidence: 0.70 },
-        { summary: "Rail", method: "Activity-based", scope: 3, category: "employee_commuting",
-          factor: mkFactor("National rail", 0.035, "DEFRA"), amount: 150000, unit: "km", kgCO2e: 5250, calcStatus: "confirmed", confidence: 0.72 },
-        { summary: "Bus", method: "Activity-based", scope: 3, category: "employee_commuting",
-          factor: mkFactor("Local bus", 0.10, "DEFRA"), amount: 70000, unit: "km", kgCO2e: 7000, calcStatus: "confirmed", confidence: 0.66 },
+        { summary: "Supplier Scope 2", method: "Spend-based", scope: 3, category: "upstream_transport",
+          factor: FX("Other land transportation services", 0.01326, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-2", "EUR"),
+          amount: 1200, unit: "EUR", kgCO2e: 15.917, calcStatus: "confirmed" },
+        { summary: "Supplier Scope 1", method: "Spend-based", scope: 3, category: "upstream_transport",
+          factor: FX("Other land transportation services", 0.08595, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-1", "EUR"),
+          amount: 1200, unit: "EUR", kgCO2e: 103.1443, calcStatus: "confirmed" },
+        { summary: "Supplier Scope 3", method: "Spend-based", scope: 3, category: "upstream_transport",
+          factor: FX("Other land transportation services", 0.1107, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-3", "EUR"),
+          amount: 1200, unit: "EUR", kgCO2e: 132.7841, calcStatus: "confirmed" },
       ],
     },
-    // 4 — Scope 3.4 upstream T&D, activity-based: one EF split into WTT + TTW legs
-    //     (worked example from DAM-7401). EF name shared, EF LCA "Multiple",
-    //     consumption shared (100 kg), CO2e summed (21.97 kg).
+    // 4 — Business travel, activity-based (WTT/TTW): flight BER → JFK, 6,389.87 km.
+    //     EF name shared · LCA Multiple · CO2e summed (1,190.43).
     {
-      id: "ex-s34-upstream", entry_status: "confirmed", category: "upstream_transport", site: "Maia DC",
-      supplier: "Continental Components SE", product: "32 F. Cables Port. — Maia",
-      desc: "Example — Scope 3.4 upstream T&D, activity-based (WTT + TTW)",
-      amount: 100, unit: "kg", spend: "EUR 640", bu: "Logistics", activity: "Upstream transport", user: "Sofie Daan",
-      date: "2026-06-24", start: "2026-04-01", end: "2026-06-30", s3cat: "4 · Upstream transport & distribution",
-      summary: "Example · Scope 3.4 upstream T&D (WTT + TTW)",
+      id: "f5de0044-6883-4a5b-9980-21148a0544fd", entry_status: "confirmed", category: "business_travel", site: "1O Taicang",
+      supplier: "", product: "Flight BER → JFK",
+      desc: "Test Business Travel Activity Case - Flight WTT-TTW",
+      amount: 6389.8693, unit: "km", spend: "—", bu: "1O Taicang", activity: "Business travel", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "6 · Business travel",
+      ef_selection: "Auto-selected",
+      summary: "Business travel · activity-based (WTT + TTW)",
       calcs: [
-        { summary: "Well-to-tank (WTT)", method: "Activity-based", scope: 3, category: "upstream_transport", factor: { ...mkFactor("Artic truck up to 40t GVW, avg/mixed, Diesel", 0.050878, "DEFRA"), lca: "Well-to-tank (WTT)" },
-          amount: 100, unit: "kg", kgCO2e: 5.0878, calcStatus: "confirmed", confidence: 0.90 },
-        { summary: "Tank-to-wheel (TTW)", method: "Activity-based", scope: 3, category: "upstream_transport", factor: { ...mkFactor("Artic truck up to 40t GVW, avg/mixed, Diesel", 0.168822, "DEFRA"), lca: "Tank-to-wheel (TTW)" },
-          amount: 100, unit: "kg", kgCO2e: 16.8822, calcStatus: "confirmed", confidence: 0.90 },
+        { summary: "Tank-to-wheel (TTW)", method: "Activity-based", scope: 3, category: "business_travel",
+          factor: FX("Business travel- air, Long-haul, to/from UK, Average passenger, Without RF", 0.1542, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "TTW", "km"),
+          amount: 6389.8693, unit: "km", kgCO2e: 985.3178, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Well-to-tank (WTT)", method: "Activity-based", scope: 3, category: "business_travel",
+          factor: FX("Business travel- air, Long-haul, to/from UK, Average passenger, Without RF", 0.0321, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "WTT", "km"),
+          amount: 6389.8693, unit: "km", kgCO2e: 205.1148, calcStatus: "confirmed", confidence: 0.9 },
       ],
     },
-    // 5 — Scope 1 + 3.3 fuel burned: one fuel EF, combustion (TTW, Scope 1) +
-    //     well-to-tank (WTT, Scope 3.3). Scope conflicts (1+3) → Scope + Scope 3
-    //     category "Multiple"; EF name shared, EF LCA "Multiple", CO2e summed.
+    // 5 — Business travel, spend-based: €800 flight booking → 3 EXIOBASE rows.
     {
-      id: "ex-s13-fuel", entry_status: "confirmed", category: "diesel", site: "Linz Plant",
-      supplier: "OMV", product: "Diesel — generators & fleet",
-      desc: "Example — fuel burned: Scope 1 combustion + Scope 3.3 well-to-tank",
-      amount: 12000, unit: "litre", spend: "EUR 19,200", bu: "Operations", activity: "Fuel combustion", user: "Tobias Brandt",
-      date: "2026-06-25", start: "2026-04-01", end: "2026-06-30", s3cat: "3 · Fuel & energy-related",
-      summary: "Example · Scope 1 + 3.3 fuel burned",
+      id: "5d2857c6-6e32-4671-9966-305b8ac17932", entry_status: "confirmed", category: "business_travel", site: "1O Taicang",
+      supplier: "", product: "Flight booking",
+      desc: "Test Business Travel Spend Case - Flight Booking",
+      amount: 800, unit: "€", spend: "EUR 800", bu: "1O Taicang", activity: "Business travel", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "6 · Business travel",
+      ef_selection: "Manually selected",
+      summary: "Business travel · spend-based (supplier scope split)",
       calcs: [
-        { summary: "Combustion (Scope 1, TTW)", method: "Activity-based", scope: 1, category: "diesel", factor: { ...mkFactor("Diesel (DEFRA 2023)", 2.54, "DEFRA"), lca: "Combustion (TTW)" },
-          amount: 12000, unit: "litre", kgCO2e: 30480, calcStatus: "confirmed", confidence: 0.96 },
-        { summary: "Well-to-tank (Scope 3.3, WTT)", method: "Activity-based", scope: 3, category: "diesel", factor: { ...mkFactor("Diesel (DEFRA 2023)", 0.61, "DEFRA"), lca: "Well-to-tank (WTT)" },
-          amount: 12000, unit: "litre", kgCO2e: 7320, calcStatus: "confirmed", confidence: 0.90 },
+        { summary: "Supplier Scope 2", method: "Spend-based", scope: 3, category: "business_travel",
+          factor: FX("Air transport services", 0.002406, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-2", "EUR"),
+          amount: 800, unit: "EUR", kgCO2e: 1.925, calcStatus: "confirmed" },
+        { summary: "Supplier Scope 1", method: "Spend-based", scope: 3, category: "business_travel",
+          factor: FX("Air transport services", 0.2999, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-1", "EUR"),
+          amount: 800, unit: "EUR", kgCO2e: 239.9484, calcStatus: "confirmed" },
+        { summary: "Supplier Scope 3", method: "Spend-based", scope: 3, category: "business_travel",
+          factor: FX("Air transport services", 0.3558, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-3", "EUR"),
+          amount: 800, unit: "EUR", kgCO2e: 284.6463, calcStatus: "confirmed" },
+      ],
+    },
+    // 6 — Employee commuting: 10 calc rows (5 modes × WTT+TTW, incl. two zero
+    //     "NA" legs — PRD 2026-07-01 correction). Consumption Multiple ·
+    //     EF name Multiple · LCA Multiple · CO2e summed (1,706.78).
+    {
+      id: "dabbf969-3caa-42ac-a8bd-055b6500180c", entry_status: "confirmed", category: "employee_commuting", site: "1O Taicang",
+      supplier: "", product: "Employee commuting — HQ",
+      desc: "Test Employee Commuting Case - HQ",
+      amount: null, unit: "", spend: "—", bu: "1O Taicang", activity: "Employee commuting", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "7 · Employee commuting",
+      ef_selection: "Auto-selected",
+      summary: "Employee commuting · 10 calculations (5 modes × WTT/TTW)",
+      calcs: [
+        { summary: "Bicycle / on-foot (TTW)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("NA", "NA", "NA", "NA", "NA", "NA", "NA", "vehicle·km"),
+          amount: 0, unit: "vehicle*km", kgCO2e: 0, calcStatus: "confirmed" },
+        { summary: "Rail, National rail (TTW)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Rail, National rail", 0.0355, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "TTW", "passenger·km"),
+          amount: 456, unit: "passenger*km", kgCO2e: 16.188, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Bicycle / on-foot (WTT)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("NA", "NA", "NA", "NA", "NA", "NA", "NA", "vehicle·km"),
+          amount: 0, unit: "vehicle*km", kgCO2e: 0, calcStatus: "confirmed" },
+        { summary: "Rail, Light rail and tram (WTT)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Rail, Light rail and tram", 0.0075, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "WTT", "passenger·km"),
+          amount: 741, unit: "passenger*km", kgCO2e: 5.5575, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Motorbike, Average (WTT)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Motorbike, Average", 0.0296, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "WTT", "passenger·km"),
+          amount: 47.5, unit: "passenger*km", kgCO2e: 1.406, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Motorbike, Average (TTW)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Motorbike, Average", 0.1137, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "TTW", "passenger·km"),
+          amount: 47.5, unit: "passenger*km", kgCO2e: 5.4007, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Rail, Light rail and tram (TTW)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Rail, Light rail and tram", 0.0286, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "TTW", "passenger·km"),
+          amount: 741, unit: "passenger*km", kgCO2e: 21.1926, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Average car, Unknown (TTW)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Average car, Unknown", 0.1669, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "TTW", "passenger·km"),
+          amount: 7837.5, unit: "passenger*km", kgCO2e: 1308.0787, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Rail, National rail (WTT)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Rail, National rail", 0.009, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "WTT", "passenger·km"),
+          amount: 456, unit: "passenger*km", kgCO2e: 4.104, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Average car, Unknown (WTT)", method: "Activity-based", scope: 3, category: "employee_commuting",
+          factor: FX("Average car, Unknown", 0.044, "UK Government", "UK Government GHG Conversion Factors for Company Reporting 2024 v1", "2024", "GB", "WTT", "passenger·km"),
+          amount: 7837.5, unit: "passenger*km", kgCO2e: 344.85, calcStatus: "confirmed", confidence: 0.9 },
+      ],
+    },
+    // 7 — Spend-based purchased goods: €4,500 office supplies → 3 EXIOBASE rows.
+    {
+      id: "13929f61-3440-442d-9605-a1d9844c7633", entry_status: "confirmed", category: "purchased_goods", site: "1O Taicang",
+      supplier: "", product: "Office supplies",
+      desc: "Test Spend-based Case - Office Supplies",
+      amount: 4500, unit: "€", spend: "EUR 4,500", bu: "1O Taicang", activity: "Purchased goods and services", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "1 · Purchased goods & services",
+      ef_selection: "Manually selected",
+      summary: "Purchased goods · spend-based (supplier scope split)",
+      calcs: [
+        { summary: "Supplier Scope 3", method: "Spend-based", scope: 3, category: "purchased_goods",
+          factor: FX("Office machinery and computers", 0.434, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-3", "EUR"),
+          amount: 4500, unit: "EUR", kgCO2e: 1953.1151, calcStatus: "confirmed" },
+        { summary: "Supplier Scope 1", method: "Spend-based", scope: 3, category: "purchased_goods",
+          factor: FX("Office machinery and computers", 0.01926, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-1", "EUR"),
+          amount: 4500, unit: "EUR", kgCO2e: 86.6652, calcStatus: "confirmed" },
+        { summary: "Supplier Scope 2", method: "Spend-based", scope: 3, category: "purchased_goods",
+          factor: FX("Office machinery and computers", 0.05152, "EXIOBASE", "3_10_1_20250610", "2022", "DE", "scope-2", "EUR"),
+          amount: 4500, unit: "EUR", kgCO2e: 231.8501, calcStatus: "confirmed" },
+      ],
+    },
+    // 8 — Electricity (market + location + Scope 3.3): 12,000 kWh Berlin office.
+    //     Everything except consumption conflicts → "Multiple" across the row
+    //     (incl. CO2e — market vs location are alternatives, not additive).
+    {
+      id: "a219af03-6509-4552-9044-f7fa735b1485", entry_status: "confirmed", category: "electricity", site: "1O Taicang",
+      calc_relation: "alternative",
+      supplier: "Test Electricity Case - Berlin Office", product: "Grid electricity",
+      desc: "Grid electricity, 12,000 kWh — market vs location + Scope 3.3 upstream",
+      amount: 12000, unit: "kWh", spend: "—", bu: "1O Taicang", activity: "Electricity", user: "Ruben Korenke",
+      date: "2026-07-01", start: "2026-01-01", end: "2026-01-31", s3cat: "—",
+      ef_selection: "Auto-selected",
+      summary: "Electricity · market + location + Scope 3.3",
+      calcs: [
+        { summary: "Market-based (Scope 2)", method: "Market-based", scope: 2, category: "electricity",
+          factor: FX("electricity, low voltage, residual mix", 0.7195, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2024", "DE", "scope-2 · market-based", "kWh"),
+          amount: 12000, unit: "kWh", kgCO2e: 8634.5515, calcStatus: "confirmed", confidence: 0.95 },
+        { summary: "Upstream emissions (Scope 3.3)", method: "Activity-based", scope: 3, category: "electricity",
+          factor: FX("market for electricity, low voltage", 0.0848, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2022", "DE", "scope-3-upstream-emissions", "kWh"),
+          amount: 12000, unit: "kWh", kgCO2e: 1017.6038, calcStatus: "confirmed", confidence: 0.9 },
+        { summary: "Location-based (Scope 2)", method: "Location-based", scope: 2, category: "electricity",
+          factor: FX("market for electricity, low voltage", 0.3632, "ecoinvent", "electricity emission factors – scope 2 – 3 in ecoinvent v3.12", "2022", "DE", "scope-2 · location-based", "kWh"),
+          amount: 12000, unit: "kWh", kgCO2e: 4358.0172, calcStatus: "confirmed", confidence: 0.95 },
       ],
     },
   );
