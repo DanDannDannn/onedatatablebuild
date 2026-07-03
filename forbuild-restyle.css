@@ -194,10 +194,6 @@
 .data-table thead th .sh-menu:hover { background: rgba(255,255,255,0.18); color: #fff; }
 .data-table thead th .sh-menu.on { color: #fff; background: rgba(255,255,255,0.22); }
 .data-table thead th .sh-rank { background: rgba(255,255,255,0.22); color: #fff; }
-/* Per-column header menu (⋯) hidden — filtering/showing/hiding columns is
-   handled by the Filters builder and the Columns panel instead. */
-.data-table thead th .sh-menu { display: none; }
-
 /* Header checkbox: white outline on purple */
 .data-table thead th .fe-cb { accent-color: #fff; }
 
@@ -225,6 +221,13 @@
   display: inline-block; max-width: 100%; box-sizing: border-box;
   overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
 }
+
+/* Icon-only sticky cells must never paint a text ellipsis: their sticky layout
+   over-reports scrollWidth, so the grid-wide text-overflow rendered stray "…"
+   dots at the frozen edges (next to the chevron / at the row end). */
+.data-table td.cb-cell, .data-table th.cb-cell,
+.data-table td.exp-cell, .data-table th.exp-cell,
+.data-table td.ra-cell, .data-table th.ra-cell { text-overflow: clip; }
 
 /* Freeze the checkbox + expand columns to the left on horizontal scroll
    (mirrors the sticky row-actions column on the right). */
