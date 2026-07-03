@@ -280,7 +280,6 @@ function AllData({
     switch (key) {
       case "id": return e.id;
       case "status": return window.entryWorkflow(e, mine);
-      case "quality": return window.calcWorkflow(e, mine);
       case "scope": { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : "multiple"; }
       case "scope2_method": { const s2 = mine.filter(c => c.scope === 2); if (!s2.length) return ""; const ms = [...new Set(s2.map(c => c.method))]; return ms.length === 1 ? ms[0] : "multiple"; }
       case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(scope3CatOf))]; return cs.length === 1 ? cs[0] : "multiple"; }
@@ -323,7 +322,6 @@ function AllData({
       case "ef_lca": return f?.lca || (f ? "Cradle-to-gate" : "");
       case "co2e_unit": return mine.length ? "kgCO₂e" : "";
       case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : "multiple"; }
-      case "calc_basis": { const bs = [...new Set(mine.map(efBasisOf))].filter(Boolean); return bs.length === 0 ? "" : bs.length === 1 ? bs[0] : "multiple"; }
       case "custom_factor": return e.custom_factor || "";
       case "notes": return e.notes || "";
       case "bulk_import_ref": return e.bulk_import_ref || "";
@@ -343,16 +341,7 @@ function AllData({
       { k: "de_draft", l: "Draft" }, { k: "de_ready", l: "Ready to submit" },
       { k: "de_review", l: "Review pending" }, { k: "de_submitted", l: "Submitted" },
     ] },
-    quality:         { options: [
-      { k: "cs_none", l: "No calculation" }, { k: "cs_processing", l: "Processing" },
-      { k: "cs_sug_high", l: "Suggested · high confidence" }, { k: "cs_sug_low", l: "Suggested · low confidence" },
-      { k: "cs_confirmed", l: "Confirmed" },
-    ] },
     scope:           { options: [{ k: "1", l: "Scope 1" }, { k: "2", l: "Scope 2" }, { k: "3", l: "Scope 3" }, { k: "multiple", l: "Multiple" }] },
-    calc_basis:      { options: [
-      { k: "Activity-based", l: "Activity-based" }, { k: "Spend-based", l: "Spend-based" },
-      { k: "Precalculated", l: "Precalculated" }, { k: "multiple", l: "Multiple" },
-    ] },
     scope3_category: { options: [
       { k: "3.1 Purchased goods and services", l: "3.1 Purchased goods and services" },
       { k: "3.2 Capital goods", l: "3.2 Capital goods" },
@@ -503,7 +492,6 @@ function AllData({
       case "id":
         return <span title={e.id} style={{ fontFamily: "var(--fe-font-mono)", fontSize: 12, color: "var(--fe-fg-strong)" }}>{fmtEntryId(e.id)}</span>;
       case "status": return <StatusChip status={window.entryWorkflow(e, r.mine)} />;
-      case "quality": return <StatusChip status={window.calcWorkflow(e, r.mine)} />;
       case "supplier": { const s = (e.details && e.details.supplier) || ""; return s ? <span title={s} style={{ color: "var(--fe-fg-strong)" }}>{s}</span> : dash; }
       case "description": { const t = (e.details && (e.details.description || e.details.product_service)) || e.summary || ""; return t ? <span title={t}>{t}</span> : dash; }
       case "business_unit": return <span style={{ color: "var(--fe-fg-strong)" }}>{e.business_unit}</span>;
@@ -573,13 +561,6 @@ function AllData({
       // CO2e calculation method is the GHG accounting method (GWP100 in the
       // export), not the EF matching method — prefer calc_method when present.
       case "co2e_method": { const mOf = (x) => x.calc_method || x.method; if (c) return <span style={{ fontSize: 12 }}>{mOf(c)}</span>; const ms = [...new Set(r.mine.map(mOf))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
-      case "calc_basis": {
-        const src = c ? [c] : r.mine;
-        const bs = [...new Set(src.map(efBasisOf))].filter(Boolean);
-        if (bs.length === 0) return dash;
-        if (bs.length > 1) return Multi;
-        return <span>{bs[0]}</span>;
-      }
       case "ef_name":    return efCell(fa => fa.name, v => <span title={v} style={{ color: "var(--fe-fg-strong)" }}>{v}</span>);
       case "ef_value":   return efCell(fa => fa.kg_per_unit, v => <span style={{ color: "var(--fe-fg-strong)" }}>{v}</span>);
       case "ef_unit":    return efCell(fa => fa.unit, v => <span style={{ fontSize: 12 }}>{`kgCO₂e/${v}`}</span>);
@@ -618,7 +599,6 @@ function AllData({
       case "scope": return x.scope;
       case "scope2_method": return x.scope === 2 ? x.method : null;
       case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
-      case "calc_basis": return efBasisOf(x);
       case "consumption_data_type": { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }
       case "co2e_method": return x.calc_method || x.method;
       case "consumption_value": return x.quantity;
@@ -651,13 +631,11 @@ function AllData({
     { k: "status", label: "Data entry status" }, { k: "scope", label: "Scope" },
     { k: "emission_source", label: "Emission source" }, { k: "business_unit", label: "Business unit" },
     { k: "data_input_type", label: "Data input type" }, { k: "user_assigned", label: "User assigned" },
-    { k: "quality", label: "Calculation status" },
   ];
   const groupLabel = (key, val) => {
     if (key === "status") return (window.STATUS_LABELS && window.STATUS_LABELS[val]) || val;
     if (key === "scope") return val === "multiple" ? "Multiple scopes" : val == null ? "No calculation" : `Scope ${val}`;
     if (key === "emission_source") return val === "multiple" ? "Multiple sources" : val == null ? "No calculation" : (CATEGORY_LABELS[val] || val);
-    if (key === "quality") return (window.STATUS_LABELS && window.STATUS_LABELS[val]) || val;
     return val == null || val === "" ? "—" : String(val);
   };
   const grouped = React.useMemo(() => {

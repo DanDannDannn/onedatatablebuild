@@ -22,8 +22,6 @@
 const DATA_COLUMNS = [
   { k:"id",                label:"Data entry ID",            w:118, kind:"entry",   ro:true },
   { k:"status",            label:"Status",                   w:104, kind:"derived", ro:true },
-  { k:"quality",           label:"Calculation status",        w:150, kind:"derived", ro:true },
-  { k:"calc_basis",        label:"Calculation basis",        w:124, kind:"calc",    ro:true },
   { k:"supplier",          label:"Supplier name",            w:184, kind:"entry",   ro:true },
   { k:"description",       label:"Description",              w:220, kind:"entry",   ro:true },
   { k:"business_unit",     label:"Business unit",            w:120, kind:"entry" },
@@ -68,7 +66,7 @@ const EF_GROUP_KEYS = DATA_COLUMNS.filter(c => c.group === "ef").map(c => c.k);
 // Columns that vary per calculation — they split into sub-rows when a data
 // entry is expanded. Everything else is constant per entry and merges (rowSpan).
 const PER_CALC_KEYS = new Set([
-  "emission_source","scope","scope2_method","scope3_category","calc_basis","consumption_data_type",
+  "emission_source","scope","scope2_method","scope3_category","consumption_data_type",
   "co2e_value","co2e_unit","co2e_method",
   "consumption_value","consumption_unit",
   "ef_name","ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
@@ -85,8 +83,7 @@ const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind 
 // Description), keep the status compact, and push the time columns to the far
 // right. `id` and the EF group stay in the catalog but hidden by default.
 // Order + visibility follow the Confluence "Unified column map and default order"
-// spec (Combined Data Table). Columns the spec doesn't list (quality,
-// calc_basis) are kept in the catalog but parked at the end, hidden.
+// spec (Combined Data Table).
 const ENTRY_ORDER = [
   "status","supplier","description","selection_type","ef_name","co2e_value","co2e_unit",
   "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
@@ -94,8 +91,6 @@ const ENTRY_ORDER = [
   "emission_source","start_date","end_date","last_updated","id",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
-  // not in the spec's unified map — available to toggle, hidden by default
-  "quality","calc_basis",
 ];
 const ENTRY_VISIBLE = [
   "status","supplier","description","ef_name","co2e_value","co2e_unit",
@@ -104,14 +99,14 @@ const ENTRY_VISIBLE = [
   "start_date","end_date","last_updated","id","ef_lca","files","bulk_import_ref","created_on",
 ];
 const CALC_ORDER = [
-  "id","status","quality","calc_basis","co2e_value","co2e_unit","scope","emission_source","ef_name",
+  "id","status","co2e_value","co2e_unit","scope","emission_source","ef_name",
   "business_unit","business_activity","consumption_value","consumption_unit",
   "start_date","end_date","data_input_type","consumption_data_type","selection_type","user_assigned","last_updated",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
 ];
 const CALC_VISIBLE = [
-  "id","status","quality","co2e_value","co2e_unit","scope","emission_source","ef_name",
+  "id","status","co2e_value","co2e_unit","scope","emission_source","ef_name",
   "business_unit","business_activity","consumption_value","consumption_unit",
   "start_date","end_date","user_assigned","last_updated",
 ];
@@ -198,7 +193,6 @@ function _matchColValue(e, mine, key) {
     case "user_assigned":   return e.user_assigned;
     case "data_input_type": return e.data_input_type;
     case "status":          return window.entryWorkflow ? window.entryWorkflow(e, mine) : _matchStatus(e, mine);
-    case "quality":         return window.calcWorkflow ? window.calcWorkflow(e, mine) : mine.filter(c => c.status === "suggested").length;
     case "scope":           { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : "multiple"; }
     case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : "multiple"; }
     case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(c => _MATCH_SCOPE3[c.category] || "3 \u00b7 Fuel & energy-related"))]; return cs.length === 1 ? cs[0] : "multiple"; }
