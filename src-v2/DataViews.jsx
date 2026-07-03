@@ -13,9 +13,9 @@
 // The two shipped views (All data + Calculations) are seeded on first load via
 // seedDataViews(); thereafter the list is whatever the user has saved.
 
-// Bumped to v12 to re-seed the built-in "All data" view (Calculation status,
-// Calculation basis and Related calculations columns removed).
-const FE_DATA_VIEWS_KEY = "fe-data-views-v12";
+// Bumped to v13 to re-seed the built-in "All data" view (Additional description
+// column added after Description, hidden by default — Confluence column map).
+const FE_DATA_VIEWS_KEY = "fe-data-views-v13";
 const FE_DATA_VIEWS_EVT = "fe-data-views-changed";
 
 function loadDataViews() {

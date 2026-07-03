@@ -24,6 +24,7 @@ const DATA_COLUMNS = [
   { k:"status",            label:"Status",                   w:104, kind:"derived", ro:true },
   { k:"supplier",          label:"Supplier name",            w:184, kind:"entry",   ro:true },
   { k:"description",       label:"Description",              w:220, kind:"entry",   ro:true },
+  { k:"additional_description", label:"Additional description", w:220, kind:"entry", ro:true },
   { k:"business_unit",     label:"Business unit",            w:120, kind:"entry" },
   { k:"business_activity", label:"Business activity",        w:160, kind:"entry" },
   { k:"data_input_type",   label:"Data input type",          w:132, kind:"derived", ro:true },
@@ -71,7 +72,7 @@ const PER_CALC_KEYS = new Set([
   "consumption_value","consumption_unit",
   "ef_name","ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
 ]);
-const WRAP_KEYS = new Set(["ef_name","notes","business_activity","description"]);
+const WRAP_KEYS = new Set(["ef_name","notes","business_activity","description","additional_description"]);
 const NUMERIC_KEYS = new Set(["co2e_value","ef_value","consumption_value"]);
 const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind === "entry" && !c.ro; };
 
@@ -85,7 +86,7 @@ const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind 
 // Order + visibility follow the Confluence "Unified column map and default order"
 // spec (Combined Data Table).
 const ENTRY_ORDER = [
-  "status","supplier","description","selection_type","ef_name","co2e_value","co2e_unit",
+  "status","supplier","description","additional_description","selection_type","ef_name","co2e_value","co2e_unit",
   "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
   "scope","scope2_method","scope3_category","business_activity","user_assigned",
   "emission_source","start_date","end_date","last_updated","id",
@@ -100,7 +101,8 @@ const ENTRY_VISIBLE = [
 ];
 const CALC_ORDER = [
   "id","status","co2e_value","co2e_unit","scope","emission_source","ef_name",
-  "business_unit","business_activity","consumption_value","consumption_unit",
+  "business_unit","business_activity","supplier","description","additional_description",
+  "consumption_value","consumption_unit",
   "start_date","end_date","data_input_type","consumption_data_type","selection_type","user_assigned","last_updated",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",

@@ -285,6 +285,7 @@ function AllData({
       case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(scope3CatOf))]; return cs.length === 1 ? cs[0] : "multiple"; }
       case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : "multiple"; }
       case "ef_name": return f?.name || "";
+      case "additional_description": return (e.details && e.details.additional_description) || "";
       case "business_unit": return e.business_unit;
       case "co2e_value": return mine.reduce((s, c) => s + c.kgCO2e, 0);
       case "business_activity": return e.business_activity;
@@ -494,6 +495,7 @@ function AllData({
       case "status": return <StatusChip status={window.entryWorkflow(e, r.mine)} />;
       case "supplier": { const s = (e.details && e.details.supplier) || ""; return s ? <span title={s} style={{ color: "var(--fe-fg-strong)" }}>{s}</span> : dash; }
       case "description": { const t = (e.details && (e.details.description || e.details.product_service)) || e.summary || ""; return t ? <span title={t}>{t}</span> : dash; }
+      case "additional_description": { const t = (e.details && e.details.additional_description) || ""; return t ? <span title={t}>{t}</span> : dash; }
       case "business_unit": return <span style={{ color: "var(--fe-fg-strong)" }}>{e.business_unit}</span>;
       case "business_activity": return <span title={e.business_activity} style={{ color: "var(--fe-fg-strong)" }}>{e.business_activity}</span>;
       case "data_input_type": {
