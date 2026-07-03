@@ -61,6 +61,15 @@ const DATA_COLUMNS = [
   { k:"created_on",        label:"Created on",               w:100, kind:"entry",  ro:true },
 ];
 
+// ── "Data 2" filter experiment (temporary) ──────────────────────────────────
+// On the #data2 route, columns that would read "multiple" instead expose
+// "multiple, v1, v2, …" — both displayed and used as the filter/sort value —
+// so a partial text or option filter can match the data-entry (parent) row.
+// The flag is set by App during render (window.FE_MULTI_ROUTE).
+const multiJoin = (vals) => (window.FE_MULTI_ROUTE && vals && vals.length)
+  ? "multiple, " + vals.join(", ")
+  : "multiple";
+
 const DATA_COL_BY_KEY = Object.fromEntries(DATA_COLUMNS.map(c => [c.k, c]));
 const EF_GROUP_KEYS = DATA_COLUMNS.filter(c => c.group === "ef").map(c => c.k);
 
@@ -195,9 +204,9 @@ function _matchColValue(e, mine, key) {
     case "user_assigned":   return e.user_assigned;
     case "data_input_type": return e.data_input_type;
     case "status":          return window.entryWorkflow ? window.entryWorkflow(e, mine) : _matchStatus(e, mine);
-    case "scope":           { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : "multiple"; }
-    case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : "multiple"; }
-    case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(c => _MATCH_SCOPE3[c.category] || "3 \u00b7 Fuel & energy-related"))]; return cs.length === 1 ? cs[0] : "multiple"; }
+    case "scope":           { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : multiJoin(ss.sort()); }
+    case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : multiJoin(cs); }
+    case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(c => _MATCH_SCOPE3[c.category] || "3 \u00b7 Fuel & energy-related"))]; return cs.length === 1 ? cs[0] : multiJoin(cs); }
     case "ef_source":       return mine[0]?.factor?.source || "";
     case "ef_year":         return mine[0]?.factor?.vintage || "";
     case "ef_region":       return mine[0]?.factor?.region || (mine[0]?.factor ? "Global" : "");
@@ -227,6 +236,7 @@ function entryMatchesView(entry, mine, viewState, query) {
 }
 
 Object.assign(window, {
+  multiJoin,
   DATA_COLUMNS, DATA_COL_BY_KEY, EF_GROUP_KEYS, PER_CALC_KEYS, WRAP_KEYS, NUMERIC_KEYS,
   isEditableCol, ENTRY_ORDER, ENTRY_VISIBLE, CALC_ORDER, CALC_VISIBLE,
   defaultViewState, seedDataViews, normalizeViewState, viewStateEqual, entryMatchesView,

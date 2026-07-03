@@ -124,18 +124,26 @@ const VALID_ROUTES = new Set([
   // Legacy aliases — auto-redirected to "data" with the matching tab
   "calcs", "entries",
 ]);
-// Table-only build: Data is the only page, so every route resolves to "data".
+// Table-only build: Data is the only page, so every route resolves to "data" —
+// except the temporary "#data2" filter experiment (multi-value "Multiple" cells).
 // (The `#data/<entryId>` drawer deep-link is parsed separately by readHashEntryId.)
-const readHashRoute = () => "data";
+const readHashRoute = () => {
+  const seg = (window.location.hash || "").replace(/^#\/?/, "").split("/")[0];
+  return seg === "data2" ? "data2" : "data";
+};
 // Deep-link: an open data-entry detail is encoded as `#data/<entryId>` so the
 // drawer can be shared and survives refresh / back-forward.
 const readHashEntryId = () => {
   const segs = (window.location.hash || "").replace(/^#\/?/, "").split("/");
-  return (segs[0] === "data" && segs[1]) ? decodeURIComponent(segs[1]) : null;
+  return ((segs[0] === "data" || segs[0] === "data2") && segs[1]) ? decodeURIComponent(segs[1]) : null;
 };
 
 function App() {
   const [route, setRoute] = useState(readHashRoute);
+  // Temporary "Data 2" filter experiment: on that route, aggregated cells carry
+  // "multiple, v1, v2" (display + filter value) instead of a bare "Multiple".
+  // Set during render so the grid picks it up in the same commit.
+  window.FE_MULTI_ROUTE = route === "data2";
 
   // ── Brand theme (Forward Earth DS v2 white-label) ───────────────────────
   // ⌥⇧T cycles all 10 partner brands; accent + neutrals + font swap live.
@@ -218,7 +226,7 @@ function App() {
     // Keep URL hash in sync with route (no extra history entry on echoes). On the
     // data route an open entry is appended as `#data/<id>` so it's shareable.
     let target = "#" + route;
-    if (route === "data" && selEntryId) target += "/" + encodeURIComponent(selEntryId);
+    if ((route === "data" || route === "data2") && selEntryId) target += "/" + encodeURIComponent(selEntryId);
     if (window.location.hash !== target) {
       window.history.replaceState(null, "", target);
     }
@@ -630,8 +638,9 @@ function App() {
               }}
             />
           )}
-          {route === "data" && (
+          {(route === "data" || route === "data2") && (
             <DataPage
+              key={route}
               tab={dataTab}
               setTab={setDataTab}
               calcPreset={calcPreset}
@@ -725,7 +734,7 @@ function App() {
       {/* Unified detail panel — the data entry, with each calculation expandable
           inline. Selecting a calc opens this panel anchored to its entry with
           that calculation expanded; there is no separate calculation drawer. */}
-      {route === "data" && panelEntry && (
+      {(route === "data" || route === "data2") && panelEntry && (
         <EntryDrawer
           entry={panelEntry}
           focusCalcId={activeCalc ? activeCalc.id : null}
@@ -750,7 +759,7 @@ function App() {
       )}
 
       {/* "Add new entry" → centred editable form modal (empty, no pre-fill). */}
-      {route === "data" && showNewEntry && (
+      {(route === "data" || route === "data2") && showNewEntry && (
         <NewEntryModal onClose={() => setShowNewEntry(false)} />
       )}
 

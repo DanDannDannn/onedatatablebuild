@@ -33,9 +33,12 @@ function fbMatchRule(rule, e, getVal) {
   const cell = getVal(e, rule.col);
   const cs = cell == null ? "" : String(cell);
   const v = rule.value == null ? "" : String(rule.value);
+  // "Data 2" experiment: an aggregated cell reads "multiple, v1, v2" — option
+  // filters then match by membership, so "is v1" still finds the parent row.
+  const parts = cs.startsWith("multiple, ") ? ["multiple", ...cs.slice(10).split(", ")] : null;
   switch (rule.op) {
-    case "is":       return cs === v;
-    case "is_not":   return cs !== v;
+    case "is":       return parts ? parts.includes(v) : cs === v;
+    case "is_not":   return parts ? !parts.includes(v) : cs !== v;
     case "contains": return cs.toLowerCase().includes(v.toLowerCase());
     case "equals":   return cs.toLowerCase() === v.toLowerCase();
     case "starts":   return cs.toLowerCase().startsWith(v.toLowerCase());

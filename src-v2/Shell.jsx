@@ -73,6 +73,9 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
     ]},
     { section: "Collect", items: [
       { key: "data",   label: "Data",        icon: "collect" },
+      // Temporary experiment page: identical table, but "Multiple" cells carry
+      // their underlying values so partial filters match the entry row.
+      { key: "data2",  label: "Data 2 · filter test", icon: "collect" },
       { key: "import", label: "Bulk import", icon: "upload", stub: true, dot: true },
     ]},
     { section: "Manage", items: [

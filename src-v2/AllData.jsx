@@ -101,15 +101,21 @@ const _facetCache = new Map(); // entries ref → Map(colKey → options[])
 function uniqueOptsFor(entries, calcsByEntry, key, getColFn, labelize) {
   let per = _facetCache.get(entries);
   if (!per) { _facetCache.clear(); per = new Map(); _facetCache.set(entries, per); }
-  if (per.has(key)) return per.get(key);
+  // Cache key includes the "Data 2" experiment flag — the same column yields a
+  // different option set there (joined multi-values are split into parts).
+  const ck = key + (window.FE_MULTI_ROUTE ? "|exp" : "");
+  if (per.has(ck)) return per.get(ck);
   const set = new Set();
   for (let i = 0; i < entries.length; i++) {
     const en = entries[i];
     const v = getColFn({ ...en, _calcs: calcsByEntry.get(en.id) }, key);
-    if (v != null && v !== "") set.add(v);
+    if (v == null || v === "") continue;
+    const s = String(v);
+    if (s.startsWith("multiple, ")) { set.add("multiple"); s.slice(10).split(", ").forEach(p => p && set.add(p)); }
+    else set.add(s);
   }
   const opts = [...set].sort().map(v => ({ k: String(v), l: labelize ? labelize(v) : String(v) }));
-  per.set(key, opts);
+  per.set(ck, opts);
   return opts;
 }
 
@@ -277,14 +283,22 @@ function AllData({
     const first = mine[0];
     const f = first?.factor;
     const cons = consumption(e);
+    // "Data 2" experiment: EF/unit columns aggregate across calcs — one shared
+    // value shows as-is, conflicting values join to "multiple, v1, v2" so a
+    // partial filter matches the parent row. Elsewhere: first calc (as before).
+    const aggOrFirst = (getter, firstVal) => {
+      if (!window.FE_MULTI_ROUTE) return firstVal;
+      const vs = [...new Set(mine.map(getter).filter(v => v != null && v !== ""))];
+      return vs.length === 0 ? "" : vs.length === 1 ? vs[0] : window.multiJoin(vs);
+    };
     switch (key) {
       case "id": return e.id;
       case "status": return window.entryWorkflow(e, mine);
-      case "scope": { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : "multiple"; }
-      case "scope2_method": { const s2 = mine.filter(c => c.scope === 2); if (!s2.length) return ""; const ms = [...new Set(s2.map(c => c.method))]; return ms.length === 1 ? ms[0] : "multiple"; }
-      case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(scope3CatOf))]; return cs.length === 1 ? cs[0] : "multiple"; }
-      case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : "multiple"; }
-      case "ef_name": return f?.name || "";
+      case "scope": { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : window.multiJoin(ss.sort()); }
+      case "scope2_method": { const s2 = mine.filter(c => c.scope === 2); if (!s2.length) return ""; const ms = [...new Set(s2.map(c => c.method))]; return ms.length === 1 ? ms[0] : window.multiJoin(ms); }
+      case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(scope3CatOf))]; return cs.length === 1 ? cs[0] : window.multiJoin(cs); }
+      case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : window.multiJoin(cs); }
+      case "ef_name": return aggOrFirst(c => c.factor?.name, f?.name || "");
       case "additional_description": return (e.details && e.details.additional_description) || "";
       case "business_unit": return e.business_unit;
       case "co2e_value": return mine.reduce((s, c) => s + c.kgCO2e, 0);
@@ -298,12 +312,12 @@ function AllData({
         if (bases.length === 0) return "Consumption data";
         const hasPre = bases.includes("Precalculated");
         const hasOther = bases.some(b => b !== "Precalculated");
-        return hasPre && hasOther ? "multiple" : hasPre ? "Precalculated" : "Consumption data";
+        return hasPre && hasOther ? window.multiJoin(["Precalculated", "Consumption data"]) : hasPre ? "Precalculated" : "Consumption data";
       }
       case "consumption_data_type": {
         // Spec: "Activity" / "Spend" (from the EF matching basis).
         const vals = [...new Set(mine.map(c => { const b = efBasisOf(c); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }).filter(Boolean))];
-        return vals.length === 0 ? "" : vals.length === 1 ? vals[0] : "multiple";
+        return vals.length === 0 ? "" : vals.length === 1 ? vals[0] : window.multiJoin(vals);
       }
       case "selection_type": {
         // Real EF-details flag when present (AUTO/MANUALLY from the export);
@@ -313,16 +327,16 @@ function AllData({
         return (Math.abs(x) % 5 === 0) ? "Manually selected" : "Auto-selected";
       }
       case "consumption_value": return cons.v;
-      case "consumption_unit": return cons.u;
+      case "consumption_unit": return aggOrFirst(c => c.unit, cons.u);
       case "ef_value": return f?.kg_per_unit ?? null;
-      case "ef_unit": return f ? `kgCO₂e/${f.unit}` : "";
-      case "ef_source": return f?.source || "";
-      case "ef_dataset": return f?.dataset || f?.source || "";
-      case "ef_year": return f?.vintage || "";
-      case "ef_region": return f?.region || (f ? "Global" : "");
-      case "ef_lca": return f?.lca || (f ? "Cradle-to-gate" : "");
+      case "ef_unit": return aggOrFirst(c => c.factor ? `kgCO₂e/${c.factor.unit}` : null, f ? `kgCO₂e/${f.unit}` : "");
+      case "ef_source": return aggOrFirst(c => c.factor?.source, f?.source || "");
+      case "ef_dataset": return aggOrFirst(c => c.factor ? (c.factor.dataset || c.factor.source) : null, f?.dataset || f?.source || "");
+      case "ef_year": return aggOrFirst(c => c.factor?.vintage, f?.vintage || "");
+      case "ef_region": return aggOrFirst(c => c.factor ? (c.factor.region || "Global") : null, f?.region || (f ? "Global" : ""));
+      case "ef_lca": return aggOrFirst(c => c.factor ? (c.factor.lca || "Cradle-to-gate") : null, f?.lca || (f ? "Cradle-to-gate" : ""));
       case "co2e_unit": return mine.length ? "kgCO₂e" : "";
-      case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : "multiple"; }
+      case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : window.multiJoin(ms); }
       case "custom_factor": return e.custom_factor || "";
       case "notes": return e.notes || "";
       case "bulk_import_ref": return e.bulk_import_ref || "";
@@ -468,6 +482,19 @@ function AllData({
 
   const muted = { color: "var(--fe-fg-subtle)" };
   const Multi = <span style={{ color: "var(--fe-fg-muted)", fontStyle: "italic" }}>Multiple</span>;
+  // "Data 2" experiment: show the underlying values behind "Multiple" so users
+  // can see (and partially filter) what the aggregate hides. Falls back to the
+  // plain chip on the normal Data page or when no values are supplied.
+  const multiVals = (vals, mapLabel) => {
+    if (!window.FE_MULTI_ROUTE || !vals || !vals.length) return Multi;
+    const list = [...vals].map(v => mapLabel ? mapLabel(v) : String(v)).join(", ");
+    return (
+      <span title={"Multiple, " + list}>
+        <span style={{ color: "var(--fe-fg-muted)", fontStyle: "italic" }}>Multiple</span>
+        <span style={{ color: "var(--fe-fg-muted)" }}>{", " + list}</span>
+      </span>
+    );
+  };
 
   // ── Cell renderer (entry-level rollup when c==null; per-calc when c set) ──
   const dataCell = (k, e, r, c) => {
@@ -483,7 +510,7 @@ function AllData({
       if (c) { const v = c.factor ? getter(c.factor) : null; return (v != null && v !== "") ? render(v) : dash; }
       const vals = [...new Set(r.mine.map(x => x.factor ? getter(x.factor) : null).filter(v => v != null && v !== ""))];
       if (!vals.length) return dash;
-      if (vals.length > 1) return Multi;
+      if (vals.length > 1) return multiVals(vals);
       return render(vals[0]);
     };
     // Scope-conflict rule: if scope differs across sub-calcs, every scope-dependent
@@ -499,8 +526,8 @@ function AllData({
       case "business_unit": return <span style={{ color: "var(--fe-fg-strong)" }}>{e.business_unit}</span>;
       case "business_activity": return <span title={e.business_activity} style={{ color: "var(--fe-fg-strong)" }}>{e.business_activity}</span>;
       case "data_input_type": {
-        const v = getCol(e, "data_input_type");
-        if (v === "multiple") return Multi;
+        const v = String(getCol(e, "data_input_type"));
+        if (v.startsWith("multiple")) return multiVals(v === "multiple" ? null : v.slice(10).split(", "));
         return <span>{v}</span>;
       }
       case "consumption_data_type": {
@@ -508,7 +535,7 @@ function AllData({
         if (c) { const v = toVal(c); return v ? <span>{v}</span> : dash; }
         const vals = [...new Set(r.mine.map(toVal).filter(Boolean))];
         if (vals.length === 0) return dash;
-        if (vals.length > 1) return Multi;
+        if (vals.length > 1) return multiVals(vals);
         return <span>{vals[0]}</span>;
       }
       case "selection_type": return <span>{getCol(e, "selection_type")}</span>;
@@ -521,7 +548,7 @@ function AllData({
         if (c) return <span title={CATEGORY_LABELS[c.category] || c.category}>{CATEGORY_LABELS[c.category] || c.category}</span>;
         const cs = [...new Set(r.mine.map(x => x.category))];
         if (cs.length === 0) return dash;
-        if (cs.length > 1) return Multi;
+        if (cs.length > 1) return multiVals(cs, k => CATEGORY_LABELS[k] || k);
         return <span title={CATEGORY_LABELS[cs[0]] || cs[0]}>{CATEGORY_LABELS[cs[0]] || cs[0]}</span>;
       }
       case "scope": {
@@ -529,24 +556,24 @@ function AllData({
         const ss = [...new Set(r.mine.map(x => x.scope))].sort();
         if (ss.length === 0) return dash;
         if (ss.length === 1) return <span>{ss[0]}</span>;
-        return Multi;
+        return multiVals(ss);
       }
-      case "scope2_method": { if (scopeConflict) return Multi; const src = c ? (c.scope === 2 ? [c] : []) : r.mine.filter(x => x.scope === 2); if (!src.length) return dash; const ms = [...new Set(src.map(x => x.method))]; return ms.length === 1 ? <span style={{ fontSize: 12 }}>{ms[0]}</span> : Multi; }
-      case "scope3_category": { if (scopeConflict) return Multi; const src = c ? (c.scope === 3 ? [c] : []) : r.mine.filter(x => x.scope === 3); if (!src.length) return dash; const cs = [...new Set(src.map(scope3CatOf))]; return cs.length === 1 ? <span style={{ fontSize: 12 }}>{cs[0]}</span> : Multi; }
+      case "scope2_method": { const s2ms = [...new Set((c ? [c] : r.mine).filter(x => x.scope === 2).map(x => x.method))]; if (scopeConflict) return multiVals(s2ms); const src = c ? (c.scope === 2 ? [c] : []) : r.mine.filter(x => x.scope === 2); if (!src.length) return dash; const ms = [...new Set(src.map(x => x.method))]; return ms.length === 1 ? <span style={{ fontSize: 12 }}>{ms[0]}</span> : multiVals(ms); }
+      case "scope3_category": { const s3cs = [...new Set((c ? [c] : r.mine).filter(x => x.scope === 3).map(scope3CatOf))]; if (scopeConflict) return multiVals(s3cs); const src = c ? (c.scope === 3 ? [c] : []) : r.mine.filter(x => x.scope === 3); if (!src.length) return dash; const cs = [...new Set(src.map(scope3CatOf))]; return cs.length === 1 ? <span style={{ fontSize: 12 }}>{cs[0]}</span> : multiVals(cs); }
       case "consumption_value": {
         if (c) return c.quantity != null ? <span style={{ color: "var(--fe-fg-strong)" }}>{c.quantity.toLocaleString()}</span> : dash;
         // Different amounts across sub-calcs (e.g. commuting modes) → "Multiple";
         // shared amount → show once (prefer the calc quantity over the category-
         // specific entry field, which isn't populated for every demo category).
         const qs = [...new Set(r.mine.map(x => x.quantity).filter(v => v != null))];
-        if (qs.length > 1) return Multi;
+        if (qs.length > 1) return multiVals(qs, v => v.toLocaleString());
         const v = qs.length === 1 ? qs[0] : cons.v;
         return v != null ? <span style={{ color: "var(--fe-fg-strong)" }}>{v.toLocaleString()}</span> : dash;
       }
       case "consumption_unit": {
         if (c) return c.unit ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>{c.unit}</span> : dash;
         const us = [...new Set(r.mine.map(x => x.unit).filter(Boolean))];
-        if (us.length > 1) return Multi;
+        if (us.length > 1) return multiVals(us);
         const u = us.length === 1 ? us[0] : cons.u;
         return u ? <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>{u}</span> : dash;
       }
@@ -555,14 +582,14 @@ function AllData({
         const v = c ? c.kgCO2e : r.total;
         // Alternative methods (e.g. location- vs market-based) aren't additive →
         // "Multiple" (DAM-7401); the per-method values live in the expand.
-        if (v == null) return Multi;
+        if (v == null) return multiVals(r.mine.map(x => x.kgCO2e), n => n.toLocaleString(undefined, { maximumFractionDigits: 2 }));
         // Always kg CO2e (PRD OQ6 — the unit is confirmed always kg).
         return <span style={{ color: "var(--fe-fg-strong)" }}>{v.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
       }
       case "co2e_unit": { if (r.count === 0) return dash; return <span style={{ fontSize: 12, color: "var(--fe-fg-default)" }}>kgCO₂e</span>; }
       // CO2e calculation method is the GHG accounting method (GWP100 in the
       // export), not the EF matching method — prefer calc_method when present.
-      case "co2e_method": { const mOf = (x) => x.calc_method || x.method; if (c) return <span style={{ fontSize: 12 }}>{mOf(c)}</span>; const ms = [...new Set(r.mine.map(mOf))]; if (!ms.length) return dash; return ms.length > 1 ? Multi : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
+      case "co2e_method": { const mOf = (x) => x.calc_method || x.method; if (c) return <span style={{ fontSize: 12 }}>{mOf(c)}</span>; const ms = [...new Set(r.mine.map(mOf))]; if (!ms.length) return dash; return ms.length > 1 ? multiVals(ms) : <span style={{ fontSize: 12 }}>{ms[0]}</span>; }
       case "ef_name":    return efCell(fa => fa.name, v => <span title={v} style={{ color: "var(--fe-fg-strong)" }}>{v}</span>);
       case "ef_value":   return efCell(fa => fa.kg_per_unit, v => <span style={{ color: "var(--fe-fg-strong)" }}>{v}</span>);
       case "ef_unit":    return efCell(fa => fa.unit, v => <span style={{ fontSize: 12 }}>{`kgCO₂e/${v}`}</span>);
