@@ -82,15 +82,17 @@ function autoTitleOnOverflow(e) {  // name kept — same delegation point as bef
     if (el.classList.contains("col-resize")) return;  // tiny handle keeps its native hint
     el.dataset.tip = el.getAttribute("title"); el.removeAttribute("title");
   });
+  // Rule: hovering ANY cell or header shows that cell's full value.
   let text = null;
   if (cell.tagName === "TH") {
     const sh = cell.querySelector(".sh[data-tip]");
     text = (sh && sh.dataset.tip) || null;
   } else {
     const inner = e.target.closest && e.target.closest("[data-tip]");
-    text = (inner && cell.contains(inner) && inner.dataset.tip)
+    text = (inner && cell.contains(inner) && inner.dataset.tip)   // renderer detail (e.g. full UUID)
         || cell.dataset.tip
-        || (cell.scrollWidth > cell.clientWidth + 1 ? (cell.innerText || "").replace(/\s+/g, " ").trim() : null);
+        || (cell.innerText || "").replace(/\s+/g, " ").trim();   // full text (CSS only clips visually)
+    if (text === "—") text = null;                                // empty-value dash: nothing to reveal
   }
   if (!text) return;
   _tipTimer = setTimeout(() => { if (_tipAnchor === cell) gridTipShow(cell, text); }, 250);

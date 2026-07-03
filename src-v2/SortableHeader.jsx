@@ -28,18 +28,13 @@ function SortableHeader({
   };
 
   // Styled header tooltip content (rendered by the grid's shared tooltip):
-  // full column title, optional description from the column catalog, and the
-  // interaction hints. Native `title` attrs are intentionally absent so the
-  // OS tooltip never doubles up with the styled one.
-  const colTip = (window.DATA_COL_BY_KEY && window.DATA_COL_BY_KEY[colKey] && window.DATA_COL_BY_KEY[colKey].tip) || null;
-  const tipText = label
-    + (colTip ? "\n" + colTip : "")
-    + (disableSort ? "" : "\nClick to sort · shift-click for multi-sort · drag to reorder");
-
+  // just the full column title — shown only when the label is truncated.
+  // Native `title` attrs are intentionally absent so the OS tooltip never
+  // doubles up with the styled one.
   return (
     <div className={"sh " + (align === "right" ? "right " : "") + (active ? "active " : "") + (filtered ? "filtered " : "")}
          onClick={toggleSort}
-         data-tip={tipText}>
+         data-tip={label}>
       <span className="sh-label">{label}</span>
       {sortRank && <span className="sh-rank" title={`Sort priority ${sortRank}`}>{sortRank}</span>}
       {!disableSort && (
