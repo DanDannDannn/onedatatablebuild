@@ -388,8 +388,9 @@
   transition: background .12s ease;
 }
 .fwe-card-fold:hover { background: var(--fe-bg-subtle); color: var(--fe-fg-strong); }
-.fwe-card-fold svg { transition: transform .15s ease; }
-.fwe-card-fold.is-collapsed svg { transform: rotate(-90deg); }
+/* Accordion convention: collapsed → chevron down (expand), expanded → up. */
+.fwe-card-fold svg { transition: transform .15s ease; transform: rotate(180deg); }
+.fwe-card-fold.is-collapsed svg { transform: none; }
 .fwe-card-collapsed-sum { margin: 8px 0 0; font-size: 13px; color: var(--fe-fg-muted); }
 .fwe-form-card__title .calc-n { color: var(--fe-fg-muted); font-weight: 600; }
 .fwe-form-card__sub { margin: 4px 0 16px; font-size: 13px; color: var(--fe-fg-muted); line-height: 1.5; }
