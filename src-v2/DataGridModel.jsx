@@ -33,7 +33,6 @@ const DATA_COLUMNS = [
   { k:"selection_type",    label:"Selection type",           w:128, kind:"derived", ro:true },
   { k:"start_date",        label:"Start date",               w:96, kind:"entry" },
   { k:"end_date",          label:"End date",                 w:96, kind:"entry" },
-  { k:"calcs_count",       label:"Related calculations",     w:118, kind:"derived", ro:true },
   { k:"emission_source",   label:"Emission source",          w:190, kind:"calc",    ro:true },
   { k:"scope",             label:"Scope",                    w:72,  kind:"calc",    ro:true },
   { k:"consumption_value", label:"Consumption value",        w:102, kind:"entry" },
@@ -75,7 +74,7 @@ const PER_CALC_KEYS = new Set([
   "ef_name","ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
 ]);
 const WRAP_KEYS = new Set(["ef_name","notes","business_activity","description"]);
-const NUMERIC_KEYS = new Set(["co2e_value","calcs_count","ef_value","consumption_value"]);
+const NUMERIC_KEYS = new Set(["co2e_value","ef_value","consumption_value"]);
 const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind === "entry" && !c.ro; };
 
 // ── Column ORIENTATIONS ────────────────────────────────────────────────────
@@ -87,7 +86,7 @@ const isEditableCol = (k) => { const c = DATA_COL_BY_KEY[k]; return c && c.kind 
 // right. `id` and the EF group stay in the catalog but hidden by default.
 // Order + visibility follow the Confluence "Unified column map and default order"
 // spec (Combined Data Table). Columns the spec doesn't list (quality,
-// calc_basis, calcs_count) are kept in the catalog but parked at the end, hidden.
+// calc_basis) are kept in the catalog but parked at the end, hidden.
 const ENTRY_ORDER = [
   "status","supplier","description","selection_type","ef_name","co2e_value","co2e_unit",
   "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
@@ -96,7 +95,7 @@ const ENTRY_ORDER = [
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
   // not in the spec's unified map — available to toggle, hidden by default
-  "quality","calc_basis","calcs_count",
+  "quality","calc_basis",
 ];
 const ENTRY_VISIBLE = [
   "status","supplier","description","ef_name","co2e_value","co2e_unit",
@@ -106,14 +105,14 @@ const ENTRY_VISIBLE = [
 ];
 const CALC_ORDER = [
   "id","status","quality","calc_basis","co2e_value","co2e_unit","scope","emission_source","ef_name",
-  "calcs_count","business_unit","business_activity","consumption_value","consumption_unit",
+  "business_unit","business_activity","consumption_value","consumption_unit",
   "start_date","end_date","data_input_type","consumption_data_type","selection_type","user_assigned","last_updated",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
 ];
 const CALC_VISIBLE = [
   "id","status","quality","co2e_value","co2e_unit","scope","emission_source","ef_name",
-  "calcs_count","business_unit","business_activity","consumption_value","consumption_unit",
+  "business_unit","business_activity","consumption_value","consumption_unit",
   "start_date","end_date","user_assigned","last_updated",
 ];
 

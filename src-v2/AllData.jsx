@@ -324,7 +324,6 @@ function AllData({
       case "co2e_unit": return mine.length ? "kgCO₂e" : "";
       case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : "multiple"; }
       case "calc_basis": { const bs = [...new Set(mine.map(efBasisOf))].filter(Boolean); return bs.length === 0 ? "" : bs.length === 1 ? bs[0] : "multiple"; }
-      case "calcs_count": return mine.length;
       case "custom_factor": return e.custom_factor || "";
       case "notes": return e.notes || "";
       case "bulk_import_ref": return e.bulk_import_ref || "";
@@ -528,10 +527,6 @@ function AllData({
       case "user_assigned": return <span>{e.user_assigned}</span>;
       case "last_updated": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.last_updated}</span>;
       case "created_on": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.created_on}</span>;
-      case "calcs_count":
-        return r.count > 0
-          ? <span className="link" onClick={(ev) => { ev.stopPropagation(); onViewCalc(r.first.id); }}>{r.count} calc{r.count > 1 ? "s" : ""}</span>
-          : <span className="draft-tag">0 · draft</span>;
       case "emission_source": {
         if (c) return <span title={CATEGORY_LABELS[c.category] || c.category}>{CATEGORY_LABELS[c.category] || c.category}</span>;
         const cs = [...new Set(r.mine.map(x => x.category))];

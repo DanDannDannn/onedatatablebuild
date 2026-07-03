@@ -703,8 +703,13 @@ function EntryDrawer({ entry, calcs, onClose }) {
   const first = mine[0];
   const toast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { detail: msg }));
 
-  // Fold state for the Calculation cards (submitted-entry modal).
-  const [collapsedCalcs, setCollapsedCalcs] = React.useState(() => new Set());
+  // Fold state for the Calculation cards (submitted-entry modal). Cards start
+  // COLLAPSED by default (DAM-7401 open question: "collapsed or something else")
+  // — the one-line summary (EF name · CO2e) carries the scan; expand for detail.
+  const [collapsedCalcs, setCollapsedCalcs] = React.useState(() => new Set(mine.map(c => c.id)));
+  React.useEffect(() => {
+    setCollapsedCalcs(new Set(calcs.filter(c => c.entryId === entry.id).map(c => c.id)));
+  }, [entry.id]);
   const toggleCalcFold = (id) => setCollapsedCalcs(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   // Close on Esc.
