@@ -243,6 +243,10 @@
    still a positioning context for the connector ::before). */
 .data-table tbody tr.calc-childrow .exp-cell--rail { position: sticky; left: 40px; }
 
+/* Roomier expand affordance: bigger chevron button inside the widened gutter. */
+.data-table .row-disc { width: 22px; height: 22px; }
+.data-table .row-disc svg { width: 15px; height: 15px; }
+
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
   position: fixed; inset: 0; background: rgba(20,20,45,0.32);

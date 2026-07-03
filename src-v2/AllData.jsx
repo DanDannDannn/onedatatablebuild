@@ -856,7 +856,7 @@ function AllData({
             <table className={"data-table data-grid-fixed density-comfortable" + (pinnedSet.size ? " has-pinned" : "")} onMouseOver={autoTitleOnOverflow} onMouseLeave={gridTipHide}>
               <colgroup>
                 {selectionOn && <col style={{ width: 40 }} />}
-                {hasExpandable && <col style={{ width: 30 }} />}
+                {hasExpandable && <col style={{ width: 44 }} />}
                 {renderKeys.map(k => <col key={k} style={{ width: colW(k) }} />)}
                 <col style={{ width: 84 }} />
               </colgroup>
