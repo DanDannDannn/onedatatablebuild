@@ -218,6 +218,14 @@
 /* Body checkboxes adopt the purple accent */
 .data-table tbody .fe-cb { accent-color: var(--tbl-accent); }
 
+/* Status chips truncate inside the pill when their column is narrowed — the
+   cell's own ellipsis on an overflowing atomic chip left a stray naked "…"
+   next to the expand chevron. */
+.data-table .status-chip {
+  display: inline-block; max-width: 100%; box-sizing: border-box;
+  overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+}
+
 /* Freeze the checkbox + expand columns to the left on horizontal scroll
    (mirrors the sticky row-actions column on the right). */
 .data-table th.cb-cell,  .data-table td.cb-cell  { position: sticky; left: 0; }
