@@ -642,6 +642,9 @@ function AllData({
   const CHILD_ALWAYS = new Set(["co2e_value", "co2e_unit"]);
   const childShows = (k, mine) => {
     if (CHILD_ALWAYS.has(k)) return true;
+    // EF unit accompanies EF value: if the value renders per sub-row, show its
+    // unit on those rows too (a bare number without its unit is ambiguous).
+    if (k === "ef_unit" && childShows("ef_value", mine)) return true;
     if (k === "scope2_method" || k === "scope3_category") {
       if ([...new Set(mine.map(x => x.scope))].length > 1) return true;
     }
@@ -732,6 +735,8 @@ function AllData({
       window.dispatchEvent(new CustomEvent("fe-toast", { detail: `Entry ${e.id} deleted · undo in 10s` }));
     }
   };
+  // Row hover actions (copy link / delete) hidden per design — kept for reference.
+  // eslint-disable-next-line no-unused-vars
   const rowActions = (e) => (
     <div className="row-actions">
       <button className="row-action" title="Copy link to row" aria-label="Copy link to row" onClick={() => copyRowLink(e.id)}><Icon name="link" size={15} /></button>
@@ -775,7 +780,6 @@ function AllData({
           ? <td key="id" className={tdPinClass("id") || undefined} style={tdPinStyle("id")} onClick={(ev) => { ev.stopPropagation(); onViewEntry(e.id); }}>{idInner}</td>
           : <td key={k} className={cellClassFor(k)} style={{ textAlign: align(k), ...tdPinStyle(k) }}>{dataCell(k, e, r, null)}</td>
         )}
-        <td className="ra-cell" onClick={(ev) => ev.stopPropagation()}>{rowActions(e)}</td>
       </tr>
     );
     if (!isOpen) return entryRow;
@@ -801,14 +805,13 @@ function AllData({
               // entry-level column → blank on the child (the parent already shows it)
               return <td key={k} className={[lead, tdPinClass(k)].filter(Boolean).join(" ") || undefined} style={tdPinStyle(k)}></td>;
             })}
-            <td className="ra-cell"></td>
           </tr>
         ))}
       </React.Fragment>
     );
   };
 
-  const colCount = renderKeys.length + (selectionOn ? 1 : 0) + (hasExpandable ? 1 : 0) + 1;
+  const colCount = renderKeys.length + (selectionOn ? 1 : 0) + (hasExpandable ? 1 : 0);
 
   const toolbar = (
       <div className="filter-bar">
@@ -858,7 +861,6 @@ function AllData({
                 {selectionOn && <col style={{ width: 40 }} />}
                 {hasExpandable && <col style={{ width: 44 }} />}
                 {renderKeys.map(k => <col key={k} style={{ width: colW(k) }} />)}
-                <col style={{ width: 84 }} />
               </colgroup>
               <thead>
                 <tr>
@@ -900,7 +902,6 @@ function AllData({
                       </th>
                     );
                   })}
-                  <th className="ra-cell" aria-hidden="true"></th>
                 </tr>
               </thead>
               <tbody>

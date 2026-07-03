@@ -194,6 +194,10 @@
 .data-table thead th .sh-menu:hover { background: rgba(255,255,255,0.18); color: #fff; }
 .data-table thead th .sh-menu.on { color: #fff; background: rgba(255,255,255,0.22); }
 .data-table thead th .sh-rank { background: rgba(255,255,255,0.22); color: #fff; }
+/* Per-column header menu (⋯) hidden — filtering/showing/hiding columns is
+   handled by the Filters builder and the Columns panel instead. */
+.data-table thead th .sh-menu { display: none; }
+
 /* Header checkbox: white outline on purple */
 .data-table thead th .fe-cb { accent-color: #fff; }
 

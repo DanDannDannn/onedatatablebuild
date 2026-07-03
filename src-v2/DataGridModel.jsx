@@ -93,7 +93,7 @@ const ENTRY_ORDER = [
   "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
   "scope","scope2_method","scope3_category","business_activity","user_assigned",
   "emission_source","start_date","end_date","last_updated","id",
-  "ef_value","ef_source","ef_unit","ef_dataset","ef_year","ef_region","ef_lca",
+  "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
   "co2e_method","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
   // not in the spec's unified map — available to toggle, hidden by default
   "quality","calc_basis","calcs_count",
