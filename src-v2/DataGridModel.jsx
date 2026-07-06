@@ -32,7 +32,6 @@ const DATA_COLUMNS = [
   { k:"selection_type",    label:"Selection type",           w:128, kind:"derived", ro:true },
   { k:"start_date",        label:"Start date",               w:96, kind:"entry" },
   { k:"end_date",          label:"End date",                 w:96, kind:"entry" },
-  { k:"emission_source",   label:"Emission source",          w:190, kind:"calc",    ro:true },
   { k:"scope",             label:"Scope",                    w:72,  kind:"calc",    ro:true },
   { k:"consumption_value", label:"Consumption value",        w:102, kind:"entry" },
   { k:"consumption_unit",  label:"Consumption unit",         w:80,  kind:"entry" },
@@ -53,7 +52,6 @@ const DATA_COLUMNS = [
   { k:"co2e_method",       label:"CO\u2082e calculation method", w:150, kind:"calc",  ro:true },
   { k:"scope2_method",     label:"Scope 2 method",           w:140, kind:"calc",  ro:true },
   { k:"scope3_category",   label:"Scope 3 category",         w:175, kind:"calc",  ro:true },
-  { k:"custom_factor",     label:"Custom Emission Factor",   w:150, kind:"entry" },
   { k:"notes",             label:"Notes",                    w:200, kind:"entry" },
   { k:"files",             label:"Files",                    w:72,  kind:"entry",  ro:true },
   { k:"bulk_import_ref",   label:"Bulk import",              w:140, kind:"entry",  ro:true },
@@ -76,7 +74,7 @@ const EF_GROUP_KEYS = DATA_COLUMNS.filter(c => c.group === "ef").map(c => c.k);
 // Columns that vary per calculation — they split into sub-rows when a data
 // entry is expanded. Everything else is constant per entry and merges (rowSpan).
 const PER_CALC_KEYS = new Set([
-  "emission_source","scope","scope2_method","scope3_category","consumption_data_type",
+  "scope","scope2_method","scope3_category","consumption_data_type",
   "co2e_value","co2e_unit","co2e_method",
   "consumption_value","consumption_unit",
   "ef_name","ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
@@ -98,26 +96,26 @@ const ENTRY_ORDER = [
   "status","supplier","description","additional_description","selection_type","ef_name","co2e_value","co2e_unit",
   "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
   "scope","scope2_method","scope3_category","business_activity","user_assigned",
-  "emission_source","start_date","end_date","last_updated","id",
+  "start_date","end_date","last_updated","id",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
-  "co2e_method","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
+  "co2e_method","notes","files","bulk_import_ref","bulk_import_file","created_on",
 ];
 const ENTRY_VISIBLE = [
   "status","supplier","description","ef_name","co2e_value","co2e_unit",
   "consumption_value","consumption_unit","business_unit","data_input_type","consumption_data_type",
-  "scope","scope3_category","business_activity","user_assigned","emission_source",
+  "scope","scope3_category","business_activity","user_assigned",
   "start_date","end_date","last_updated","id","ef_lca","files","bulk_import_ref","created_on",
 ];
 const CALC_ORDER = [
-  "id","status","co2e_value","co2e_unit","scope","emission_source","ef_name",
+  "id","status","co2e_value","co2e_unit","scope","ef_name",
   "business_unit","business_activity","supplier","description","additional_description",
   "consumption_value","consumption_unit",
   "start_date","end_date","data_input_type","consumption_data_type","selection_type","user_assigned","last_updated",
   "ef_value","ef_unit","ef_source","ef_dataset","ef_year","ef_region","ef_lca",
-  "co2e_method","scope2_method","scope3_category","custom_factor","notes","files","bulk_import_ref","bulk_import_file","created_on",
+  "co2e_method","scope2_method","scope3_category","notes","files","bulk_import_ref","bulk_import_file","created_on",
 ];
 const CALC_VISIBLE = [
-  "id","status","co2e_value","co2e_unit","scope","emission_source","ef_name",
+  "id","status","co2e_value","co2e_unit","scope","ef_name",
   "business_unit","business_activity","consumption_value","consumption_unit",
   "start_date","end_date","user_assigned","last_updated",
 ];
@@ -205,7 +203,6 @@ function _matchColValue(e, mine, key) {
     case "data_input_type": return e.data_input_type;
     case "status":          return window.entryWorkflow ? window.entryWorkflow(e, mine) : _matchStatus(e, mine);
     case "scope":           { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : multiJoin(ss.sort()); }
-    case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : multiJoin(cs); }
     case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(c => _MATCH_SCOPE3[c.category] || "3 \u00b7 Fuel & energy-related"))]; return cs.length === 1 ? cs[0] : multiJoin(cs); }
     case "ef_source":       return mine[0]?.factor?.source || "";
     case "ef_year":         return mine[0]?.factor?.vintage || "";

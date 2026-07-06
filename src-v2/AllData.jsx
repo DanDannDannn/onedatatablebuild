@@ -297,7 +297,6 @@ function AllData({
       case "scope": { const ss = [...new Set(mine.map(c => c.scope))]; return ss.length === 0 ? null : ss.length === 1 ? ss[0] : window.multiJoin(ss.sort()); }
       case "scope2_method": { const s2 = mine.filter(c => c.scope === 2); if (!s2.length) return ""; const ms = [...new Set(s2.map(c => c.method))]; return ms.length === 1 ? ms[0] : window.multiJoin(ms); }
       case "scope3_category": { const s3 = mine.filter(c => c.scope === 3); if (!s3.length) return ""; const cs = [...new Set(s3.map(scope3CatOf))]; return cs.length === 1 ? cs[0] : window.multiJoin(cs); }
-      case "emission_source": { const cs = [...new Set(mine.map(c => c.category))]; return cs.length === 0 ? null : cs.length === 1 ? cs[0] : window.multiJoin(cs); }
       case "ef_name": return aggOrFirst(c => c.factor?.name, f?.name || "");
       case "additional_description": return (e.details && e.details.additional_description) || "";
       case "business_unit": return e.business_unit;
@@ -337,7 +336,6 @@ function AllData({
       case "ef_lca": return aggOrFirst(c => c.factor ? (c.factor.lca || "Cradle-to-gate") : null, f?.lca || (f ? "Cradle-to-gate" : ""));
       case "co2e_unit": return mine.length ? "kgCO₂e" : "";
       case "co2e_method": { const ms = [...new Set(mine.map(c => c.calc_method || c.method))]; return ms.length === 0 ? "" : ms.length === 1 ? ms[0] : window.multiJoin(ms); }
-      case "custom_factor": return e.custom_factor || "";
       case "notes": return e.notes || "";
       case "bulk_import_ref": return e.bulk_import_ref || "";
       case "bulk_import_file": return e.bulk_import_file || "";
@@ -366,7 +364,6 @@ function AllData({
       { k: "3.6 Business travel", l: "3.6 Business travel" },
       { k: "3.7 Employee commuting", l: "3.7 Employee commuting" }, { k: "multiple", l: "Multiple" },
     ] },
-    emission_source: { options: [...Object.entries(CATEGORY_LABELS).map(([k, l]) => ({ k, l })), { k: "multiple", l: "Multiple" }] },
     user_assigned:   { options: uniqueOpts("user_assigned") },
     data_input_type: { options: [{ k: "Consumption data", l: "Consumption data" }, { k: "Precalculated", l: "Precalculated" }, { k: "multiple", l: "Multiple" }] },
     consumption_data_type: { options: [{ k: "Activity", l: "Activity" }, { k: "Spend", l: "Spend" }, { k: "multiple", l: "Multiple" }] },
@@ -544,13 +541,6 @@ function AllData({
       case "user_assigned": return <span>{e.user_assigned}</span>;
       case "last_updated": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.last_updated}</span>;
       case "created_on": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.created_on}</span>;
-      case "emission_source": {
-        if (c) return <span title={CATEGORY_LABELS[c.category] || c.category}>{CATEGORY_LABELS[c.category] || c.category}</span>;
-        const cs = [...new Set(r.mine.map(x => x.category))];
-        if (cs.length === 0) return dash;
-        if (cs.length > 1) return multiVals(cs, k => CATEGORY_LABELS[k] || k);
-        return <span title={CATEGORY_LABELS[cs[0]] || cs[0]}>{CATEGORY_LABELS[cs[0]] || cs[0]}</span>;
-      }
       case "scope": {
         if (c) return <span>{c.scope}</span>;
         const ss = [...new Set(r.mine.map(x => x.scope))].sort();
@@ -598,7 +588,6 @@ function AllData({
       case "ef_year":    return efCell(fa => fa.vintage, v => <span style={{ color: "var(--fe-fg-muted)" }}>{v}</span>);
       case "ef_region":  return efCell(fa => fa.region || "Global", v => <span>{v}</span>);
       case "ef_lca":     return efCell(fa => fa.lca || "Cradle-to-gate", v => <span style={{ fontSize: 12 }}>{v}</span>);
-      case "custom_factor": return <span style={{ fontSize: 12, color: e.custom_factor && e.custom_factor !== "—" ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)" }}>{e.custom_factor || "—"}</span>;
       case "notes": return <span title={e.notes || ""} style={{ color: e.notes ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)", fontSize: 12 }}>{e.notes || "—"}</span>;
       case "bulk_import_ref": {
         const v = e.bulk_import_ref;
@@ -624,7 +613,6 @@ function AllData({
   const calcColVal = (x, k) => {
     const f = x.factor || {};
     switch (k) {
-      case "emission_source": return x.category;
       case "scope": return x.scope;
       case "scope2_method": return x.scope === 2 ? x.method : null;
       case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
@@ -658,13 +646,12 @@ function AllData({
 
   const GROUP_OPTS = [
     { k: "status", label: "Data entry status" }, { k: "scope", label: "Scope" },
-    { k: "emission_source", label: "Emission source" }, { k: "business_unit", label: "Business unit" },
+    { k: "business_unit", label: "Business unit" },
     { k: "data_input_type", label: "Data input type" }, { k: "user_assigned", label: "User assigned" },
   ];
   const groupLabel = (key, val) => {
     if (key === "status") return (window.STATUS_LABELS && window.STATUS_LABELS[val]) || val;
     if (key === "scope") return val === "multiple" ? "Multiple scopes" : val == null ? "No calculation" : `Scope ${val}`;
-    if (key === "emission_source") return val === "multiple" ? "Multiple sources" : val == null ? "No calculation" : (CATEGORY_LABELS[val] || val);
     return val == null || val === "" ? "—" : String(val);
   };
   const grouped = React.useMemo(() => {

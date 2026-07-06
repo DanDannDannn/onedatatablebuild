@@ -13,9 +13,9 @@
 // The two shipped views (All data + Calculations) are seeded on first load via
 // seedDataViews(); thereafter the list is whatever the user has saved.
 
-// Bumped to v13 to re-seed the built-in "All data" view (Additional description
-// column added after Description, hidden by default — Confluence column map).
-const FE_DATA_VIEWS_KEY = "fe-data-views-v13";
+// Bumped to v14 to re-seed the built-in "All data" view (Emission source and
+// Custom Emission Factor columns removed — Confluence column map update).
+const FE_DATA_VIEWS_KEY = "fe-data-views-v14";
 const FE_DATA_VIEWS_EVT = "fe-data-views-changed";
 
 function loadDataViews() {

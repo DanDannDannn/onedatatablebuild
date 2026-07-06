@@ -210,7 +210,7 @@ function FilterBuilder({ rules, onChange, cols, colConfig, numericKeys }) {
 // AllData (seeding) and DataGridModel (view-state normalization) so legacy
 // {col: value} → rule conversion is identical on both sides.
 const FB_OPTION_COLS = new Set([
-  "business_unit","status","quality","calc_basis","scope","scope3_category","emission_source",
+  "business_unit","status","quality","calc_basis","scope","scope3_category",
   "user_assigned","data_input_type","ef_source","ef_year","ef_region","consumption_unit","co2e_unit",
 ]);
 
