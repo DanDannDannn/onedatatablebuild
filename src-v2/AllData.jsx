@@ -787,11 +787,30 @@ function AllData({
     // Expanded: keep the parent summary row, then one child row per calculation.
     // Entry-level columns are blank on children (shown once on the parent); the
     // leftmost content cell gets a tree connector.
+    // "Data 2" experiment: when active filter rules target per-calc columns,
+    // hide the sub-rows that don't themselves match — the expand shows only the
+    // matching calculation(s), even when a single one is left. If no sub-row
+    // matches individually (e.g. "is Multiple" matched the aggregate), fall
+    // back to showing all of them rather than an empty expand.
+    const kids = (() => {
+      if (!window.FE_MULTI_ROUTE) return r.mine;
+      const active = filterRules.filter(window.fbRuleActive).filter(rl => PER_CALC.has(rl.col));
+      if (!active.length) return r.mine;
+      const kidVal = (x, k) => {
+        if (k === "co2e_value") return x.kgCO2e;
+        if (k === "co2e_unit") return "kgCO₂e";
+        if (k === "ef_unit") return x.factor ? `kgCO₂e/${x.factor.unit}` : "";
+        const v = calcColVal(x, k);
+        return v == null ? "" : v;
+      };
+      const m = r.mine.filter(c => window.evalFilterRules(active, c, kidVal));
+      return m.length ? m : r.mine;
+    })();
     return (
       <React.Fragment key={e.id}>
         {entryRow}
-        {r.mine.map((c, i) => (
-          <tr key={c.id} className={"calc-childrow" + (i === r.mine.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
+        {kids.map((c, i) => (
+          <tr key={c.id} className={"calc-childrow" + (i === kids.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
             {/* No checkbox on calc sub-rows — selection is entry-level. */}
             {selectionOn && <td className="cb-cell" aria-hidden="true" />}
             {hasExpandable && <td className="exp-cell exp-cell--rail"></td>}
