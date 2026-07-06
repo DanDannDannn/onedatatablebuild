@@ -775,14 +775,14 @@ function AllData({
     // Entry-level columns are blank on children (shown once on the parent); the
     // leftmost content cell gets a tree connector.
     // "Data 2" experiment: when active filter rules target per-calc columns,
-    // hide the sub-rows that don't themselves match — the expand shows only the
-    // matching calculation(s), even when a single one is left. If no sub-row
-    // matches individually (e.g. "is Multiple" matched the aggregate), fall
-    // back to showing all of them rather than an empty expand.
-    const kids = (() => {
-      if (!window.FE_MULTI_ROUTE) return r.mine;
+    // every sub-row still renders, but the ones that don't themselves match
+    // are visually de-emphasized (dimmed) so the matching leg(s) stand out.
+    // If no sub-row matches individually (e.g. "is Multiple" matched only the
+    // aggregate) — or all of them match — nothing is dimmed.
+    const dimIds = (() => {
+      if (!window.FE_MULTI_ROUTE) return null;
       const active = filterRules.filter(window.fbRuleActive).filter(rl => PER_CALC.has(rl.col));
-      if (!active.length) return r.mine;
+      if (!active.length) return null;
       const kidVal = (x, k) => {
         if (k === "co2e_value") return x.kgCO2e;
         if (k === "co2e_unit") return "kgCO₂e";
@@ -790,14 +790,15 @@ function AllData({
         const v = calcColVal(x, k);
         return v == null ? "" : v;
       };
-      const m = r.mine.filter(c => window.evalFilterRules(active, c, kidVal));
-      return m.length ? m : r.mine;
+      const match = new Set(r.mine.filter(c => window.evalFilterRules(active, c, kidVal)).map(c => c.id));
+      if (match.size === 0 || match.size === r.mine.length) return null;
+      return new Set(r.mine.filter(c => !match.has(c.id)).map(c => c.id));
     })();
     return (
       <React.Fragment key={e.id}>
         {entryRow}
-        {kids.map((c, i) => (
-          <tr key={c.id} className={"calc-childrow" + (i === kids.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
+        {r.mine.map((c, i) => (
+          <tr key={c.id} className={"calc-childrow" + (i === r.mine.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "") + (dimIds && dimIds.has(c.id) ? " is-dim" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
             {/* No checkbox on calc sub-rows — selection is entry-level. */}
             {selectionOn && <td className="cb-cell" aria-hidden="true" />}
             {hasExpandable && <td className="exp-cell exp-cell--rail"></td>}

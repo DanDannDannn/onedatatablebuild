@@ -262,6 +262,12 @@
 .data-table .row-disc { width: 22px; height: 22px; }
 .data-table .row-disc svg { width: 15px; height: 15px; }
 
+/* "Data 2" filter experiment: sub-rows that don't match the active per-calc
+   filter stay visible but recede; the matching leg(s) keep full contrast.
+   Hover restores most of the contrast so the dimmed legs remain inspectable. */
+.data-table tbody tr.calc-childrow.is-dim td { opacity: 0.38; }
+.data-table tbody tr.calc-childrow.is-dim:hover td { opacity: 0.8; }
+
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
   position: fixed; inset: 0; background: rgba(20,20,45,0.32);
