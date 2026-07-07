@@ -733,8 +733,11 @@ function AllData({
   // Show the dedicated expander gutter only when the current rows actually have
   // an expandable (multi-calc) entry, so single-calc views don't get dead space.
   const hasExpandable = (group ? filtered : paged).some(e => (calcsByEntry.get(e.id) || []).length > 1);
-  const renderRow = (e) => {
+  const renderRow = (e, rowIdx) => {
     const r = rollup(e);
+    // Child rows carry the PARENT's zebra colour (they're excluded from the
+    // nth-child stripe count, so parity = the parent's index in this page).
+    const stripe = rowIdx % 2 === 0 ? " stripe-w" : " stripe-g";
     const canExpand = r.count > 1;
     const isOpen = canExpand && expanded.has(e.id);
     const discBtn = canExpand ? (
@@ -798,7 +801,7 @@ function AllData({
       <React.Fragment key={e.id}>
         {entryRow}
         {r.mine.map((c, i) => (
-          <tr key={c.id} className={"calc-childrow" + (i === r.mine.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "") + (dimIds && dimIds.has(c.id) ? " is-dim" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
+          <tr key={c.id} className={"calc-childrow" + stripe + (i === r.mine.length - 1 ? " last" : "") + (selected.has(e.id) ? " sel" : "") + (dimIds && dimIds.has(c.id) ? " is-dim" : "")} onClick={(ev) => { ev.stopPropagation(); onViewCalc(c.id); }}>
             {/* No checkbox on calc sub-rows — selection is entry-level. */}
             {selectionOn && <td className="cb-cell" aria-hidden="true" />}
             {hasExpandable && <td className="exp-cell exp-cell--rail"></td>}

@@ -269,6 +269,14 @@
 .data-table tbody tr.calc-childrow.is-dim td > * { opacity: 0.38; }
 .data-table tbody tr.calc-childrow.is-dim:hover td > * { opacity: 0.8; }
 
+/* Expanded sub-rows match their PARENT's zebra colour (extras-v2 paints every
+   child row --fe-bg-subtle, which read as a state change on white parents).
+   The stripe-w/stripe-g class carries the parent's parity from renderRow. */
+.data-table tbody tr.calc-childrow:not(.sel) td { background: transparent; }
+.data-table tbody tr.calc-childrow.stripe-w:not(.sel) { background: #fff; }
+.data-table tbody tr.calc-childrow.stripe-g:not(.sel) { background: var(--fe-bg-subtle); }
+.data-table tbody tr.calc-childrow:hover:not(.sel) td { background: var(--fe-row-hover, #F1EFFE); }
+
 /* Expanded parent row keeps its normal zebra background — no "open" highlight
    (extras-v2 paints it --fe-bg-subtle, which reads as a state change). */
 .data-table tbody tr.calc-parent.open:not(.sel) td,
