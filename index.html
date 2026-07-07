@@ -134,7 +134,8 @@ const VALID_ROUTES = new Set([
 const readHashRoute = () => {
   const seg = (window.location.hash || "").replace(/^#\/?/, "").split("/")[0];
   if (seg === "data-classic") return "data-classic";
-  if (seg === "improve-ef") return "improve-ef";
+  if (seg === "improve-ef-2") return "improve-ef-2";
+  if (seg === "improve-ef" || seg === "improve-ef-1") return "improve-ef-1";
   return "data";
 };
 const isDataRoute = (r) => r === "data" || r === "data-classic";
@@ -412,7 +413,7 @@ function App() {
     quality:"Calculation quality",
     trends:"Trends",
     data:"Data", "data-classic":"Data (classic)", factors:"Emission Factors",
-    "improve-ef":"Improve EF · synthetic PCF mock",
+    "improve-ef-1":"Data", "improve-ef-2":"Data",
     import:"Imports", manual:"Manual entry",
     org:"Organization", settings:"Settings",
   };
@@ -719,8 +720,11 @@ function App() {
               : <BulkImportHome onViewEntries={(batchId) => go("entries", {batchId})} />
           )}
           */}
-          {route === "improve-ef" && (
-            <ImproveEFPage />
+          {route === "improve-ef-1" && (
+            <ImproveEFPage key="ief1" option={1} />
+          )}
+          {route === "improve-ef-2" && (
+            <ImproveEFPage key="ief2" option={2} />
           )}
           {route === "manual" && (
             <ManualEntry
@@ -731,7 +735,7 @@ function App() {
               }}
             />
           )}
-          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data","data-classic","improve-ef","manual","forward-ai"].includes(route)) && (
+          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data","data-classic","improve-ef-1","improve-ef-2","manual","forward-ai"].includes(route)) && (
             <div className="card" style={{padding:0, textAlign:"center"}}>
               <div className="metric-label">{routeTitles[route]}</div>
               <h2 className="page-title" style={{marginTop:12}}>{routeTitles[route]}</h2>
