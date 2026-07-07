@@ -59,10 +59,11 @@ const DATA_COLUMNS = [
   { k:"created_on",        label:"Created on",               w:100, kind:"entry",  ro:true },
 ];
 
-// ── "Data 2" filter experiment (temporary) ──────────────────────────────────
-// On the #data2 route, columns that would read "multiple" instead expose
-// "multiple, v1, v2, …" — both displayed and used as the filter/sort value —
-// so a partial text or option filter can match the data-entry (parent) row.
+// ── Multi-value "Multiple" cells (default Data page behaviour) ──────────────
+// Columns that would read "multiple" instead expose "multiple, v1, v2, …" —
+// both displayed and used as the filter/sort value — so a partial text or
+// option filter can match the data-entry (parent) row. Formerly the "Data 2"
+// experiment; the classic single-"Multiple" table is archived at #data-classic.
 // The flag is set by App during render (window.FE_MULTI_ROUTE).
 const multiJoin = (vals) => (window.FE_MULTI_ROUTE && vals && vals.length)
   ? "multiple, " + vals.join(", ")

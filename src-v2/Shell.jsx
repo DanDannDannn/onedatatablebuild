@@ -72,10 +72,9 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
       { key: "trends",            label: "Trends",            icon: "trends", stub: true },
     ]},
     { section: "Collect", items: [
+      // "Data" is the multi-value filter version (formerly "Data 2"). The
+      // classic single-"Multiple" table is archived at #data-classic (URL only).
       { key: "data",   label: "Data",        icon: "collect" },
-      // Temporary experiment page: identical table, but "Multiple" cells carry
-      // their underlying values so partial filters match the entry row.
-      { key: "data2",  label: "Data 2 · filter test", icon: "collect" },
       { key: "improve-ef", label: "Improve EF · PCF mock", icon: "sparkle" },
       { key: "import", label: "Bulk import", icon: "upload", stub: true, dot: true },
     ]},
