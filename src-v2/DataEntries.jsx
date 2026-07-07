@@ -690,15 +690,36 @@ function FoldSection({ title, sub, defaultOpen = true, children }) {
     </details>
   );
 }
-// Detail surface — read-only, mirrors the HTML reference. Submitted entries open
-// a centred entry modal (full form); everything else opens the side drawer
-// (provenance chain: Overview → Activity data → Emission factor → Result).
-// Editing / calc-approval were intentionally dropped in this restyle.
-function EntryDrawer({ entry, calcs, onClose }) {
+// Small centred confirmation card (product pattern: "Submit your entry?").
+function ConfirmCard({ title, body, cancelLabel, confirmLabel, onCancel, onConfirm }) {
+  return (
+    <div className="fwe-confirm-scrim" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="fwe-confirm" role="alertdialog" aria-modal="true">
+        <h4>{title}</h4>
+        <p>{body}</p>
+        <div className="fwe-confirm__actions">
+          <button className="fwe-btn-secondary" onClick={onCancel}>{cancelLabel}</button>
+          <button className="fwe-btn-primary" onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Detail surface — mirrors the product's entry-status logic:
+//   Draft (or no calculations yet) → editable form modal, NO calculation section.
+//   Ready to submit (unsubmitted, calcs exist) → detail modal where the EF name
+//     per calculation is a dropdown; the EF detail values below follow the
+//     selection but stay read-only. Footer: Save draft · Submit (confirm dialog).
+//   Submitted → read-only detail modal. Footer: Unsubmit (confirm dialog) —
+//     unsubmitting returns the entry to Ready and unlocks the EF selection.
+function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
   if (!entry) return null;
   const mine = calcs.filter(c => c.entryId === entry.id);
   const wf = window.entryWorkflow(entry, mine);
   const isSubmitted = wf === "de_submitted";
+  // Unsubmitted-but-calculated: the state between Unsubmit and re-Submit.
+  const isReadyWithCalcs = wf === "de_ready" && mine.length > 0;
   const total = window.entryTotalKg ? window.entryTotalKg(entry, mine) : mine.reduce((s, c) => s + c.kgCO2e, 0);
   const first = mine[0];
   const toast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { detail: msg }));
@@ -708,16 +729,27 @@ function EntryDrawer({ entry, calcs, onClose }) {
   // — the one-line summary (EF name · CO2e) carries the scan; expand for detail.
   const [collapsedCalcs, setCollapsedCalcs] = React.useState(() => new Set(mine.map(c => c.id)));
   React.useEffect(() => {
-    setCollapsedCalcs(new Set(calcs.filter(c => c.entryId === entry.id).map(c => c.id)));
-  }, [entry.id]);
+    // Ready state starts with the cards OPEN — the EF selection is the point.
+    setCollapsedCalcs(isReadyWithCalcs ? new Set() : new Set(calcs.filter(c => c.entryId === entry.id).map(c => c.id)));
+  }, [entry.id, isReadyWithCalcs]);
   const toggleCalcFold = (id) => setCollapsedCalcs(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
-  // Close on Esc.
+  // Pending EF choice per calculation (Ready state only) — applied on Submit.
+  const [pendingEF, setPendingEF] = React.useState({});
+  React.useEffect(() => { setPendingEF({}); }, [entry.id]);
+  // Which confirmation dialog is open: "unsubmit" | "submit" | null.
+  const [confirm, setConfirm] = React.useState(null);
+
+  // Close on Esc — an open confirmation dialog eats the first Esc.
   React.useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose && onClose(); };
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (confirm) { setConfirm(null); return; }
+      onClose && onClose();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, confirm]);
 
   const num = (n) => n == null ? "—" : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
   const d = entry.details || {};
@@ -727,11 +759,22 @@ function EntryDrawer({ entry, calcs, onClose }) {
   const activityName = entry.business_activity || (window.CatLabel ? null : entry.category) || entry.category;
   const period = `${entry.start_date} → ${entry.end_date}`;
 
-  // Non-submitted (draft / ready / review) or a brand-new entry → the editable
-  // "New entry" form modal (centred), populated from the entry (empty for new).
-  if (!isSubmitted) {
+  // Draft, review, or never-calculated entries → the editable "New entry" form
+  // modal (centred), which has NO calculation section. Submitted and
+  // Ready-with-calculations entries use the detail modal below.
+  if (!isSubmitted && !isReadyWithCalcs) {
     return <NewEntryModal entry={entry} onClose={onClose} />;
   }
+
+  // EF choices for a calculation: every distinct factor used by calcs of the
+  // same emission source across the dataset (a realistic stand-in for the
+  // product's factor search, and deterministic for the demo).
+  const efOptionsFor = (c) => {
+    const opts = new Map();
+    if (c.factor) opts.set(c.factor.name, c.factor);
+    (calcs || []).forEach(x => { if (x.category === c.category && x.factor && !opts.has(x.factor.name)) opts.set(x.factor.name, x.factor); });
+    return [...opts.values()];
+  };
 
   // ── Submitted-entry modal (read-only form) ──────────────────────────────
   const Ro = (label, value, o) => {
@@ -805,7 +848,14 @@ function EntryDrawer({ entry, calcs, onClose }) {
             </section>
 
             {mine.map((c, i) => {
-              const f = c.factor || {};
+              // In the Ready state the EF NAME drives the card: the pending
+              // selection (if any) supplies every derived detail value below,
+              // and the CO₂e re-derives from quantity × factor when it can.
+              const f = pendingEF[c.id] || c.factor || {};
+              const efChanged = !!pendingEF[c.id] && (!c.factor || pendingEF[c.id].name !== c.factor.name);
+              const shownKg = efChanged && c.quantity != null && f.kg_per_unit != null
+                ? Math.round(c.quantity * f.kg_per_unit * 100) / 100
+                : c.kgCO2e;
               const collapsed = collapsedCalcs.has(c.id);
               const title = mine.length > 1
                 ? <>Calculation <span className="calc-n">{i + 1} of {mine.length}</span></>
@@ -821,11 +871,22 @@ function EntryDrawer({ entry, calcs, onClose }) {
                     </button>
                   </h3>
                   {collapsed ? (
-                    <p className="fwe-card-collapsed-sum">{f.name || "—"} · {num(c.kgCO2e)} kgCO₂e</p>
+                    <p className="fwe-card-collapsed-sum">{f.name || "—"} · {num(shownKg)} kgCO₂e</p>
                   ) : (
                     <>
                       <div className="fwe-form-grid">
-                        {Ro("Emission factor name", f.name)}
+                        {isReadyWithCalcs ? (
+                          <div className="fwe-fld">
+                            <span className="lab">Emission factor name</span>
+                            <select className="control" value={f.name || ""}
+                              onChange={(ev) => {
+                                const nf = efOptionsFor(c).find(o => o.name === ev.target.value);
+                                if (nf) setPendingEF(p => ({ ...p, [c.id]: nf }));
+                              }}>
+                              {efOptionsFor(c).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
+                            </select>
+                          </div>
+                        ) : Ro("Emission factor name", f.name)}
                       </div>
                       <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
                         {Ro("Emission factor value", f.kg_per_unit != null ? String(f.kg_per_unit) : "—")}
@@ -840,7 +901,7 @@ function EntryDrawer({ entry, calcs, onClose }) {
                         {c.scope === 3 && Ro("Scope 3 category", scope3Of(c))}
                       </div>
                       <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
-                        {Ro("CO2e emission", num(c.kgCO2e))}
+                        {Ro("CO2e emission", num(shownKg))}
                         {Ro("CO2e emission unit", "kgCO₂e")}
                       </div>
                       <div className="fwe-form-grid" style={{ marginTop: 18 }}>
@@ -858,7 +919,7 @@ function EntryDrawer({ entry, calcs, onClose }) {
               <div className="fwe-dropzone">
                 <div className="fwe-dropzone__drop">
                   <Icon name="upload" size={18} />
-                  <span>You can't add files to a submitted data entry</span>
+                  <span>{isReadyWithCalcs ? "Drag or upload" : "You can't add files to a submitted data entry"}</span>
                 </div>
                 <div className="fwe-dropzone__files">
                   <h4>Uploaded files</h4>
@@ -879,10 +940,50 @@ function EntryDrawer({ entry, calcs, onClose }) {
           </div>
 
           <div className="fwe-modal__foot">
-            <button className="fwe-btn-danger" onClick={() => { toast(`${entry.id} unsubmitted`); onClose && onClose(); }}>Unsubmit</button>
+            {isSubmitted ? (
+              <button className="fwe-btn-danger" onClick={() => setConfirm("unsubmit")}>Unsubmit</button>
+            ) : (
+              <>
+                <button className="fwe-btn-secondary" onClick={() => toast("Draft saved")}>Save draft</button>
+                <button className="fwe-btn-primary" onClick={() => setConfirm("submit")}>Submit to start calculations</button>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {confirm === "unsubmit" && (
+        <ConfirmCard
+          title="Unsubmit this entry?"
+          body="The entry returns to Ready and you can change its emission factors. Calculations run again when you submit."
+          cancelLabel="Cancel" confirmLabel="Unsubmit"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            setConfirm(null);
+            onUpdateEntry && onUpdateEntry(entry.id, { entry_status: "ready" });
+            toast(`${entry.id} unsubmitted — ready to submit`);
+          }} />
+      )}
+      {confirm === "submit" && (
+        <ConfirmCard
+          title="Submit your entry?"
+          body="Submitting will start emission calculations. You can unsubmit at any time."
+          cancelLabel="Review data" confirmLabel="Submit"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            setConfirm(null);
+            mine.forEach(c => {
+              const nf = pendingEF[c.id];
+              if (!nf || (c.factor && nf.name === c.factor.name)) return;
+              const patch = { factor: nf };
+              if (c.quantity != null && nf.kg_per_unit != null) patch.kgCO2e = Math.round(c.quantity * nf.kg_per_unit * 100) / 100;
+              onUpdateCalc && onUpdateCalc(c.id, patch);
+            });
+            setPendingEF({});
+            onUpdateEntry && onUpdateEntry(entry.id, { entry_status: "confirmed" });
+            toast(`${entry.id} submitted — calculations updated`);
+          }} />
+      )}
     </>
   );
 }

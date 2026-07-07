@@ -287,6 +287,21 @@
 .data-table tbody tr.calc-parent.open:not(.sel) td.exp-cell { background: inherit; }
 .data-table tbody tr.calc-parent.open:not(.sel):hover td.ra-cell { background: var(--fe-row-hover, #F1EFFE); }
 
+/* Confirmation card (Unsubmit / Submit) — small centred dialog above the modal. */
+.fwe-confirm-scrim {
+  position: fixed; inset: 0; z-index: 1500;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 20, 45, 0.28);
+}
+.fwe-confirm {
+  width: 340px; max-width: calc(100vw - 48px);
+  background: #fff; border-radius: 12px; padding: 20px;
+  box-shadow: 0 24px 64px -16px rgba(11, 16, 49, 0.35);
+}
+.fwe-confirm h4 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--fe-fg-strong); }
+.fwe-confirm p { margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: var(--fe-fg-muted); }
+.fwe-confirm__actions { display: flex; justify-content: flex-end; gap: 8px; }
+
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
   position: fixed; inset: 0; background: rgba(20,20,45,0.32);
