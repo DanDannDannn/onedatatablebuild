@@ -278,16 +278,13 @@
 .data-table tbody tr.calc-childrow:hover:not(.sel) td { background: var(--fe-row-hover, #F1EFFE); }
 
 /* Expanded parent row keeps its normal zebra background — no "open" highlight
-   (extras-v2 paints it --fe-bg-subtle, which reads as a state change). */
-.data-table tbody tr.calc-parent.open:not(.sel) td,
-.data-table tbody tr.calc-parent.open:not(.sel):hover td { background: transparent; }
-/* …but the sticky cells must keep their opaque row/hover paints so content
-   scrolling underneath never shows through. */
+   (extras-v2 paints it --fe-bg-subtle, which reads as a state change). On hover
+   it tints edge-to-edge exactly like any other row. */
+.data-table tbody tr.calc-parent.open:not(.sel) td { background: transparent; }
+.data-table tbody tr.calc-parent.open:not(.sel):hover td { background: var(--tbl-tint); }
+/* …and the sticky cells stay opaque at rest so content never shows through. */
 .data-table tbody tr.calc-parent.open:not(.sel) td.cb-cell,
 .data-table tbody tr.calc-parent.open:not(.sel) td.exp-cell { background: inherit; }
-.data-table tbody tr.calc-parent.open:not(.sel):hover td.cb-cell,
-.data-table tbody tr.calc-parent.open:not(.sel):hover td.exp-cell,
-.data-table tbody tr.calc-parent.open:not(.sel):hover td.td-pin { background: var(--tbl-tint); }
 .data-table tbody tr.calc-parent.open:not(.sel):hover td.ra-cell { background: var(--fe-row-hover, #F1EFFE); }
 
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
