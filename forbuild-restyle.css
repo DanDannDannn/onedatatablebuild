@@ -264,9 +264,23 @@
 
 /* "Data 2" filter experiment: sub-rows that don't match the active per-calc
    filter stay visible but recede; the matching leg(s) keep full contrast.
-   Hover restores most of the contrast so the dimmed legs remain inspectable. */
-.data-table tbody tr.calc-childrow.is-dim td { opacity: 0.38; }
-.data-table tbody tr.calc-childrow.is-dim:hover td { opacity: 0.8; }
+   Only the cell CONTENT dims (td > *) — the row background must stay identical
+   to the other sub-rows. Hover restores contrast so dimmed legs stay readable. */
+.data-table tbody tr.calc-childrow.is-dim td > * { opacity: 0.38; }
+.data-table tbody tr.calc-childrow.is-dim:hover td > * { opacity: 0.8; }
+
+/* Expanded parent row keeps its normal zebra background — no "open" highlight
+   (extras-v2 paints it --fe-bg-subtle, which reads as a state change). */
+.data-table tbody tr.calc-parent.open:not(.sel) td,
+.data-table tbody tr.calc-parent.open:not(.sel):hover td { background: transparent; }
+/* …but the sticky cells must keep their opaque row/hover paints so content
+   scrolling underneath never shows through. */
+.data-table tbody tr.calc-parent.open:not(.sel) td.cb-cell,
+.data-table tbody tr.calc-parent.open:not(.sel) td.exp-cell { background: inherit; }
+.data-table tbody tr.calc-parent.open:not(.sel):hover td.cb-cell,
+.data-table tbody tr.calc-parent.open:not(.sel):hover td.exp-cell,
+.data-table tbody tr.calc-parent.open:not(.sel):hover td.td-pin { background: var(--tbl-tint); }
+.data-table tbody tr.calc-parent.open:not(.sel):hover td.ra-cell { background: var(--fe-row-hover, #F1EFFE); }
 
 /* ───────────────────────── 3 · Provenance drawer ───────────────────────── */
 .fwe-scrim {
