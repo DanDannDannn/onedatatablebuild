@@ -865,26 +865,37 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
               <section className="fwe-form-card">
                 <h3 className="fwe-form-card__title">Emission factor details</h3>
                 <div className="fwe-form-grid">
-                  {mine.map((c) => {
-                    const f = pendingEF[c.id] || c.factor || {};
-                    return isReadyWithCalcs ? (
-                      <div className="fwe-fld" key={c.id}>
+                  {(() => {
+                    // Calculations sharing the same EF show it ONCE; a distinct
+                    // EF per calc (e.g. location vs market legs) gets its own
+                    // field. In the Ready state, one dropdown drives every
+                    // calculation in its group.
+                    const groups = [];
+                    const byName = new Map();
+                    mine.forEach(c => {
+                      const f = pendingEF[c.id] || c.factor || {};
+                      const k = f.name || "—";
+                      if (!byName.has(k)) { byName.set(k, { f, calcs: [] }); groups.push(byName.get(k)); }
+                      byName.get(k).calcs.push(c);
+                    });
+                    return groups.map((g, gi) => isReadyWithCalcs ? (
+                      <div className="fwe-fld" key={gi}>
                         <span className="lab">Emission factor name</span>
-                        <select className="control" value={f.name || ""}
+                        <select className="control" value={g.f.name || ""}
                           onChange={(ev) => {
-                            const nf = efOptionsFor(c).find(o => o.name === ev.target.value);
-                            if (nf) setPendingEF(p => ({ ...p, [c.id]: nf }));
+                            const nf = efOptionsFor(g.calcs[0]).find(o => o.name === ev.target.value);
+                            if (nf) setPendingEF(p => { const n = { ...p }; g.calcs.forEach(c => { n[c.id] = nf; }); return n; });
                           }}>
-                          {efOptionsFor(c).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
+                          {efOptionsFor(g.calcs[0]).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
                         </select>
                       </div>
                     ) : (
-                      <div className="fwe-fld" key={c.id}>
+                      <div className="fwe-fld" key={gi}>
                         <span className="lab">Emission factor name</span>
-                        <div className={"control" + (f.name ? "" : " placeholder")}>{f.name || "—"}</div>
+                        <div className={"control" + (g.f.name && g.f.name !== "—" ? "" : " placeholder")}>{g.f.name || "—"}</div>
                       </div>
-                    );
-                  })}
+                    ));
+                  })()}
                 </div>
               </section>
             )}
