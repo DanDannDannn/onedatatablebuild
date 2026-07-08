@@ -92,18 +92,14 @@ function IefStatusChip({ entry, phase, option }) {
   return <span className="ief-chips">{submitted}{extra}</span>;
 }
 
+// Confidence as a Low / Med / High pill (percentages stay in the detail view).
 function IefConf({ v, spinning }) {
   if (spinning) return (
     <span className="conf-inline"><span className="ief-spin"><Icon name="refresh" size={12}/></span>Improving…</span>
   );
-  const pct = Math.round(v * 100);
-  const level = v < 0.6 ? "low" : v < 0.8 ? "med" : "";
-  return (
-    <span className={`conf-inline ${level}`}>
-      <span>{pct}%</span>
-      <span className="m"><div style={{ width: pct + "%" }} /></span>
-    </span>
-  );
+  const level = v < 0.6 ? "low" : v < 0.8 ? "med" : "high";
+  const label = level === "low" ? "Low" : level === "med" ? "Med" : "High";
+  return <span className={`ief-confpill ${level}`}>{label}</span>;
 }
 
 function IefSynthFlag() {
@@ -366,10 +362,16 @@ function ImproveEFPage({ option }) {
   const [phases, setPhases] = React.useState({});           // id → phase
   const [detailId, setDetailId] = React.useState(null);
   const [wizardId, setWizardId] = React.useState(null);
+  const [deleted, setDeleted] = React.useState(() => new Set());
   const timers = React.useRef({});
   React.useEffect(() => () => Object.values(timers.current).forEach(clearTimeout), []);
 
   const phaseOf = (id) => phases[id] || "before";
+  const copyRow = (id) => iefToast(`Link to ${id} copied to clipboard`);
+  const deleteRow = (id) => {
+    setDeleted(s => new Set(s).add(id));
+    iefToast(`${id} deleted · Reset demo restores it`);
+  };
 
   const startImprove = (id) => {
     const e = IEF_ENTRIES.find(x => x.id === id);
@@ -385,7 +387,7 @@ function ImproveEFPage({ option }) {
   const reset = () => {
     Object.values(timers.current).forEach(clearTimeout);
     timers.current = {};
-    setPhases({}); setDetailId(null); setWizardId(null);
+    setPhases({}); setDetailId(null); setWizardId(null); setDeleted(new Set());
     iefToast("Demo reset — low-match entries restored");
   };
 
@@ -442,11 +444,11 @@ function ImproveEFPage({ option }) {
               <th>Files</th>
               <th>Bulk import</th>
               <th>Created on</th>
-              {option === 2 && <th className="ief-cta-cell" aria-hidden="true"></th>}
+              <th className="ief-act-cell" aria-hidden="true"></th>
             </tr>
           </thead>
           <tbody>
-            {IEF_ENTRIES.map(e => {
+            {IEF_ENTRIES.filter(e => !deleted.has(e.id)).map(e => {
               const ph = phaseOf(e.id);
               const c = iefCalc(e, ph);
               return (
@@ -486,15 +488,19 @@ function ImproveEFPage({ option }) {
                   <td>{e.files || "—"}</td>
                   <td>{e.imp}</td>
                   <td>{e.created}</td>
-                  {option === 2 && (
-                    <td className="ief-cta-cell" onClick={(ev) => ev.stopPropagation()}>
-                      {e.low && ph === "before" && (
+                  <td className="ief-act-cell" onClick={(ev) => ev.stopPropagation()}>
+                    <span className="ief-actions">
+                      {option === 2 && e.low && ph === "before" && (
                         <button type="button" className="ief-rowcta" onClick={() => setWizardId(e.id)}>
                           <Icon name="sparkle" size={12}/>Improve EF
                         </button>
                       )}
-                    </td>
-                  )}
+                      <button type="button" className="ief-iconbtn" title="Copy link to row" aria-label="Copy link to row"
+                        onClick={() => copyRow(e.id)}><Icon name="link" size={15}/></button>
+                      <button type="button" className="ief-iconbtn danger" title="Delete entry" aria-label="Delete entry"
+                        onClick={() => deleteRow(e.id)}><Icon name="trash" size={15}/></button>
+                    </span>
+                  </td>
                 </tr>
               );
             })}

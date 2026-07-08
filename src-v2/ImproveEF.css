@@ -31,28 +31,50 @@
 .ief-table tbody tr:nth-child(even) { background: var(--fe-bg-subtle); }
 .ief-table tbody tr:hover { background: #f3effe; }
 
-/* Right-frozen CTA cell (option 2) — stays visible while the grid scrolls,
-   like the product's row-actions column. Background tracks the row. */
-.ief-table th.ief-cta-cell, .ief-table td.ief-cta-cell {
+/* Right-frozen actions cell — stays visible while the grid scrolls, like the
+   product's row-actions column. Background tracks the row. */
+.ief-table th.ief-act-cell, .ief-table td.ief-act-cell {
   position: sticky; right: 0;
   box-shadow: -6px 0 6px -6px rgba(11,16,49,0.14);
 }
-.ief-table th.ief-cta-cell { background: #7c3aed; z-index: 3; }
-.ief-table td.ief-cta-cell { background: inherit; z-index: 2; }
+.ief-table th.ief-act-cell { background: #7c3aed; z-index: 3; }
+.ief-table td.ief-act-cell { background: inherit; z-index: 2; }
 
-/* Inline hover CTA (option 2): revealed when the row is hovered. */
+/* EF confidence pill (table column) — Low / Med / High, like the reference. */
+.ief-confpill {
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 600; line-height: 16px;
+}
+.ief-confpill.high { background: var(--fe-success-50, #dcfce7); color: var(--fe-success-700, #15803d); }
+.ief-confpill.med  { background: var(--fe-alert-50, #fef3c7);  color: var(--fe-alert-700, #b45309); }
+.ief-confpill.low  { background: #fee2e2; color: #991b1b; }
+
+/* Hover row actions: copy link + delete on every row (both options); option 2
+   adds the inline "Improve EF" CTA for low-confidence rows. Revealed on hover. */
+.ief-actions {
+  display: inline-flex; align-items: center; gap: 6px;
+  opacity: 0; transform: translateX(4px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+.ief-table tbody tr:hover .ief-actions { opacity: 1; transform: none; }
 .ief-rowcta {
   display: inline-flex; align-items: center; gap: 5px;
   border: none; border-radius: 6px; cursor: pointer;
   background: var(--fe-accent-primary); color: #fff;
   font-family: inherit; font-size: 12px; font-weight: 600;
   padding: 5px 11px;
-  opacity: 0; transform: translateX(4px);
-  transition: opacity .12s ease, transform .12s ease, background .12s ease;
+  transition: background .12s ease;
 }
 .ief-rowcta:hover { background: var(--fe-accent-primary-hover, #472ad8); }
-.ief-table tbody tr:hover .ief-rowcta { opacity: 1; transform: none; }
-.ief-cta-cell { width: 118px; }
+.ief-iconbtn {
+  width: 28px; height: 28px; flex: 0 0 auto;
+  display: inline-grid; place-items: center;
+  border: 1px solid var(--fe-border-subtle); border-radius: 6px;
+  background: #fff; color: var(--fe-fg-muted); cursor: pointer;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.ief-iconbtn:hover { background: var(--fe-bg-subtle); color: var(--fe-fg-strong); border-color: var(--fe-border-strong); }
+.ief-iconbtn.danger:hover { background: #fee2e2; color: var(--fe-error-500, #f35151); border-color: #fca5a5; }
 
 /* Synthetic EF flag */
 .ief-synth {
