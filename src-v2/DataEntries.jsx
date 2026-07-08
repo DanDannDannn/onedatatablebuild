@@ -848,18 +848,16 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
             </section>
 
             {mine.map((c, i) => {
-              // In the Ready state the EF NAME drives the card: the pending
-              // selection (if any) supplies every derived detail value below,
-              // and the CO₂e re-derives from quantity × factor when it can.
+              // In the Ready state ONLY the EF name (dropdown) shows — there is
+              // no calculation yet (it runs on submit), so no EF/CO₂e details.
+              // Submitted: the full read-only detail block as before.
               const f = pendingEF[c.id] || c.factor || {};
-              const efChanged = !!pendingEF[c.id] && (!c.factor || pendingEF[c.id].name !== c.factor.name);
-              const shownKg = efChanged && c.quantity != null && f.kg_per_unit != null
-                ? Math.round(c.quantity * f.kg_per_unit * 100) / 100
-                : c.kgCO2e;
+              const shownKg = c.kgCO2e;
               const collapsed = collapsedCalcs.has(c.id);
+              const baseTitle = isReadyWithCalcs ? "Emission factor details" : "Calculation";
               const title = mine.length > 1
-                ? <>Calculation <span className="calc-n">{i + 1} of {mine.length}</span></>
-                : "Calculation";
+                ? <>{baseTitle} <span className="calc-n">{i + 1} of {mine.length}</span></>
+                : baseTitle;
               return (
                 <section className="fwe-form-card" key={c.id}>
                   <h3 className="fwe-form-card__title fwe-card-head">
@@ -871,22 +869,28 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
                     </button>
                   </h3>
                   {collapsed ? (
-                    <p className="fwe-card-collapsed-sum">{f.name || "—"} · {num(shownKg)} kgCO₂e</p>
+                    <p className="fwe-card-collapsed-sum">
+                      {isReadyWithCalcs ? (f.name || "—") : <>{f.name || "—"} · {num(shownKg)} kgCO₂e</>}
+                    </p>
+                  ) : isReadyWithCalcs ? (
+                    // Ready: EF selection only — the calculation (and all its
+                    // derived values) doesn't exist until the entry is submitted.
+                    <div className="fwe-form-grid">
+                      <div className="fwe-fld">
+                        <span className="lab">Emission factor name</span>
+                        <select className="control" value={f.name || ""}
+                          onChange={(ev) => {
+                            const nf = efOptionsFor(c).find(o => o.name === ev.target.value);
+                            if (nf) setPendingEF(p => ({ ...p, [c.id]: nf }));
+                          }}>
+                          {efOptionsFor(c).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
                   ) : (
                     <>
                       <div className="fwe-form-grid">
-                        {isReadyWithCalcs ? (
-                          <div className="fwe-fld">
-                            <span className="lab">Emission factor name</span>
-                            <select className="control" value={f.name || ""}
-                              onChange={(ev) => {
-                                const nf = efOptionsFor(c).find(o => o.name === ev.target.value);
-                                if (nf) setPendingEF(p => ({ ...p, [c.id]: nf }));
-                              }}>
-                              {efOptionsFor(c).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
-                            </select>
-                          </div>
-                        ) : Ro("Emission factor name", f.name)}
+                        {Ro("Emission factor name", f.name)}
                       </div>
                       <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
                         {Ro("Emission factor value", f.kg_per_unit != null ? String(f.kg_per_unit) : "—")}
