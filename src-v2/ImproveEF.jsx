@@ -96,11 +96,11 @@ function IefConf({ v, spinning }) {
 }
 
 // "Synthetic EF" TAG — deliberately styled as metadata, not an action: flat
-// lavender tint, square corners, small caps, no border/hover. The CTA next to
-// it stays a solid violet button with a hover state, so the two never read as
-// the same kind of element.
+// lavender tint, square corners, small caps, a non-actionable status dot, and
+// no icon/border/hover. Buttons keep a solid fill, white text, an action icon,
+// elevation and a hover state — so a tag never reads as something to click.
 function IefSynthFlag() {
-  return <span className="ief-synth"><Icon name="sparkle" size={10}/>Synthetic EF</span>;
+  return <span className="ief-synth"><span className="ief-synth-dot" aria-hidden/>Synthetic EF</span>;
 }
 
 // ── AI wizard hand-off dialog (the wizard itself is a shared pattern, out of
@@ -258,9 +258,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
                 {Ro("Emission factor name",
                   phase === "improving"
                     ? <span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span>
-                    : phase === "after"
-                      ? <><Icon name="sparkle" size={14} style={{ color: "var(--fe-accent-primary)", flex: "0 0 auto" }}/>{c.ef}</>
-                      : c.ef)}
+                    : c.ef)}
               </div>
               {banner && <div style={{ marginTop: 14 }}>{banner}</div>}
             </section>
@@ -480,14 +478,13 @@ function ImproveEFPage({ cta = "hover" }) {
                   <td>
                     {ph === "improving"
                       ? <span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span>
-                      : ph === "after" ? <>{c.ef} <IefSynthFlag/></>
+                      : ph === "after" ? <><IefSynthFlag/> {c.ef}</>
                       : cta === "cell" && e.low ? (
                           <>
-                            {c.ef}
                             <button type="button" className="ief-cellcta"
                               onClick={(ev) => { ev.stopPropagation(); setWizardId(e.id); }}>
                               <Icon name="sparkle" size={11}/>Improve EF
-                            </button>
+                            </button> {c.ef}
                           </>
                         )
                       : c.ef}

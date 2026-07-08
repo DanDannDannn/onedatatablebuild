@@ -87,29 +87,34 @@
 .ief-iconbtn.danger:hover { background: #fee2e2; color: var(--fe-error-500, #f35151); border-color: #fca5a5; }
 
 /* "Synthetic EF" TAG — metadata, not an action. Everything about it is the
-   opposite of a button: flat tint (no border, no hover, no shadow), square
-   4px corners instead of a pill, small caps. */
+   opposite of a button: flat tint, no border/shadow/hover, square 4px corners
+   instead of a pill, small uppercase caps, a non-actionable status dot, and a
+   default cursor. Sits in FRONT of the EF name, left-aligned. */
 .ief-synth {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 6px; border-radius: 4px; vertical-align: 1px;
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-right: 8px; vertical-align: 1px;
+  padding: 2px 7px; border-radius: 4px; cursor: default;
   background: var(--fe-primary-50, #ecefff); color: var(--fe-primary-700, #5b21b6);
   font-size: 10px; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
 }
+.ief-synth-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--fe-accent-primary, #5a4dff); flex: 0 0 auto; }
 
-/* In-cell CTA (version B): a compact solid button inside the EF name cell.
-   Reads as an action next to the tag-styled flags: solid fill, white text,
-   hover state, pill-ish 6px radius. */
+/* In-cell CTA (version B): a compact solid button in FRONT of the EF name.
+   Everything says "pressable": saturated fill, white text, action icon, a
+   raised shadow that lifts on hover, and a pointer cursor. */
 .ief-cellcta {
   display: inline-flex; align-items: center; gap: 4px;
-  margin-left: 8px; vertical-align: 1px;
-  height: 22px; padding: 0 9px;
-  border: none; border-radius: 6px; cursor: pointer;
+  margin-right: 8px; vertical-align: 1px;
+  height: 22px; padding: 0 10px;
+  border: none; border-radius: 9999px; cursor: pointer;
   background: var(--fe-accent-primary); color: #fff;
   font-family: inherit; font-size: 11.5px; font-weight: 600;
-  transition: background .12s ease;
+  box-shadow: 0 1px 2px rgba(48,42,108,0.28), 0 2px 6px -2px rgba(90,77,255,0.5);
+  transition: background .12s ease, box-shadow .12s ease, transform .06s ease;
 }
-.ief-cellcta:hover { background: var(--fe-accent-primary-hover, #472ad8); }
+.ief-cellcta:hover { background: var(--fe-accent-primary-hover, #472ad8); box-shadow: 0 2px 4px rgba(48,42,108,0.3), 0 4px 10px -2px rgba(90,77,255,0.55); }
+.ief-cellcta:active { transform: translateY(0.5px); }
 .ief-delta { color: var(--fe-success-700, #047857); font-size: 11px; font-weight: 600; }
 .ief-strike { text-decoration: line-through; color: var(--fe-fg-subtle); font-size: 11px; }
 
