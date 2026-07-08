@@ -149,6 +149,8 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+  // Calculation card starts collapsed (summary line), like the product modal.
+  const [calcOpen, setCalcOpen] = React.useState(false);
 
   const c = iefCalc(entry, phase);
   const Ro = (label, value, opt) => (
@@ -159,8 +161,8 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
   );
   const spend = entry.consType === "Spend data";
 
-  // The low-match signal + CTA sit in a banner at the TOP of the modal
-  // (above the fold) — the full entry content follows below.
+  // The low-match signal + CTA live INSIDE the "Emission factor details" card,
+  // right under the EF name field (mirrors the product's standalone EF card).
   const banner = entry.low && (
     phase === "before" ? (
       <div className="ief-banner">
@@ -202,8 +204,6 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
           </div>
 
           <div className="fwe-modal__body">
-            {banner}
-
             <section className="fwe-form-card">
               <h3 className="fwe-form-card__title">General information</h3>
               <div className="fwe-form-grid">
@@ -245,6 +245,25 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
               </div>
             </section>
 
+            {/* Emission factor details — a card of its own holding ONLY the EF
+                name, like the product modal. The low-match / improving /
+                improved banner lives inside this card, under the field. */}
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title fwe-card-head">
+                <span>Emission factor details</span>
+                {phase === "after" && <IefSynthFlag/>}
+              </h3>
+              <div className="fwe-form-grid" style={{ marginTop: 14 }}>
+                {Ro("Emission factor name",
+                  phase === "improving"
+                    ? <span style={{ color: "var(--fe-fg-subtle)" }}>Regenerating…</span>
+                    : phase === "after"
+                      ? <><Icon name="sparkle" size={14} style={{ color: "var(--fe-accent-primary)", flex: "0 0 auto" }}/>{c.ef}</>
+                      : c.ef)}
+              </div>
+              {banner && <div style={{ marginTop: 14 }}>{banner}</div>}
+            </section>
+
             {phase === "improving" ? (
               <section className="fwe-form-card">
                 <div className="ief-processing">
@@ -260,37 +279,47 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
               <section className="fwe-form-card">
                 <h3 className="fwe-form-card__title fwe-card-head">
                   <span>Calculation</span>
-                  {phase === "after" && <IefSynthFlag/>}
+                  <button type="button" className={"fwe-card-fold" + (calcOpen ? "" : " is-collapsed")}
+                    onClick={() => setCalcOpen(o => !o)} aria-expanded={calcOpen}
+                    aria-label={calcOpen ? "Collapse calculation" : "Expand calculation"} title={calcOpen ? "Collapse" : "Expand"}>
+                    <Icon name="chev" size={16}/>
+                  </button>
                 </h3>
-                <div className="fwe-form-grid" style={{ marginTop: 14 }}>
-                  {Ro("Emission factor name", phase === "after"
-                    ? <><Icon name="sparkle" size={14} style={{ color: "var(--fe-accent-primary)", flex: "0 0 auto" }}/>{c.ef}</>
-                    : c.ef)}
-                </div>
-                <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
-                  {Ro("Emission factor value", c.val)}
-                  {Ro("Emission factor unit", c.unit)}
-                  {Ro("Emission factor source", c.src)}
-                  {Ro("Emission factor dataset", c.src)}
-                  {Ro("Emission factor year", c.year)}
-                  {Ro("Emission factor region", "Europe")}
-                  {Ro("Emission factor LCA activity", entry.lca)}
-                  {Ro("Scope", "3")}
-                  {Ro("Scope 3 category", entry.cat)}
-                </div>
-                <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
-                  {Ro("CO₂e emission", c.co2)}
-                  {Ro("CO₂e emission unit", "kgCO₂e")}
-                </div>
-                <div className="fwe-form-grid" style={{ marginTop: 18 }}>
-                  {Ro("CO₂e calculation method", "GWP100")}
-                </div>
-                {phase === "after" && (
-                  <div className="ief-match ok">
-                    <Icon name="check" size={15} className="ic"/>
-                    <span><b>Emission factor improved.</b> {c.note} Confidence {Math.round(c.conf * 100)}%.
-                      The previous spend-based factor is kept in the audit log.</span>
-                  </div>
+                {!calcOpen ? (
+                  <p className="fwe-card-collapsed-sum">{c.ef} · {c.co2}CO₂e</p>
+                ) : (
+                  <>
+                    <div className="fwe-form-grid" style={{ marginTop: 14 }}>
+                      {Ro("Emission factor name", phase === "after"
+                        ? <><Icon name="sparkle" size={14} style={{ color: "var(--fe-accent-primary)", flex: "0 0 auto" }}/>{c.ef}</>
+                        : c.ef)}
+                    </div>
+                    <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                      {Ro("Emission factor value", c.val)}
+                      {Ro("Emission factor unit", c.unit)}
+                      {Ro("Emission factor source", c.src)}
+                      {Ro("Emission factor dataset", c.src)}
+                      {Ro("Emission factor year", c.year)}
+                      {Ro("Emission factor region", "Europe")}
+                      {Ro("Emission factor LCA activity", entry.lca)}
+                      {Ro("Scope", "3")}
+                      {Ro("Scope 3 category", entry.cat)}
+                    </div>
+                    <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                      {Ro("CO₂e emission", c.co2)}
+                      {Ro("CO₂e emission unit", "kgCO₂e")}
+                    </div>
+                    <div className="fwe-form-grid" style={{ marginTop: 18 }}>
+                      {Ro("CO₂e calculation method", "GWP100")}
+                    </div>
+                    {phase === "after" && (
+                      <div className="ief-match ok">
+                        <Icon name="check" size={15} className="ic"/>
+                        <span><b>Emission factor improved.</b> {c.note} Confidence {Math.round(c.conf * 100)}%.
+                          The previous spend-based factor is kept in the audit log.</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             )}
