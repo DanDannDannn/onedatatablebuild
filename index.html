@@ -134,7 +134,8 @@ const VALID_ROUTES = new Set([
 const readHashRoute = () => {
   const seg = (window.location.hash || "").replace(/^#\/?/, "").split("/")[0];
   if (seg === "data-classic") return "data-classic";
-  // Single Improve EF mock (old option URLs redirect here)
+  // Improve EF mock — two CTA placements (old option URLs → hover version)
+  if (seg === "improve-ef-cell") return "improve-ef-cell";
   if (seg === "improve-ef" || seg === "improve-ef-1" || seg === "improve-ef-2") return "improve-ef";
   return "data";
 };
@@ -413,7 +414,7 @@ function App() {
     quality:"Calculation quality",
     trends:"Trends",
     data:"Data", "data-classic":"Data (classic)", factors:"Emission Factors",
-    "improve-ef":"Data",
+    "improve-ef":"Data", "improve-ef-cell":"Data",
     import:"Imports", manual:"Manual entry",
     org:"Organization", settings:"Settings",
   };
@@ -721,7 +722,10 @@ function App() {
           )}
           */}
           {route === "improve-ef" && (
-            <ImproveEFPage />
+            <ImproveEFPage key="ief-hover" cta="hover" />
+          )}
+          {route === "improve-ef-cell" && (
+            <ImproveEFPage key="ief-cell" cta="cell" />
           )}
           {route === "manual" && (
             <ManualEntry
@@ -732,7 +736,7 @@ function App() {
               }}
             />
           )}
-          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data","data-classic","improve-ef","manual","forward-ai"].includes(route)) && (
+          {!(isReportRoute || ["overview","emission-overview","hotspot","quality","trends","data","data-classic","improve-ef","improve-ef-cell","manual","forward-ai"].includes(route)) && (
             <div className="card" style={{padding:0, textAlign:"center"}}>
               <div className="metric-label">{routeTitles[route]}</div>
               <h2 className="page-title" style={{marginTop:12}}>{routeTitles[route]}</h2>

@@ -88,14 +88,30 @@
 .ief-iconbtn:hover { background: var(--fe-bg-subtle); color: var(--fe-fg-strong); border-color: var(--fe-border-strong); }
 .ief-iconbtn.danger:hover { background: #fee2e2; color: var(--fe-error-500, #f35151); border-color: #fca5a5; }
 
-/* Synthetic EF flag */
+/* "Synthetic EF" TAG — metadata, not an action. Everything about it is the
+   opposite of a button: flat tint (no border, no hover, no shadow), square
+   4px corners instead of a pill, small caps. */
 .ief-synth {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 1px 7px; border-radius: 9999px; vertical-align: 1px;
-  background: var(--fe-primary-50, #f5f3ff); color: var(--fe-accent-primary);
-  border: 1px solid var(--fe-primary-100, #e9e3ff);
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 6px; border-radius: 4px; vertical-align: 1px;
+  background: var(--fe-primary-50, #ecefff); color: var(--fe-primary-700, #5b21b6);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
 }
+
+/* In-cell CTA (version B): a compact solid button inside the EF name cell.
+   Reads as an action next to the tag-styled flags: solid fill, white text,
+   hover state, pill-ish 6px radius. */
+.ief-cellcta {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 8px; vertical-align: 1px;
+  height: 22px; padding: 0 9px;
+  border: none; border-radius: 6px; cursor: pointer;
+  background: var(--fe-accent-primary); color: #fff;
+  font-family: inherit; font-size: 11.5px; font-weight: 600;
+  transition: background .12s ease;
+}
+.ief-cellcta:hover { background: var(--fe-accent-primary-hover, #472ad8); }
 .ief-delta { color: var(--fe-success-700, #047857); font-size: 11px; font-weight: 600; }
 .ief-strike { text-decoration: line-through; color: var(--fe-fg-subtle); font-size: 11px; }
 

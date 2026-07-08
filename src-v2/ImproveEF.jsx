@@ -98,8 +98,12 @@ function IefConf({ v, spinning }) {
   return <span className={`ief-confpill ${level}`}>{label}</span>;
 }
 
+// "Synthetic EF" TAG — deliberately styled as metadata, not an action: flat
+// lavender tint, square corners, small caps, no border/hover. The CTA next to
+// it stays a solid violet button with a hover state, so the two never read as
+// the same kind of element.
 function IefSynthFlag() {
-  return <span className="ief-synth"><Icon name="sparkle" size={11}/>Synthetic EF</span>;
+  return <span className="ief-synth"><Icon name="sparkle" size={10}/>Synthetic EF</span>;
 }
 
 // ── AI wizard hand-off dialog (the wizard itself is a shared pattern, out of
@@ -376,7 +380,9 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-function ImproveEFPage() {
+// cta: "hover" — Improve EF lives in the hover actions tray (row end).
+//      "cell"  — Improve EF is a compact button inside the EF name cell.
+function ImproveEFPage({ cta = "hover" }) {
   const [phases, setPhases] = React.useState({});           // id → phase
   const [detailId, setDetailId] = React.useState(null);
   const [wizardId, setWizardId] = React.useState(null);
@@ -414,12 +420,14 @@ function ImproveEFPage() {
 
   // Mirrors the Data page's default entry-orientation columns (ENTRY_VISIBLE).
   return (
-    <div className="data-page-root" data-screen-label="FE · Improve EF mock">
+    <div className="data-page-root" data-screen-label={`FE · Improve EF mock (${cta} CTA)`}>
       <div className="page-head data-page-head">
         <div className="data-page-head-title">
           <h1 className="page-title">Data</h1>
           <div className="ief-caption">
-            Improve EF mock — EF confidence column; improve via row hover or the entry detail
+            {cta === "cell"
+              ? "Improve EF mock · in-cell CTA — the button sits inside the EF name column"
+              : "Improve EF mock · hover CTA — the button appears in the row-hover actions"}
           </div>
         </div>
         <div className="data-header-right">
@@ -475,7 +483,17 @@ function ImproveEFPage() {
                   <td>
                     {ph === "improving"
                       ? <span style={{ color: "var(--fe-fg-subtle)" }}>Regenerating…</span>
-                      : ph === "after" ? <>{c.ef} <IefSynthFlag/></> : c.ef}
+                      : ph === "after" ? <>{c.ef} <IefSynthFlag/></>
+                      : cta === "cell" && e.low ? (
+                          <>
+                            {c.ef}
+                            <button type="button" className="ief-cellcta"
+                              onClick={(ev) => { ev.stopPropagation(); setWizardId(e.id); }}>
+                              <Icon name="sparkle" size={11}/>Improve EF
+                            </button>
+                          </>
+                        )
+                      : c.ef}
                   </td>
                   <td>{ph === "improving" ? <IefConf spinning/> : <IefConf v={c.conf}/>}</td>
                   <td className="num">
@@ -504,7 +522,7 @@ function ImproveEFPage() {
                   <td>{e.created}</td>
                   <td className="ief-act-cell" onClick={(ev) => ev.stopPropagation()}>
                     <span className="ief-actions">
-                      {e.low && ph === "before" && (
+                      {cta === "hover" && e.low && ph === "before" && (
                         <button type="button" className="ief-rowcta" onClick={() => setWizardId(e.id)}>
                           <Icon name="sparkle" size={12}/>Improve EF
                         </button>
