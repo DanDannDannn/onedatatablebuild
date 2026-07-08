@@ -11,7 +11,7 @@
   border-radius: 10px; overflow-x: auto; margin-top: 16px;
   box-shadow: 0 1px 2px rgba(16,16,25,0.05);
 }
-.ief-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 880px; }
+.ief-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ief-table th {
   background: #7c3aed; color: #fff; text-align: left;
   font-weight: 500; font-size: 12.5px; padding: 10px 14px; white-space: nowrap;
@@ -19,16 +19,23 @@
 .ief-table th.new-col { background: #6d28d9; }
 .ief-table td {
   padding: 10px 14px; border-top: 1px solid var(--fe-border-subtle);
-  color: var(--fe-fg-default); vertical-align: middle;
+  color: var(--fe-fg-default); vertical-align: middle; white-space: nowrap;
 }
-.ief-table td:first-child { white-space: nowrap; }
-.ief-table td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.ief-table td.num { font-variant-numeric: tabular-nums; text-align: right; }
 .ief-table th.num { text-align: right; }
-.ief-table td .status-chip, .ief-table td .conf-inline { white-space: nowrap; }
-.ief-table td .sub { display: block; font-size: 11.5px; color: var(--fe-fg-subtle); margin-top: 1px; }
 .ief-table tbody tr { cursor: pointer; }
+.ief-table tbody tr:nth-child(odd)  { background: #fff; }
 .ief-table tbody tr:nth-child(even) { background: var(--fe-bg-subtle); }
 .ief-table tbody tr:hover { background: #f3effe; }
+
+/* Right-frozen CTA cell (option 2) — stays visible while the grid scrolls,
+   like the product's row-actions column. Background tracks the row. */
+.ief-table th.ief-cta-cell, .ief-table td.ief-cta-cell {
+  position: sticky; right: 0;
+  box-shadow: -6px 0 6px -6px rgba(11,16,49,0.14);
+}
+.ief-table th.ief-cta-cell { background: #7c3aed; z-index: 3; }
+.ief-table td.ief-cta-cell { background: inherit; z-index: 2; }
 
 /* Inline hover CTA (option 2): revealed when the row is hovered. */
 .ief-rowcta {
