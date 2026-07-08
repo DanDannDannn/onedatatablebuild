@@ -82,7 +82,7 @@ const iefCalc = (e, phase) => (phase === "after" && e.after) ? e.after : e.befor
 // the improvement job. The low-match signal lives in the confidence column and
 // the "Improving EF…" progress indicator lives in the EF name field.
 function IefStatusChip() {
-  return <span className="status-chip st-de_submitted">Submitted</span>;
+  return <span className="status-chip st-de_submitted ief-statuspill">Submitted</span>;
 }
 
 // Confidence as a Low / Med / High pill (percentages stay in the detail view).

@@ -47,6 +47,10 @@
 .ief-confpill.med  { background: var(--fe-alert-50, #fef3c7);  color: var(--fe-alert-700, #b45309); }
 .ief-confpill.low  { background: #fee2e2; color: #991b1b; }
 
+/* Status chip in these mock pages follows the same square-ish label shape
+   (scoped override — the shared product status-chip stays a pill elsewhere). */
+.ief-statuspill { border-radius: 6px; }
+
 /* Hover row actions: copy link + delete on every row; low-confidence rows add
    the inline "Improve EF" CTA. The actions cell is ZERO-width (no reserved
    blank column) — the buttons float over the row's right edge on hover in a
