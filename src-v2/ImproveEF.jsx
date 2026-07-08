@@ -493,10 +493,7 @@ function ImproveEFPage({ cta = "hover" }) {
                   </td>
                   <td>{ph === "improving" ? <IefConf spinning/> : <IefConf v={c.conf}/>}</td>
                   <td className="num">
-                    {ph === "improving" ? "—"
-                      : ph === "after"
-                        ? <>{c.co2t} <span className="ief-strike">{e.before.co2t}</span> <span className="ief-delta">{c.delta}</span></>
-                        : c.co2t}
+                    {ph === "improving" ? "—" : c.co2t}
                   </td>
                   <td>tCO₂e</td>
                   <td className="num">{e.consV}</td>
