@@ -118,7 +118,6 @@ function IefWizardDialog({ entry, onCancel, onConfirm }) {
       <div className="fwe-scrim" style={{ zIndex: 1400 }} onClick={onCancel}/>
       <div className="ief-wizdlg" role="dialog" aria-modal="true">
         <div className="ief-wizdlg__head">
-          <Icon name="sparkle" size={18} style={{ color: "var(--fe-accent-primary)" }}/>
           <h3>Improve emission factor</h3>
           <button className="close" aria-label="Close" onClick={onCancel}><Icon name="close" size={16}/></button>
         </div>
@@ -137,7 +136,7 @@ function IefWizardDialog({ entry, onCancel, onConfirm }) {
         <div className="ief-wizdlg__foot">
           <button className="fwe-btn-secondary" style={{ height: 38, fontSize: 13 }} onClick={onCancel}>Cancel</button>
           <button className="fwe-btn-primary" style={{ height: 38, fontSize: 13 }} onClick={onConfirm}>
-            <Icon name="sparkle" size={14}/>Apply and confirm
+            Apply and confirm
           </button>
         </div>
       </div>
@@ -173,7 +172,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
         <span className="tx"><b>Low EF match ({Math.round(entry.before.conf * 100)}%).</b> Matched
           to a broad, spend-based sector average — the product is more specific than the factor.</span>
         <button className="fwe-btn-primary" style={{ height: 36, fontSize: 13, flex: "0 0 auto" }} onClick={onImprove}>
-          <Icon name="sparkle" size={14}/>Improve emission factor
+          Improve emission factor
         </button>
       </div>
     ) : phase === "improving" ? (
@@ -291,9 +290,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
                 ) : (
                   <>
                     <div className="fwe-form-grid" style={{ marginTop: 14 }}>
-                      {Ro("Emission factor name", phase === "after"
-                        ? <><Icon name="sparkle" size={14} style={{ color: "var(--fe-accent-primary)", flex: "0 0 auto" }}/>{c.ef}</>
-                        : c.ef)}
+                      {Ro("Emission factor name", c.ef)}
                     </div>
                     <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
                       {Ro("Emission factor value", c.val)}
@@ -363,7 +360,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
               <>
                 <button className="fwe-btn-secondary" onClick={() => iefToast("Would open the manual factor picker")}>Swap factor manually</button>
                 <button className="fwe-btn-primary" onClick={onImprove}>
-                  <Icon name="sparkle" size={16}/>Improve emission factor
+                  Improve emission factor
                 </button>
               </>
             ) : (
@@ -517,7 +514,7 @@ function ImproveEFPage({ cta = "hover" }) {
                     <span className="ief-actions">
                       {cta === "hover" && e.low && ph === "before" && (
                         <button type="button" className="ief-rowcta" onClick={() => setWizardId(e.id)}>
-                          <Icon name="sparkle" size={12}/>Improve EF
+                          Improve EF
                         </button>
                       )}
                       <button type="button" className="ief-iconbtn" title="Copy link to row" aria-label="Copy link to row"
