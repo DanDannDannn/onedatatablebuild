@@ -76,7 +76,10 @@
   background: #fff; border: 1px solid var(--fe-border-subtle); border-radius: 10px;
   box-shadow: 0 12px 32px -10px rgba(16,16,40,0.30); padding: 6px;
   display: flex; flex-direction: column; gap: 2px;
+  max-height: 280px; overflow-y: auto;   /* scroll long factor lists */
 }
+/* Flip above the trigger when there's no room below (near the modal's bottom). */
+.ief-efselect__menu.up { top: auto; bottom: calc(100% + 6px); }
 .ief-efselect__item {
   display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
   text-align: left; border: none; background: transparent; cursor: pointer; font-family: inherit;

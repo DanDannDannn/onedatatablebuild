@@ -116,23 +116,35 @@ function IefEfFlag({ synthetic, custom }) {
 // trigger + a white popover menu, with two "create" actions at the bottom.
 function IefEfSelect({ options, onPick }) {
   const [open, setOpen] = React.useState(false);
+  const [up, setUp] = React.useState(false);
   const ref = React.useRef(null);
+  const triggerRef = React.useRef(null);
   React.useEffect(() => {
     if (!open) return;
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
+  const toggle = () => {
+    // Flip the menu upward when there isn't room for it below the trigger
+    // (the modal clips its own overflow, so a downward menu near the bottom
+    // would be cut off).
+    if (!open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setUp((window.innerHeight - r.bottom) < 300);
+    }
+    setOpen(o => !o);
+  };
   const pick = (v) => { setOpen(false); onPick(v); };
   return (
     <div className="ief-efselect" ref={ref}>
-      <button type="button" className="ief-efselect__trigger" aria-haspopup="listbox" aria-expanded={open}
-        onClick={() => setOpen(o => !o)}>
+      <button type="button" ref={triggerRef} className="ief-efselect__trigger" aria-haspopup="listbox" aria-expanded={open}
+        onClick={toggle}>
         <span className="ph placeholder">Select an emission factor…</span>
         <Icon name="chev" size={16}/>
       </button>
       {open && (
-        <div className="ief-efselect__menu" role="listbox">
+        <div className={"ief-efselect__menu" + (up ? " up" : "")} role="listbox">
           {options.map(o => (
             <button key={o} type="button" role="option" className="ief-efselect__item" onClick={() => pick(o)}>{o}</button>
           ))}
