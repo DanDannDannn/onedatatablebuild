@@ -75,8 +75,7 @@ function Sidebar({ route, setRoute, needsReviewCount, onCreateReport, reports = 
       // "Data" is the multi-value filter version (formerly "Data 2"). The
       // classic single-"Multiple" table is archived at #data-classic (URL only).
       { key: "data",   label: "Data",        icon: "collect" },
-      { key: "improve-ef-1", label: "Improve EF · Option 1", icon: "sparkle" },
-      { key: "improve-ef-2", label: "Improve EF · Option 2", icon: "sparkle" },
+      { key: "improve-ef", label: "Improve EF · PCF mock", icon: "sparkle" },
       { key: "import", label: "Bulk import", icon: "upload", stub: true, dot: true },
     ]},
     { section: "Manage", items: [
