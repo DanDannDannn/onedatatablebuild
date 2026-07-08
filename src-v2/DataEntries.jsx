@@ -776,6 +776,16 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
     return [...opts.values()];
   };
 
+  // The "Emission factor details" card only exists when the EF is user-selected;
+  // auto-selected entries hide it entirely (the EF still shows inside each
+  // Calculation card). Mirrors the grid's Selection type logic exactly.
+  const selType = entry.ef_selection || (() => {
+    let x = 0; const s = entry.id || "";
+    for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0;
+    return (Math.abs(x) % 5 === 0) ? "Manually selected" : "Auto-selected";
+  })();
+  const efSelectable = selType === "Manually selected";
+
   // ── Submitted-entry modal (read-only form) ──────────────────────────────
   const Ro = (label, value, o) => {
     o = o || {};
@@ -847,17 +857,48 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
               </div>
             </section>
 
-            {mine.map((c, i) => {
-              // In the Ready state ONLY the EF name (dropdown) shows — there is
-              // no calculation yet (it runs on submit), so no EF/CO₂e details.
-              // Submitted: the full read-only detail block as before.
-              const f = pendingEF[c.id] || c.factor || {};
-              const shownKg = c.kgCO2e;
+            {/* Emission factor details — a card of its own, holding ONLY the EF
+                selection. Hidden entirely when the EF was auto-selected (the
+                user can't edit it, same logic as the grid's Selection type).
+                Ready state: editable dropdown(s). Submitted: read-only name. */}
+            {efSelectable && (
+              <section className="fwe-form-card">
+                <h3 className="fwe-form-card__title">Emission factor details</h3>
+                <div className="fwe-form-grid">
+                  {mine.map((c) => {
+                    const f = pendingEF[c.id] || c.factor || {};
+                    return isReadyWithCalcs ? (
+                      <div className="fwe-fld" key={c.id}>
+                        <span className="lab">Emission factor name</span>
+                        <select className="control" value={f.name || ""}
+                          onChange={(ev) => {
+                            const nf = efOptionsFor(c).find(o => o.name === ev.target.value);
+                            if (nf) setPendingEF(p => ({ ...p, [c.id]: nf }));
+                          }}>
+                          {efOptionsFor(c).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="fwe-fld" key={c.id}>
+                        <span className="lab">Emission factor name</span>
+                        <div className={"control" + (f.name ? "" : " placeholder")}>{f.name || "—"}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Calculation cards — only while the entry is SUBMITTED. After an
+                unsubmit there is no calculation (nothing is computed in real
+                time); the cards return once the user submits again. Each card
+                repeats its emission factor name alongside the derived values. */}
+            {!isReadyWithCalcs && mine.map((c, i) => {
+              const f = c.factor || {};
               const collapsed = collapsedCalcs.has(c.id);
-              const baseTitle = isReadyWithCalcs ? "Emission factor details" : "Calculation";
               const title = mine.length > 1
-                ? <>{baseTitle} <span className="calc-n">{i + 1} of {mine.length}</span></>
-                : baseTitle;
+                ? <>Calculation <span className="calc-n">{i + 1} of {mine.length}</span></>
+                : "Calculation";
               return (
                 <section className="fwe-form-card" key={c.id}>
                   <h3 className="fwe-form-card__title fwe-card-head">
@@ -869,24 +910,7 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
                     </button>
                   </h3>
                   {collapsed ? (
-                    <p className="fwe-card-collapsed-sum">
-                      {isReadyWithCalcs ? (f.name || "—") : <>{f.name || "—"} · {num(shownKg)} kgCO₂e</>}
-                    </p>
-                  ) : isReadyWithCalcs ? (
-                    // Ready: EF selection only — the calculation (and all its
-                    // derived values) doesn't exist until the entry is submitted.
-                    <div className="fwe-form-grid">
-                      <div className="fwe-fld">
-                        <span className="lab">Emission factor name</span>
-                        <select className="control" value={f.name || ""}
-                          onChange={(ev) => {
-                            const nf = efOptionsFor(c).find(o => o.name === ev.target.value);
-                            if (nf) setPendingEF(p => ({ ...p, [c.id]: nf }));
-                          }}>
-                          {efOptionsFor(c).map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
-                        </select>
-                      </div>
-                    </div>
+                    <p className="fwe-card-collapsed-sum">{f.name || "—"} · {num(c.kgCO2e)} kgCO₂e</p>
                   ) : (
                     <>
                       <div className="fwe-form-grid">
@@ -905,7 +929,7 @@ function EntryDrawer({ entry, calcs, onClose, onUpdateEntry, onUpdateCalc }) {
                         {c.scope === 3 && Ro("Scope 3 category", scope3Of(c))}
                       </div>
                       <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
-                        {Ro("CO2e emission", num(shownKg))}
+                        {Ro("CO2e emission", num(c.kgCO2e))}
                         {Ro("CO2e emission unit", "kgCO₂e")}
                       </div>
                       <div className="fwe-form-grid" style={{ marginTop: 18 }}>
