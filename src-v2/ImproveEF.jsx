@@ -100,7 +100,8 @@ function IefConf({ v, spinning }) {
 // no icon/border/hover. Buttons keep a solid fill, white text, an action icon,
 // elevation and a hover state — so a tag never reads as something to click.
 function IefSynthFlag() {
-  return <span className="ief-synth"><span className="ief-synth-dot" aria-hidden/>Synthetic EF</span>;
+  // "Synthetic" (not "Synthetic EF") — the EF column already gives the context.
+  return <span className="ief-synth"><span className="ief-synth-dot" aria-hidden/>Synthetic</span>;
 }
 
 // ── AI wizard hand-off dialog (the wizard itself is a shared pattern, out of
@@ -483,7 +484,7 @@ function ImproveEFPage({ cta = "hover" }) {
                           <>
                             <button type="button" className="ief-cellcta"
                               onClick={(ev) => { ev.stopPropagation(); setWizardId(e.id); }}>
-                              <Icon name="sparkle" size={11}/>Improve EF
+                              Improve EF
                             </button> {c.ef}
                           </>
                         )
