@@ -54,6 +54,41 @@
 /* Draft status chip (New entry modal header) */
 .st-de_draft { background: var(--fe-gray-100, #f3f4f6); color: var(--fe-gray-700, #374151); }
 
+/* Custom-EF tag — neutral slate (vs the violet "Synthetic"), so provenance
+   reads at a glance: AI-generated vs user's own primary data. */
+.ief-customtag { background: #eef1f6; color: #475569; }
+
+/* DS emission-factor dropdown (New entry modal) — combobox trigger + popover */
+.ief-efselect { position: relative; }
+.ief-efselect__trigger {
+  width: 100%; box-sizing: border-box; min-height: 40px; padding: 9px 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: #fff; border: 1px solid var(--fe-border-default, #d7d7e0); border-radius: 8px;
+  font-family: inherit; font-size: 13px; color: var(--fe-fg-strong); cursor: pointer; text-align: left;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.ief-efselect__trigger:hover { border-color: var(--fe-border-strong); }
+.ief-efselect__trigger[aria-expanded="true"] { border-color: var(--fe-accent-primary); box-shadow: 0 0 0 3px rgba(90,77,255,0.14); }
+.ief-efselect__trigger .ph.placeholder { color: var(--fe-fg-subtle); }
+.ief-efselect__trigger svg { color: var(--fe-fg-muted); flex: 0 0 auto; }
+.ief-efselect__menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 40;
+  background: #fff; border: 1px solid var(--fe-border-subtle); border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(16,16,40,0.30); padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ief-efselect__item {
+  display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+  text-align: left; border: none; background: transparent; cursor: pointer; font-family: inherit;
+  font-size: 13px; color: var(--fe-fg-strong); padding: 9px 10px; border-radius: 6px;
+}
+.ief-efselect__item:hover { background: var(--fe-bg-subtle); }
+.ief-efselect__sep { height: 1px; background: var(--fe-border-subtle); margin: 5px 4px; }
+.ief-efselect__item.create { align-items: flex-start; color: var(--fe-accent-primary); }
+.ief-efselect__item.create svg { margin-top: 2px; flex: 0 0 auto; }
+.ief-efselect__item.create b { display: block; font-weight: 600; }
+.ief-efselect__item.create .sub { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 400; color: var(--fe-fg-muted); }
+
 /* "Change" link inside the chosen-EF control (New entry modal) */
 .ief-changelink {
   border: none; background: transparent; cursor: pointer;

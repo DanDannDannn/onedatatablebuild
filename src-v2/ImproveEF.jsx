@@ -104,6 +104,52 @@ function IefSynthFlag() {
   // Styled as the design-system chip: pastel rounded rectangle, colored text.
   return <span className="ief-synth">Synthetic</span>;
 }
+// EF provenance tag: violet "Synthetic" (AI-generated) or neutral "Custom"
+// (user's own supplier-specific factor). Renders nothing for standard factors.
+function IefEfFlag({ synthetic, custom }) {
+  if (synthetic) return <span className="ief-synth">Synthetic</span>;
+  if (custom) return <span className="ief-synth ief-customtag">Custom</span>;
+  return null;
+}
+
+// Design-system EF dropdown (replaces the native <select>): a combobox-style
+// trigger + a white popover menu, with two "create" actions at the bottom.
+function IefEfSelect({ options, onPick }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const pick = (v) => { setOpen(false); onPick(v); };
+  return (
+    <div className="ief-efselect" ref={ref}>
+      <button type="button" className="ief-efselect__trigger" aria-haspopup="listbox" aria-expanded={open}
+        onClick={() => setOpen(o => !o)}>
+        <span className="ph placeholder">Select an emission factor…</span>
+        <Icon name="chev" size={16}/>
+      </button>
+      {open && (
+        <div className="ief-efselect__menu" role="listbox">
+          {options.map(o => (
+            <button key={o} type="button" role="option" className="ief-efselect__item" onClick={() => pick(o)}>{o}</button>
+          ))}
+          <div className="ief-efselect__sep"/>
+          <button type="button" className="ief-efselect__item create" onClick={() => pick("__synthetic__")}>
+            <Icon name="plus" size={15}/>
+            <span><b>Create synthetic emission factor with AI</b><span className="sub">Deconstruct the line item into components</span></span>
+          </button>
+          <button type="button" className="ief-efselect__item create" onClick={() => pick("__custom__")}>
+            <Icon name="pencil" size={15}/>
+            <span><b>Create custom emission factor</b><span className="sub">Enter your own supplier-specific factor</span></span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── AI wizard hand-off dialog (the wizard itself is a shared pattern, out of
 //    scope here — this dialog stands in for it and skips ahead on confirm) ──
@@ -253,7 +299,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
             <section className="fwe-form-card">
               <h3 className="fwe-form-card__title fwe-card-head">
                 <span>Emission factor details</span>
-                {(phase === "after" || entry.synthetic) && <IefSynthFlag/>}
+                <IefEfFlag synthetic={phase === "after" || entry.synthetic} custom={entry.custom}/>
               </h3>
               <div className="fwe-form-grid" style={{ marginTop: 14 }}>
                 {Ro("Emission factor name",
@@ -385,6 +431,7 @@ function IefNewEntryModal({ onClose, onSubmit }) {
   });
   const [efName, setEfName] = React.useState("");
   const [synthetic, setSynthetic] = React.useState(false);
+  const [custom, setCustom] = React.useState(false);
   const [synthPhase, setSynthPhase] = React.useState("idle"); // idle | improving | done
   const [wizardOpen, setWizardOpen] = React.useState(false);
   const timer = React.useRef(null);
@@ -405,18 +452,24 @@ function IefNewEntryModal({ onClose, onSubmit }) {
   ];
 
   const onPickEf = (v) => {
-    if (v === "__create__") { setWizardOpen(true); return; }
-    setSynthetic(false); setSynthPhase("idle"); setEfName(v);
+    if (v === "__synthetic__") { setWizardOpen(true); return; }
+    if (v === "__custom__") {
+      setSynthetic(false); setCustom(true); setSynthPhase("idle");
+      setEfName("Custom factor · " + (f.supplier || "supplier-specific"));
+      iefToast("Custom emission factor added");
+      return;
+    }
+    setSynthetic(false); setCustom(false); setSynthPhase("idle"); setEfName(v);
   };
   const startSynth = () => {
     setWizardOpen(false);
-    setEfName(""); setSynthetic(false); setSynthPhase("improving");
+    setEfName(""); setSynthetic(false); setCustom(false); setSynthPhase("improving");
     timer.current = setTimeout(() => {
       setEfName("Aluminium brackets, EU supplier mix"); setSynthetic(true); setSynthPhase("done");
       iefToast("Synthetic emission factor generated · confidence 90%");
     }, IEF_IMPROVE_MS);
   };
-  const changeEf = () => { setEfName(""); setSynthetic(false); setSynthPhase("idle"); };
+  const changeEf = () => { setEfName(""); setSynthetic(false); setCustom(false); setSynthPhase("idle"); };
 
   const canSubmit = !!efName && synthPhase !== "improving";
   const Fld = (label, node) => (
@@ -470,7 +523,7 @@ function IefNewEntryModal({ onClose, onSubmit }) {
             <section className="fwe-form-card">
               <h3 className="fwe-form-card__title fwe-card-head">
                 <span>Emission factor details</span>
-                {synthetic && synthPhase === "done" && <IefSynthFlag/>}
+                <IefEfFlag synthetic={synthetic && synthPhase === "done"} custom={custom}/>
               </h3>
               <div className="fwe-form-grid" style={{ marginTop: 14 }}>
                 <div className="fwe-fld">
@@ -483,11 +536,7 @@ function IefNewEntryModal({ onClose, onSubmit }) {
                       <button type="button" className="ief-changelink" onClick={changeEf}>Change</button>
                     </div>
                   ) : (
-                    <select className="control" defaultValue="" onChange={e => onPickEf(e.target.value)}>
-                      <option value="" disabled>Select an emission factor…</option>
-                      {EF_CHOICES.map(o => <option key={o} value={o}>{o}</option>)}
-                      <option value="__create__">＋ Create synthetic emission factor with AI</option>
-                    </select>
+                    <IefEfSelect options={EF_CHOICES} onPick={onPickEf}/>
                   )}
                 </div>
               </div>
@@ -497,9 +546,14 @@ function IefNewEntryModal({ onClose, onSubmit }) {
                   <span><b>Synthetic emission factor generated.</b> Confidence 90%. You can submit the entry now.</span>
                 </div>
               )}
+              {custom && (
+                <p className="fwe-form-card__sub" style={{ margin: "12px 0 0" }}>
+                  Custom factor — supplier-specific primary data. It will be saved with this entry.
+                </p>
+              )}
               {!efName && synthPhase === "idle" && (
                 <p className="fwe-form-card__sub" style={{ margin: "12px 0 0" }}>
-                  No good match? Choose <b>Create synthetic emission factor with AI</b> to generate a tailored one.
+                  No good match? <b>Create synthetic emission factor with AI</b> to generate a tailored one, or <b>create a custom factor</b> from your own data.
                 </p>
               )}
             </section>
@@ -508,7 +562,7 @@ function IefNewEntryModal({ onClose, onSubmit }) {
           <div className="fwe-modal__foot">
             <button className="fwe-btn-secondary" onClick={onClose}>Cancel</button>
             <button className="fwe-btn-primary" disabled={!canSubmit}
-              onClick={() => { onSubmit({ ...f, efName, synthetic }); onClose(); }}>
+              onClick={() => { onSubmit({ ...f, efName, synthetic, custom }); onClose(); }}>
               Submit data entry
             </button>
           </div>
@@ -543,9 +597,10 @@ function ImproveEFPage({ cta = "hover" }) {
   // Build a full table entry from the New-entry form + chosen/generated EF.
   const addEntry = (data) => {
     const priceNum = parseFloat(String(data.price).replace(/[^0-9.]/g, "")) || 0;
-    const val = data.synthetic ? 0.31 : 0.42;
+    const val = data.synthetic ? 0.31 : data.custom ? 0.28 : 0.42;
     const co2t = priceNum ? (priceNum * val / 1000).toFixed(2) : "12.00";
     const n = created.length + 1;
+    const kind = data.synthetic ? "synthetic" : data.custom ? "custom" : "standard";
     const entry = {
       id: "DE-2026-9" + String(n).padStart(3, "0"),
       desc: data.desc || "New data entry", supplier: data.supplier || "—", bu: data.bu,
@@ -553,20 +608,20 @@ function ImproveEFPage({ cta = "hover" }) {
       consType: "Spend data", cat: "3.1 Purchased goods and services", act: data.activity,
       user: "Johannes Weber", input: "Manual entry", imp: "—", files: 0,
       start: "2026-01-01", end: "2026-03-31", updated: "2026-07-08", created: "2026-07-08",
-      lca: "Cradle-to-gate", low: false, synthetic: !!data.synthetic,
+      lca: "Cradle-to-gate", low: false, synthetic: !!data.synthetic, custom: !!data.custom,
       before: {
         ef: data.efName,
-        src: data.synthetic ? "Forward Earth synthetic v1" : "EXIOBASE",
-        year: data.synthetic ? "2026" : "2019",
-        basis: data.synthetic ? "AI-deconstructed" : "spend-based",
-        conf: data.synthetic ? 0.9 : 0.85, co2t,
+        src: kind === "synthetic" ? "Forward Earth synthetic v1" : kind === "custom" ? "Custom (primary data)" : "EXIOBASE",
+        year: kind === "standard" ? "2019" : "2026",
+        basis: kind === "synthetic" ? "AI-deconstructed" : kind === "custom" ? "supplier-specific" : "spend-based",
+        conf: kind === "synthetic" ? 0.9 : kind === "custom" ? 0.92 : 0.85, co2t,
         val: String(val), unit: "kgCO₂e/" + data.cur,
         co2: (priceNum * val).toLocaleString(undefined, { maximumFractionDigits: 0 }) + " kg",
       },
       after: null,
     };
     setCreated(cs => [entry, ...cs]);
-    iefToast(`${entry.id} submitted · emission factor ${data.synthetic ? "(synthetic) " : ""}applied`);
+    iefToast(`${entry.id} submitted · ${kind === "standard" ? "emission factor" : kind + " emission factor"} applied`);
   };
   const copyRow = (id) => iefToast(`Link to ${id} copied to clipboard`);
   const deleteRow = (id) => {
@@ -662,7 +717,7 @@ function ImproveEFPage({ cta = "hover" }) {
                   <td>
                     {ph === "improving"
                       ? <span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span>
-                      : (ph === "after" || e.synthetic) ? <><IefSynthFlag/> {c.ef}</>
+                      : (ph === "after" || e.synthetic || e.custom) ? <><IefEfFlag synthetic={ph === "after" || e.synthetic} custom={e.custom}/> {c.ef}</>
                       : cta === "cell" && e.low ? (
                           <>
                             <button type="button" className="ief-cellcta"
