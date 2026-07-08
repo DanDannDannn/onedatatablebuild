@@ -31,14 +31,14 @@
 .ief-table tbody tr:nth-child(even) { background: var(--fe-bg-subtle); }
 .ief-table tbody tr:hover { background: #f3effe; }
 
-/* Right-frozen actions cell — stays visible while the grid scrolls, like the
-   product's row-actions column. Background tracks the row. */
+/* Right-frozen anchor cell for the floating actions — zero width so the grid
+   reserves no blank column; the absolutely-positioned tray hangs off it. */
 .ief-table th.ief-act-cell, .ief-table td.ief-act-cell {
   position: sticky; right: 0;
-  box-shadow: -6px 0 6px -6px rgba(11,16,49,0.14);
+  width: 0; min-width: 0; max-width: 0; padding: 0;
+  background: transparent; overflow: visible;
 }
-.ief-table th.ief-act-cell { background: #7c3aed; z-index: 3; }
-.ief-table td.ief-act-cell { background: inherit; z-index: 2; }
+.ief-table td.ief-act-cell { z-index: 2; }
 
 /* EF confidence pill (table column) — Low / Med / High, like the reference. */
 .ief-confpill {
@@ -49,14 +49,26 @@
 .ief-confpill.med  { background: var(--fe-alert-50, #fef3c7);  color: var(--fe-alert-700, #b45309); }
 .ief-confpill.low  { background: #fee2e2; color: #991b1b; }
 
-/* Hover row actions: copy link + delete on every row (both options); option 2
-   adds the inline "Improve EF" CTA for low-confidence rows. Revealed on hover. */
+/* Hover row actions: copy link + delete on every row; low-confidence rows add
+   the inline "Improve EF" CTA. The actions cell is ZERO-width (no reserved
+   blank column) — the buttons float over the row's right edge on hover in a
+   small white tray, pinned by the sticky cell while the grid scrolls. */
 .ief-actions {
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%) translateX(6px);
   display: inline-flex; align-items: center; gap: 6px;
-  opacity: 0; transform: translateX(4px);
+  padding: 4px 6px;
+  background: #fff; border: 1px solid var(--fe-border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px -6px rgba(11,16,49,0.28);
+  opacity: 0; pointer-events: none;
   transition: opacity .12s ease, transform .12s ease;
+  white-space: nowrap;
 }
-.ief-table tbody tr:hover .ief-actions { opacity: 1; transform: none; }
+.ief-table tbody tr:hover .ief-actions {
+  opacity: 1; pointer-events: auto;
+  transform: translateY(-50%);
+}
 .ief-rowcta {
   display: inline-flex; align-items: center; gap: 5px;
   border: none; border-radius: 6px; cursor: pointer;
