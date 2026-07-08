@@ -148,7 +148,7 @@ function IefWizardDialog({ entry, onCancel, onConfirm }) {
   );
 }
 
-// ── Entry detail modal (product fwe-modal chrome) ────────────────────────────
+// ── Entry detail modal (product fwe-modal chrome, full-page content) ─────────
 function IefDetailModal({ entry, phase, option, onClose, onImprove }) {
   React.useEffect(() => {
     const onKey = (ev) => { if (ev.key === "Escape") onClose(); };
@@ -157,11 +157,39 @@ function IefDetailModal({ entry, phase, option, onClose, onImprove }) {
   }, [onClose]);
 
   const c = iefCalc(entry, phase);
-  const Ro = (label, value) => (
+  const Ro = (label, value, opt) => (
     <div className="fwe-fld" key={label}>
-      <span className="lab">{label}</span>
+      <span className="lab">{label}{opt && <span className="opt"> (optional)</span>}</span>
       <div className="control">{value}</div>
     </div>
+  );
+  const spend = entry.consType === "Spend data";
+
+  // Option 1: the low-match signal + CTA sit in a banner at the TOP of the
+  // modal (above the fold) — the full entry content follows below.
+  const banner = option === 1 && entry.low && (
+    phase === "before" ? (
+      <div className="ief-banner">
+        <Icon name="warn" size={17} className="ic"/>
+        <span className="tx"><b>Low EF match ({Math.round(entry.before.conf * 100)}%).</b> Matched
+          to a broad, spend-based sector average — the product is more specific than the factor.</span>
+        <button className="fwe-btn-primary" style={{ height: 36, fontSize: 13, flex: "0 0 auto" }} onClick={onImprove}>
+          <Icon name="sparkle" size={14}/>Improve emission factor
+        </button>
+      </div>
+    ) : phase === "improving" ? (
+      <div className="ief-banner busy">
+        <span className="ief-spinner sm" aria-hidden/>
+        <span className="tx"><b>Generating an improved emission factor…</b> This can take a few
+          minutes — you can leave this page.</span>
+      </div>
+    ) : (
+      <div className="ief-banner ok">
+        <Icon name="check" size={17} className="ic"/>
+        <span className="tx"><b>Emission factor improved.</b> Confidence is now {Math.round(c.conf * 100)}% —
+          the previous factor is kept in the audit log.</span>
+      </div>
+    )
   );
 
   return (
@@ -180,16 +208,46 @@ function IefDetailModal({ entry, phase, option, onClose, onImprove }) {
           </div>
 
           <div className="fwe-modal__body">
+            {banner}
+
             <section className="fwe-form-card">
               <h3 className="fwe-form-card__title">General information</h3>
               <div className="fwe-form-grid">
                 {Ro("Business activity", entry.act)}
                 {Ro("Business unit", entry.bu)}
-                {Ro("Supplier name", entry.supplier)}
+                {Ro("User assigned", entry.user)}
                 <div className="fwe-form-grid two">
-                  {Ro("Consumption data type", entry.consType)}
-                  {Ro(entry.consType === "Spend data" ? "Price" : "Quantity", entry.cons)}
+                  {Ro("Start date", entry.start)}
+                  {Ro("End date", entry.end)}
                 </div>
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Data entry type</h3>
+              <p className="fwe-form-card__sub">How the data in this entry was provided</p>
+              <div className="fwe-form-grid">
+                {Ro("Data input type", entry.input)}
+                {Ro("Consumption data type", entry.consType)}
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Consumption details</h3>
+              <div className="fwe-form-grid">
+                {spend ? (
+                  <div className="fwe-form-grid two">
+                    {Ro("Currency", "EUR – Euro")}
+                    {Ro("Price", entry.consV)}
+                  </div>
+                ) : (
+                  <div className="fwe-form-grid two">
+                    {Ro("Material/service quantity", entry.consV)}
+                    {Ro("Material/service unit", entry.consU)}
+                  </div>
+                )}
+                {Ro("Description", entry.desc, true)}
+                {Ro("Supplier name", entry.supplier, true)}
               </div>
             </section>
 
@@ -219,11 +277,21 @@ function IefDetailModal({ entry, phase, option, onClose, onImprove }) {
                   {Ro("Emission factor value", c.val)}
                   {Ro("Emission factor unit", c.unit)}
                   {Ro("Emission factor source", c.src)}
+                  {Ro("Emission factor dataset", c.src)}
                   {Ro("Emission factor year", c.year)}
-                  {Ro("CO₂e emission", c.co2)}
+                  {Ro("Emission factor region", "Europe")}
+                  {Ro("Emission factor LCA activity", entry.lca)}
+                  {Ro("Scope", "3")}
                   {Ro("Scope 3 category", entry.cat)}
                 </div>
-                {entry.low && phase === "before" && (
+                <div className="fwe-form-grid two" style={{ marginTop: 18 }}>
+                  {Ro("CO₂e emission", c.co2)}
+                  {Ro("CO₂e emission unit", "kgCO₂e")}
+                </div>
+                <div className="fwe-form-grid" style={{ marginTop: 18 }}>
+                  {Ro("CO₂e calculation method", "GWP100")}
+                </div>
+                {entry.low && phase === "before" && option !== 1 && (
                   <div className="ief-match">
                     <Icon name="warn" size={15} className="ic"/>
                     <span><b>Low EF match ({Math.round(c.conf * 100)}%).</b> Matched to a broad,
@@ -239,6 +307,29 @@ function IefDetailModal({ entry, phase, option, onClose, onImprove }) {
                 )}
               </section>
             )}
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Attachments</h3>
+              <p className="fwe-form-card__sub">Upload supporting documents (images or PDFs, max 2MB) as proof of your entries</p>
+              <div className="fwe-dropzone">
+                <div className="fwe-dropzone__drop">
+                  <Icon name="upload" size={18}/>
+                  <span>You can't add files to a submitted data entry</span>
+                </div>
+                <div className="fwe-dropzone__files">
+                  <h4>Uploaded files</h4>
+                  <p>{entry.files > 0 ? `${entry.files} file${entry.files > 1 ? "s" : ""} attached` : "Files have not been uploaded yet"}</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Notes</h3>
+              <div className="fwe-fld">
+                <span className="lab">Notes</span>
+                <div className="control placeholder" style={{ minHeight: 84, alignItems: "flex-start" }}>—</div>
+              </div>
+            </section>
           </div>
 
           <div className="fwe-modal__foot">

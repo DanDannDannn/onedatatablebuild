@@ -65,6 +65,30 @@
 /* In-flight confidence cell (option 2, progress state) */
 .ief-spin { animation: spin 1.6s linear infinite; transform-origin: center; display: inline-flex; }
 
+/* ── Top-of-modal banner (option 1): low-match signal + CTA above the fold ── */
+.ief-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-radius: 12px;
+  border: 1px solid var(--fe-alert-200, #fde68a);
+  background: var(--fe-alert-50, #fef3c7);
+  color: var(--fe-alert-700, #b45309);
+  font-size: 13px; line-height: 1.5;
+}
+.ief-banner .ic { flex: 0 0 auto; }
+.ief-banner .tx { flex: 1; min-width: 0; }
+.ief-banner b { font-weight: 700; }
+.ief-banner.busy {
+  border-color: var(--fe-primary-200, #c9c2ff);
+  background: var(--fe-primary-50, #f5f3ff);
+  color: var(--fe-primary-700, #5b21b6);
+}
+.ief-banner.ok {
+  border-color: var(--fe-success-200, #a7f3d0);
+  background: var(--fe-success-50, #ecfdf5);
+  color: var(--fe-success-700, #047857);
+}
+.ief-spinner.sm { width: 16px; height: 16px; border-width: 2px; flex: 0 0 auto; }
+
 /* ── EF-match callout inside the Calculation card ── */
 .ief-match {
   margin-top: 16px; padding: 11px 13px; border-radius: 8px;
