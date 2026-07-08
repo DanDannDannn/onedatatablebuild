@@ -78,14 +78,11 @@ const iefToast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { det
 // phase: "before" | "improving" | "after"
 const iefCalc = (e, phase) => (phase === "after" && e.after) ? e.after : e.before;
 
-// The workflow status ("Submitted") is never replaced — progress renders as a
-// second chip beside it. The low-match signal lives in the confidence column.
-function IefStatusChip({ phase }) {
-  const submitted = <span className="status-chip st-de_submitted">Submitted</span>;
-  const extra = phase === "improving"
-    ? <span className="status-chip st-cs_processing"><Icon name="clock" size={12} className="ic"/>Improving EF…</span>
-    : null;
-  return <span className="ief-chips">{submitted}{extra}</span>;
+// The workflow status is always just "Submitted" — untouched by EF quality or
+// the improvement job. The low-match signal lives in the confidence column and
+// the "Improving EF…" progress indicator lives in the EF name field.
+function IefStatusChip() {
+  return <span className="status-chip st-de_submitted">Submitted</span>;
 }
 
 // Confidence as a Low / Med / High pill (percentages stay in the detail view).
@@ -199,7 +196,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
         <div className="fwe-modal">
           <div className="fwe-modal__head">
             <h2 className="trunc">{entry.desc}{"  |  "}{entry.bu}</h2>
-            <IefStatusChip phase={phase}/>
+            <IefStatusChip/>
             <button className="link-ic" title="Copy link to this entry" aria-label="Copy link to this entry"
               onClick={() => iefToast(`Link to ${entry.id} copied to clipboard`)}>
               <Icon name="link" size={17}/>
@@ -260,7 +257,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
               <div className="fwe-form-grid" style={{ marginTop: 14 }}>
                 {Ro("Emission factor name",
                   phase === "improving"
-                    ? <span style={{ color: "var(--fe-fg-subtle)" }}>Regenerating…</span>
+                    ? <span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span>
                     : phase === "after"
                       ? <><Icon name="sparkle" size={14} style={{ color: "var(--fe-accent-primary)", flex: "0 0 auto" }}/>{c.ef}</>
                       : c.ef)}
@@ -477,12 +474,12 @@ function ImproveEFPage({ cta = "hover" }) {
               const c = iefCalc(e, ph);
               return (
                 <tr key={e.id} onClick={() => setDetailId(e.id)}>
-                  <td><IefStatusChip phase={ph}/></td>
+                  <td><IefStatusChip/></td>
                   <td>{e.supplier}</td>
                   <td>{e.desc}</td>
                   <td>
                     {ph === "improving"
-                      ? <span style={{ color: "var(--fe-fg-subtle)" }}>Regenerating…</span>
+                      ? <span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span>
                       : ph === "after" ? <>{c.ef} <IefSynthFlag/></>
                       : cta === "cell" && e.low ? (
                           <>
