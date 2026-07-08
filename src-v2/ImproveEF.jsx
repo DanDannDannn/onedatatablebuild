@@ -80,14 +80,16 @@ const iefToast = (msg) => window.dispatchEvent(new CustomEvent("fe-toast", { det
 // phase: "before" | "improving" | "after"
 const iefCalc = (e, phase) => (phase === "after" && e.after) ? e.after : e.before;
 
+// The workflow status ("Submitted") is never replaced — the EF-quality /
+// progress signal renders as a second chip beside it.
 function IefStatusChip({ entry, phase, option }) {
-  if (phase === "improving") {
-    return <span className="status-chip st-cs_processing"><Icon name="clock" size={12} className="ic"/>Improving EF…</span>;
-  }
-  if (option === 1 && entry.low && phase === "before") {
-    return <span className="status-chip st-cs_sug_low"><Icon name="warn" size={12}/>Low EF match</span>;
-  }
-  return <span className="status-chip st-de_submitted">Submitted</span>;
+  const submitted = <span className="status-chip st-de_submitted">Submitted</span>;
+  const extra = phase === "improving"
+    ? <span className="status-chip st-cs_processing"><Icon name="clock" size={12} className="ic"/>Improving EF…</span>
+    : (option === 1 && entry.low && phase === "before")
+      ? <span className="status-chip st-cs_sug_low"><Icon name="warn" size={12}/>Low EF match</span>
+      : null;
+  return <span className="ief-chips">{submitted}{extra}</span>;
 }
 
 function IefConf({ v, spinning }) {

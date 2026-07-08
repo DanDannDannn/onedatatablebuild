@@ -5,6 +5,9 @@
 /* Small muted caption under the page title identifying the mock variant. */
 .ief-caption { margin-top: 4px; font-size: 12.5px; color: var(--fe-fg-muted); }
 
+/* Status cell: workflow chip + optional quality/progress chip side by side. */
+.ief-chips { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
 /* ── Data table (mirrors the product grid's purple header + zebra rows) ── */
 .ief-tablewrap {
   background: #fff; border: 1px solid var(--fe-border-subtle);
