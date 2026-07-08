@@ -40,7 +40,7 @@
 
 /* EF confidence pill (table column) — Low / Med / High, like the reference. */
 .ief-confpill {
-  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  display: inline-block; padding: 3px 11px; border-radius: 9999px;
   font-size: 12px; font-weight: 600; line-height: 16px;
 }
 .ief-confpill.high { background: var(--fe-success-50, #dcfce7); color: var(--fe-success-700, #15803d); }
@@ -90,24 +90,27 @@
    opposite of a button: flat tint, no border/shadow/hover, square 4px corners
    instead of a pill, small uppercase caps, a non-actionable status dot, and a
    default cursor. Sits in FRONT of the EF name, left-aligned. */
+/* Design-system convention (Claude): tags/chips are fully ROUND, buttons are
+   rounded RECTANGLES. The tag is a flat round pill — no border/shadow/hover,
+   status dot, uppercase micro-text, default cursor. */
 .ief-synth {
   display: inline-flex; align-items: center; gap: 5px;
   margin-right: 8px; vertical-align: 1px;
-  padding: 2px 7px; border-radius: 4px; cursor: default;
+  padding: 2px 9px; border-radius: 9999px; cursor: default;
   background: var(--fe-primary-50, #ecefff); color: var(--fe-primary-700, #5b21b6);
   font-size: 10px; font-weight: 700;
   letter-spacing: 0.06em; text-transform: uppercase;
 }
 .ief-synth-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--fe-accent-primary, #5a4dff); flex: 0 0 auto; }
 
-/* In-cell CTA (version B): a compact solid button in FRONT of the EF name.
-   Everything says "pressable": saturated fill, white text, action icon, a
-   raised shadow that lifts on hover, and a pointer cursor. */
+/* In-cell CTA (version B): a solid button in FRONT of the EF name — a rounded
+   RECTANGLE (not a pill). Everything else says "pressable": saturated fill,
+   white text, action icon, a raised shadow that lifts on hover, pointer. */
 .ief-cellcta {
   display: inline-flex; align-items: center; gap: 4px;
   margin-right: 8px; vertical-align: 1px;
-  height: 22px; padding: 0 10px;
-  border: none; border-radius: 9999px; cursor: pointer;
+  height: 22px; padding: 0 9px;
+  border: none; border-radius: 6px; cursor: pointer;
   background: var(--fe-accent-primary); color: #fff;
   font-family: inherit; font-size: 11.5px; font-weight: 600;
   box-shadow: 0 1px 2px rgba(48,42,108,0.28), 0 2px 6px -2px rgba(90,77,255,0.5);
