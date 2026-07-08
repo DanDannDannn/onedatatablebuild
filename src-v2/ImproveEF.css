@@ -51,6 +51,23 @@
    (scoped override — the shared product status-chip stays a pill elsewhere). */
 .ief-statuspill { border-radius: 6px; }
 
+/* Draft status chip (New entry modal header) */
+.st-de_draft { background: var(--fe-gray-100, #f3f4f6); color: var(--fe-gray-700, #374151); }
+
+/* "Change" link inside the chosen-EF control (New entry modal) */
+.ief-changelink {
+  border: none; background: transparent; cursor: pointer;
+  color: var(--fe-accent-primary); font-family: inherit; font-size: 12px; font-weight: 600;
+  padding: 0; flex: 0 0 auto;
+}
+.ief-changelink:hover { text-decoration: underline; }
+
+/* Disabled primary button (Submit until an EF is chosen) */
+.fwe-btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+/* Freshly created row — brief accent rail so it's easy to spot at the top. */
+.ief-table tbody tr.ief-created td:first-child { box-shadow: inset 3px 0 0 var(--fe-accent-primary); }
+
 /* Hover row actions: copy link + delete on every row; low-confidence rows add
    the inline "Improve EF" CTA. The actions cell is ZERO-width (no reserved
    blank column) — the buttons float over the row's right edge on hover in a

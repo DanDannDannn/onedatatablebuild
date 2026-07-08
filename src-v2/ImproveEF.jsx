@@ -253,7 +253,7 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
             <section className="fwe-form-card">
               <h3 className="fwe-form-card__title fwe-card-head">
                 <span>Emission factor details</span>
-                {phase === "after" && <IefSynthFlag/>}
+                {(phase === "after" || entry.synthetic) && <IefSynthFlag/>}
               </h3>
               <div className="fwe-form-grid" style={{ marginTop: 14 }}>
                 {Ro("Emission factor name",
@@ -373,6 +373,158 @@ function IefDetailModal({ entry, phase, onClose, onImprove }) {
   );
 }
 
+// ── New data entry modal — create an entry and pick or generate an EF ────────
+// The Emission-factor dropdown includes a "Create synthetic emission factor
+// with AI" option that triggers the SAME wizard flow. Once an EF is chosen or
+// generated, the entry can be submitted and lands in the table.
+function IefNewEntryModal({ onClose, onSubmit }) {
+  const [f, setF] = React.useState({
+    activity: "Purchased goods & services", bu: "Operations DE",
+    supplier: "Aurora Precision GmbH", desc: "CNC-machined aluminium brackets",
+    cur: "EUR", price: "25,000",
+  });
+  const [efName, setEfName] = React.useState("");
+  const [synthetic, setSynthetic] = React.useState(false);
+  const [synthPhase, setSynthPhase] = React.useState("idle"); // idle | improving | done
+  const [wizardOpen, setWizardOpen] = React.useState(false);
+  const timer = React.useRef(null);
+  React.useEffect(() => {
+    const onKey = (ev) => { if (ev.key === "Escape" && !wizardOpen) onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, wizardOpen]);
+  // Clear the synth timer only on unmount (not when wizardOpen toggles, or the
+  // improvement job would be cancelled the moment the wizard closes).
+  React.useEffect(() => () => clearTimeout(timer.current), []);
+
+  const set = (k, v) => setF(s => ({ ...s, [k]: v }));
+  const EF_CHOICES = [
+    "Fabricated metal products, EU average",
+    "Aluminium products, EU average",
+    "Machined metal components, global average",
+  ];
+
+  const onPickEf = (v) => {
+    if (v === "__create__") { setWizardOpen(true); return; }
+    setSynthetic(false); setSynthPhase("idle"); setEfName(v);
+  };
+  const startSynth = () => {
+    setWizardOpen(false);
+    setEfName(""); setSynthetic(false); setSynthPhase("improving");
+    timer.current = setTimeout(() => {
+      setEfName("Aluminium brackets, EU supplier mix"); setSynthetic(true); setSynthPhase("done");
+      iefToast("Synthetic emission factor generated · confidence 90%");
+    }, IEF_IMPROVE_MS);
+  };
+  const changeEf = () => { setEfName(""); setSynthetic(false); setSynthPhase("idle"); };
+
+  const canSubmit = !!efName && synthPhase !== "improving";
+  const Fld = (label, node) => (
+    <div className="fwe-fld"><span className="lab">{label}</span>{node}</div>
+  );
+
+  return (
+    <>
+      <div className="fwe-scrim" onClick={onClose}/>
+      <div className="fwe-modal-wrap" role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="fwe-modal">
+          <div className="fwe-modal__head">
+            <h2 className="trunc">New data entry</h2>
+            <span className="status-chip st-de_draft ief-statuspill">Draft</span>
+            <button className="close" aria-label="Close" onClick={onClose}><Icon name="close" size={18}/></button>
+          </div>
+
+          <div className="fwe-modal__body">
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">General information</h3>
+              <div className="fwe-form-grid">
+                {Fld("Business activity",
+                  <select className="control" value={f.activity} onChange={e => set("activity", e.target.value)}>
+                    <option>Purchased goods & services</option>
+                    <option>Capital goods</option>
+                    <option>Upstream transport</option>
+                  </select>)}
+                {Fld("Business unit",
+                  <select className="control" value={f.bu} onChange={e => set("bu", e.target.value)}>
+                    <option>Operations DE</option><option>Operations IT</option>
+                    <option>Logistics</option><option>Shared services</option>
+                  </select>)}
+                {Fld("Supplier name", <input className="control" value={f.supplier} onChange={e => set("supplier", e.target.value)}/>)}
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title">Consumption details</h3>
+              <div className="fwe-form-grid">
+                <div className="fwe-form-grid two">
+                  {Fld("Currency",
+                    <select className="control" value={f.cur} onChange={e => set("cur", e.target.value)}>
+                      <option>EUR</option><option>USD</option><option>GBP</option>
+                    </select>)}
+                  {Fld("Price", <input className="control" value={f.price} onChange={e => set("price", e.target.value)}/>)}
+                </div>
+                {Fld("Description", <input className="control" value={f.desc} onChange={e => set("desc", e.target.value)}/>)}
+              </div>
+            </section>
+
+            <section className="fwe-form-card">
+              <h3 className="fwe-form-card__title fwe-card-head">
+                <span>Emission factor details</span>
+                {synthetic && synthPhase === "done" && <IefSynthFlag/>}
+              </h3>
+              <div className="fwe-form-grid" style={{ marginTop: 14 }}>
+                <div className="fwe-fld">
+                  <span className="lab">Emission factor name</span>
+                  {synthPhase === "improving" ? (
+                    <div className="control"><span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span></div>
+                  ) : efName ? (
+                    <div className="control" style={{ justifyContent: "space-between" }}>
+                      <span>{efName}</span>
+                      <button type="button" className="ief-changelink" onClick={changeEf}>Change</button>
+                    </div>
+                  ) : (
+                    <select className="control" defaultValue="" onChange={e => onPickEf(e.target.value)}>
+                      <option value="" disabled>Select an emission factor…</option>
+                      {EF_CHOICES.map(o => <option key={o} value={o}>{o}</option>)}
+                      <option value="__create__">＋ Create synthetic emission factor with AI</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+              {synthPhase === "done" && (
+                <div className="ief-match ok" style={{ marginTop: 14 }}>
+                  <Icon name="check" size={15} className="ic"/>
+                  <span><b>Synthetic emission factor generated.</b> Confidence 90%. You can submit the entry now.</span>
+                </div>
+              )}
+              {!efName && synthPhase === "idle" && (
+                <p className="fwe-form-card__sub" style={{ margin: "12px 0 0" }}>
+                  No good match? Choose <b>Create synthetic emission factor with AI</b> to generate a tailored one.
+                </p>
+              )}
+            </section>
+          </div>
+
+          <div className="fwe-modal__foot">
+            <button className="fwe-btn-secondary" onClick={onClose}>Cancel</button>
+            <button className="fwe-btn-primary" disabled={!canSubmit}
+              onClick={() => { onSubmit({ ...f, efName, synthetic }); onClose(); }}>
+              Submit data entry
+            </button>
+          </div>
+        </div>
+      </div>
+      {wizardOpen && (
+        <IefWizardDialog
+          entry={{ desc: f.desc || "this line item" }}
+          onCancel={() => setWizardOpen(false)}
+          onConfirm={startSynth}
+        />
+      )}
+    </>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 // cta: "hover" — Improve EF lives in the hover actions tray (row end).
 //      "cell"  — Improve EF is a compact button inside the EF name cell.
@@ -381,10 +533,41 @@ function ImproveEFPage({ cta = "hover" }) {
   const [detailId, setDetailId] = React.useState(null);
   const [wizardId, setWizardId] = React.useState(null);
   const [deleted, setDeleted] = React.useState(() => new Set());
+  const [newOpen, setNewOpen] = React.useState(false);      // "New data entry" modal
+  const [created, setCreated] = React.useState([]);         // user-created entries (prepended)
   const timers = React.useRef({});
   React.useEffect(() => () => Object.values(timers.current).forEach(clearTimeout), []);
 
   const phaseOf = (id) => phases[id] || "before";
+
+  // Build a full table entry from the New-entry form + chosen/generated EF.
+  const addEntry = (data) => {
+    const priceNum = parseFloat(String(data.price).replace(/[^0-9.]/g, "")) || 0;
+    const val = data.synthetic ? 0.31 : 0.42;
+    const co2t = priceNum ? (priceNum * val / 1000).toFixed(2) : "12.00";
+    const n = created.length + 1;
+    const entry = {
+      id: "DE-2026-9" + String(n).padStart(3, "0"),
+      desc: data.desc || "New data entry", supplier: data.supplier || "—", bu: data.bu,
+      consV: data.price || "—", consU: data.cur, cons: (data.price || "—") + " " + data.cur,
+      consType: "Spend data", cat: "3.1 Purchased goods and services", act: data.activity,
+      user: "Johannes Weber", input: "Manual entry", imp: "—", files: 0,
+      start: "2026-01-01", end: "2026-03-31", updated: "2026-07-08", created: "2026-07-08",
+      lca: "Cradle-to-gate", low: false, synthetic: !!data.synthetic,
+      before: {
+        ef: data.efName,
+        src: data.synthetic ? "Forward Earth synthetic v1" : "EXIOBASE",
+        year: data.synthetic ? "2026" : "2019",
+        basis: data.synthetic ? "AI-deconstructed" : "spend-based",
+        conf: data.synthetic ? 0.9 : 0.85, co2t,
+        val: String(val), unit: "kgCO₂e/" + data.cur,
+        co2: (priceNum * val).toLocaleString(undefined, { maximumFractionDigits: 0 }) + " kg",
+      },
+      after: null,
+    };
+    setCreated(cs => [entry, ...cs]);
+    iefToast(`${entry.id} submitted · emission factor ${data.synthetic ? "(synthetic) " : ""}applied`);
+  };
   const copyRow = (id) => iefToast(`Link to ${id} copied to clipboard`);
   const deleteRow = (id) => {
     setDeleted(s => new Set(s).add(id));
@@ -406,11 +589,13 @@ function ImproveEFPage({ cta = "hover" }) {
     Object.values(timers.current).forEach(clearTimeout);
     timers.current = {};
     setPhases({}); setDetailId(null); setWizardId(null); setDeleted(new Set());
+    setNewOpen(false); setCreated([]);
     iefToast("Demo reset — low-match entries restored");
   };
 
-  const detail = detailId ? IEF_ENTRIES.find(e => e.id === detailId) : null;
-  const wizard = wizardId ? IEF_ENTRIES.find(e => e.id === wizardId) : null;
+  const allEntries = [...created, ...IEF_ENTRIES];
+  const detail = detailId ? allEntries.find(e => e.id === detailId) : null;
+  const wizard = wizardId ? allEntries.find(e => e.id === wizardId) : null;
 
   // Mirrors the Data page's default entry-orientation columns (ENTRY_VISIBLE).
   return (
@@ -428,7 +613,7 @@ function ImproveEFPage({ cta = "hover" }) {
           <button className="btn secondary" style={{ whiteSpace: "nowrap" }} onClick={reset}>
             <Icon name="refresh" size={16}/>Reset demo
           </button>
-          <button className="btn primary" style={{ whiteSpace: "nowrap" }} onClick={() => iefToast("Add data — not part of this mock")}>
+          <button className="btn primary" style={{ whiteSpace: "nowrap" }} onClick={() => setNewOpen(true)}>
             <Icon name="plus" size={18}/>Add data
           </button>
         </div>
@@ -466,18 +651,18 @@ function ImproveEFPage({ cta = "hover" }) {
             </tr>
           </thead>
           <tbody>
-            {IEF_ENTRIES.filter(e => !deleted.has(e.id)).map(e => {
+            {allEntries.filter(e => !deleted.has(e.id)).map(e => {
               const ph = phaseOf(e.id);
               const c = iefCalc(e, ph);
               return (
-                <tr key={e.id} onClick={() => setDetailId(e.id)}>
+                <tr key={e.id} className={created.includes(e) ? "ief-created" : undefined} onClick={() => setDetailId(e.id)}>
                   <td><IefStatusChip/></td>
                   <td>{e.supplier}</td>
                   <td>{e.desc}</td>
                   <td>
                     {ph === "improving"
                       ? <span className="ief-efbusy"><span className="ief-spin"><Icon name="refresh" size={13}/></span>Improving EF…</span>
-                      : ph === "after" ? <><IefSynthFlag/> {c.ef}</>
+                      : (ph === "after" || e.synthetic) ? <><IefSynthFlag/> {c.ef}</>
                       : cta === "cell" && e.low ? (
                           <>
                             <button type="button" className="ief-cellcta"
@@ -544,6 +729,9 @@ function ImproveEFPage({ cta = "hover" }) {
           onCancel={() => setWizardId(null)}
           onConfirm={() => startImprove(wizard.id)}
         />
+      )}
+      {newOpen && (
+        <IefNewEntryModal onClose={() => setNewOpen(false)} onSubmit={addEntry} />
       )}
     </div>
   );
