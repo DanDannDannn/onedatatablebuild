@@ -101,7 +101,8 @@ function IefConf({ v, spinning }) {
 // elevation and a hover state — so a tag never reads as something to click.
 function IefSynthFlag() {
   // "Synthetic" (not "Synthetic EF") — the EF column already gives the context.
-  return <span className="ief-synth"><span className="ief-synth-dot" aria-hidden/>Synthetic</span>;
+  // Styled as the design-system chip: pastel rounded rectangle, colored text.
+  return <span className="ief-synth">Synthetic</span>;
 }
 
 // ── AI wizard hand-off dialog (the wizard itself is a shared pattern, out of

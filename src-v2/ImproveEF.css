@@ -40,7 +40,7 @@
 
 /* EF confidence pill (table column) — Low / Med / High, like the reference. */
 .ief-confpill {
-  display: inline-block; padding: 3px 11px; border-radius: 9999px;
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
   font-size: 12px; font-weight: 600; line-height: 16px;
 }
 .ief-confpill.high { background: var(--fe-success-50, #dcfce7); color: var(--fe-success-700, #15803d); }
@@ -90,18 +90,16 @@
    opposite of a button: flat tint, no border/shadow/hover, square 4px corners
    instead of a pill, small uppercase caps, a non-actionable status dot, and a
    default cursor. Sits in FRONT of the EF name, left-aligned. */
-/* Design-system convention (Claude): tags/chips are fully ROUND, buttons are
-   rounded RECTANGLES. The tag is a flat round pill — no border/shadow/hover,
-   status dot, uppercase micro-text, default cursor. */
+/* Design-system chip/label: a pastel rounded RECTANGLE with colored text, flat
+   (no border/shadow/hover), normal case, default cursor. Buttons stay distinct
+   via a saturated fill, white text and elevation — not shape. */
 .ief-synth {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center;
   margin-right: 8px; vertical-align: 1px;
-  padding: 2px 9px; border-radius: 9999px; cursor: default;
+  padding: 2px 8px; border-radius: 6px; cursor: default;
   background: var(--fe-primary-50, #ecefff); color: var(--fe-primary-700, #5b21b6);
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 11px; font-weight: 600;
 }
-.ief-synth-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--fe-accent-primary, #5a4dff); flex: 0 0 auto; }
 
 /* In-cell CTA (version B): a solid button in FRONT of the EF name — a rounded
    RECTANGLE (not a pill). Everything else says "pressable": saturated fill,
