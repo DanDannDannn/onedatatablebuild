@@ -628,10 +628,11 @@ function openDetail(id){
   if(e.low){
     if(ph==="before") banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span>${e.status==="Ready to submit"?`<button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openWizard('${id}')">Improve emission factor</button>`:""}</div>`;
     else if(ph==="improving") banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating an improved emission factor…</b> This can take a few minutes — you can leave this page.</span></div>`;
-    else banner=`<div class="banner ok"><span style="flex:0 0 auto">${svg("check",18)}</span><span class="tx"><b>Emission factor improved.</b> Confidence is now ${Math.round(c.conf*100)}% — the previous factor is kept in the audit log.</span></div>`;
+    else banner="";
   }
+  // Provenance tag renders inline in the EF name field, in front of the name.
   const efTag = (ph==="after"||e.synthetic)?'<span class="synth">Synthetic</span>':e.custom?'<span class="synth custom">Custom</span>':"";
-  const efName = ph==="improving"?`<span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span>`:c.ef;
+  const efName = ph==="improving"?`<span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span>`:efTag+c.ef;
 
   let calcSection;
   if(ph==="improving"){
@@ -690,7 +691,7 @@ function openDetail(id){
           </div>
         </section>
         <section class="form-card">
-          <div class="card-head-row"><h3>Emission factor details</h3>${efTag}</div>
+          <div class="card-head-row"><h3>Emission factor details</h3></div>
           <div class="grid">${field("Emission factor name",efName)}</div>
           ${banner?`<div style="margin-top:14px">${banner}</div>`:""}
         </section>
@@ -811,7 +812,7 @@ function renderNew(){
     efControl=`<div class="control"><span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span></div>`;
   } else if(f.efName){
     efControl=`<div class="control" style="justify-content:space-between">
-      <span>${f.efName}</span><button type="button" class="changelink" onclick="changeEf()">Change</button></div>`;
+      <span>${efTag}${f.efName}</span><button type="button" class="changelink" onclick="changeEf()">Change</button></div>`;
   } else {
     efControl=`<div class="efselect">
       <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="${f.efOpen}" onclick="toggleEfMenu()">
@@ -830,8 +831,7 @@ function renderNew(){
     </div>`;
   }
   let efNote="";
-  if(f.synthPhase==="done") efNote=`<div class="match" style="margin-top:14px"><span>${svg("check",15)}</span><span><b>Synthetic emission factor generated.</b> Confidence 90%. You can submit the entry now.</span></div>`;
-  else if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
+  if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
   else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Create synthetic emission factor with AI</b> to generate a tailored one, or <b>create a custom factor</b> from your own data.</p>`;
   const canSubmit=!!f.efName&&f.synthPhase!=="improving";
 
@@ -863,7 +863,7 @@ function renderNew(){
           </div>
         </section>
         <section class="form-card">
-          <div class="card-head-row"><h3>Emission factor details</h3>${efTag}</div>
+          <div class="card-head-row"><h3>Emission factor details</h3></div>
           <div class="grid">
             <div class="fld"><span class="lab">Emission factor name</span>${efControl}</div>
           </div>
