@@ -122,6 +122,7 @@ td.muted{color:var(--text-muted);}
   font-size:12px;font-weight:500;}
 .chip.submitted{background:var(--success-bg);color:var(--success-fg);}
 .chip.draft{background:#F3F4F6;color:#374151;}
+.chip.ready{background:var(--violet-50);color:var(--violet-700);}
 .synth{display:inline-flex;align-items:center;margin-right:8px;padding:2px 8px;border-radius:var(--radius-sm);
   background:var(--violet-50);color:var(--violet-700);font-size:11px;font-weight:600;}
 .synth.custom{background:#EEF1F6;color:#475569;}
@@ -408,6 +409,7 @@ const ENTRIES = RAW.map((r,i)=>{
     start:"08/01/2019",end:"11/01/2019",
     lca: spend?"Cradle-to-gate":(consU==="t·km"||consU==="pax·km"?"Well-to-wheel":"Cradle-to-gate"),
     cat:act==="Upstream transport"?"3.4 Upstream transportation and distribution":act==="Capital goods"?"3.2 Capital goods":act==="Business travel"?"3.6 Business travel":act==="Waste in operations"?"3.5 Waste generated in operations":"3.1 Purchased goods and services",
+    status: [2,6,10,13].includes(i)?"Ready to submit":[4,8,12].includes(i)?"Draft":"Submitted",
     low: conf<0.62,
     before:{ef,src,year,basis,conf,co2t,val:spend?"0.58":"—",unit:spend?"kgCO₂e/EUR":"kgCO₂e/"+consU,co2:(Number(co2t.replace(",",""))*1000).toLocaleString()+" kg"},
     after: AFTER[id]||null,
@@ -438,11 +440,14 @@ function renderTable(){
     else if(improved) efCell=`<span class="synth">Synthetic</span>${c.ef}`;
     else if(e.custom) efCell=`<span class="synth custom">Custom</span>${c.ef}`;
     else efCell=c.ef;
-    const showCta = e.low && ph==="before";
+    // Improve EF is offered pre-submission (Draft / Ready to submit) and on
+    // low-match submitted rows.
+    const showCta = ph==="before" && (e.low || e.status==="Draft" || e.status==="Ready to submit");
+    const stCls = e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted";
     return `<tr onclick="openDetail('${e.id}')" ${state.created.includes(e)?'style="box-shadow:inset 3px 0 0 var(--violet)"':""}>
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
       <td class="id-cell">${e.id}</td>
-      <td><span class="chip submitted">Submitted</span></td>
+      <td><span class="chip ${stCls}">${e.status}</span></td>
       <td>${e.bu}</td>
       <td>${e.act}</td>
       <td>${e.user}</td>
@@ -466,6 +471,16 @@ function deleteRow(id){state.deleted.add(id);renderTable();toast(id.slice(0,8)+"
 /* ─── Improve flow ─── */
 function startImprove(id){
   const e=allEntries().find(x=>x.id===id);
+  // Rows without a scripted result get a generic synthetic EF.
+  if(!e.after){
+    const co2tNum=parseFloat(e.before.co2t.replace(",",""))*0.68;
+    e.after={ef:e.desc.split("—")[0].split(",")[0].trim()+", supplier-specific mix",
+      val:e.before.val==="—"?"—":(parseFloat(e.before.val)*0.68).toFixed(2),unit:e.before.unit,
+      src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",
+      co2:(co2tNum*1000).toLocaleString(undefined,{maximumFractionDigits:0})+" kg",
+      co2t:co2tNum.toFixed(2),conf:0.9,
+      note:"Built from deconstructed components (materials, processing, transport)."};
+  }
   state.phases[id]="improving";
   closeWiz();renderTable();
   if(document.querySelector(".modal-wrap")) openDetail(id); // refresh detail modal in place
@@ -551,6 +566,7 @@ function openDetail(id){
   if(ph==="improving") footer=`<button class="btn secondary" onclick="toast('Cancel improvement — would return the entry to its previous state')">Cancel improvement</button>`;
   else if(ph==="after") footer=`<button class="btn secondary" onclick="toast('Would show the previous factor and the change log')">View previous factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… · calculation confirmed');closeOverlays()">${svg("check",16)}Confirm calculation</button>`;
   else if(e.low) footer=`<button class="btn secondary" onclick="toast('Would open the manual factor picker')">Swap factor manually</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="openWizard('${id}')">Improve emission factor</button>`;
+  else if(e.status==="Draft"||e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="openWizard('${id}')">Improve emission factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
 
   document.getElementById("overlays").innerHTML=`
@@ -559,7 +575,7 @@ function openDetail(id){
       <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-head">
           <h2>${e.act} | ${e.bu} | ${e.desc}</h2>
-          <span class="chip submitted">Submitted</span>
+          <span class="chip ${e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted"}">${e.status}</span>
           <button class="link-ic" title="Copy link to this entry" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",17)}</button>
           <button class="close" onclick="closeOverlays()">${svg("close",18)}</button>
         </div>
@@ -588,7 +604,7 @@ function openDetail(id){
         ${calcSection}
         <section class="form-card">
           <h3>Attachments</h3><p class="sub">Upload supporting documents (images or PDFs, max 2MB) as proof of your entries</p>
-          <div class="dropzone">${svg("upload",26)}<span>You can't add files to a submitted data entry</span></div>
+          <div class="dropzone">${svg("upload",26)}<span>${e.status==="Submitted"?"You can't add files to a submitted data entry":"Drag or upload up to 3 files"}</span></div>
         </section>
         <section class="form-card">
           <h3>Notes</h3>
@@ -661,7 +677,7 @@ function submitNew(){
   const kind=f.synthetic?"synthetic":f.custom?"custom":"standard";
   const id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
   const entry={
-    id,supplier:f.supplier||"—",desc:f.desc||"New data entry",bu:f.bu,act:f.activity,
+    id,supplier:f.supplier||"—",desc:f.desc||"New data entry",bu:f.bu,act:f.activity,status:"Submitted",
     user:"Johannes Weber",input:"Manual entry",consType:"Spend data",
     consV:f.price||"—",consU:f.cur,cons:(f.price||"—")+" "+f.cur,
     start:"01/01/2026",end:"03/31/2026",lca:"Cradle-to-gate",
