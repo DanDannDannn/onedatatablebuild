@@ -189,6 +189,35 @@ tbody tr:hover .actions{opacity:1;pointer-events:auto;transform:translateY(-50%)
 .fld .control{min-height:52px;display:flex;align-items:center;padding:0 14px;border-radius:var(--radius-md);
   background:rgba(90,77,255,.03);border:1px solid var(--border);font-size:14px;color:var(--text-strong);}
 .fld .control.placeholder{color:var(--text-subtle);}
+input.control,select.control{width:100%;font-family:inherit;outline:none;appearance:none;cursor:pointer;
+  height:52px;display:block;}
+input.control{cursor:text;}
+input.control:focus,select.control:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(90,77,255,.14);}
+select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237A7A91' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;padding-right:40px;}
+
+/* EF combobox (New entry modal) — trigger + popover with two create actions */
+.efselect{position:relative;}
+.efselect-trigger{width:100%;box-sizing:border-box;min-height:52px;padding:0 14px;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;background:#fff;border:1px solid var(--border-strong);border-radius:var(--radius-md);
+  font-family:inherit;font-size:14px;color:var(--text-strong);cursor:pointer;text-align:left;transition:border-color .12s,box-shadow .12s;}
+.efselect-trigger:hover{border-color:var(--text-muted);}
+.efselect-trigger[aria-expanded="true"]{border-color:var(--violet);box-shadow:0 0 0 3px rgba(90,77,255,.14);}
+.efselect-trigger .ph{color:var(--text-subtle);}
+.efselect-trigger svg{color:var(--text-muted);flex:0 0 auto;}
+.efselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:60;background:#fff;
+  border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-pop);padding:6px;
+  display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto;}
+.efselect-menu.up{top:auto;bottom:calc(100% + 6px);}
+.efselect-item{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;
+  border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text-strong);
+  padding:10px 10px;border-radius:var(--radius-sm);}
+.efselect-item:hover{background:var(--bg-subtle);}
+.efselect-sep{height:1px;background:var(--border);margin:5px 4px;}
+.efselect-item.create{align-items:flex-start;color:var(--violet);}
+.efselect-item.create svg{margin-top:2px;flex:0 0 auto;}
+.efselect-item.create b{display:block;font-weight:600;}
+.efselect-item.create .subline{display:block;margin-top:1px;font-size:11.5px;font-weight:400;color:var(--text-muted);}
 
 .dropzone{border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);background:var(--bg-subtle);
   padding:26px;text-align:center;color:var(--text-subtle);display:flex;flex-direction:column;align-items:center;gap:8px;}
@@ -333,6 +362,7 @@ tbody tr:hover .actions{opacity:1;pointer-events:auto;transform:translateY(-50%)
 </div>
 
 <div id="overlays"></div>
+<div id="wizlayer"></div>
 <div id="toast"></div>
 
 <script>
@@ -450,7 +480,8 @@ function deleteRow(id){state.deleted.add(id);renderTable();toast(id.slice(0,8)+"
 function startImprove(id){
   const e=allEntries().find(x=>x.id===id);
   state.phases[id]="improving";
-  closeOverlays();renderTable();
+  closeWiz();renderTable();
+  if(document.querySelector(".modal-wrap")) openDetail(id); // refresh detail modal in place
   toast(id.slice(0,8)+"… · generating improved EF");
   state.timers[id]=setTimeout(()=>{
     state.phases[id]="after";renderTable();
@@ -462,16 +493,17 @@ function startImprove(id){
 
 /* ─── Overlays ─── */
 function closeOverlays(){document.getElementById("overlays").innerHTML="";}
+function closeWiz(){document.getElementById("wizlayer").innerHTML="";}
 function esc(fn){const h=ev=>{if(ev.key==="Escape"){fn();document.removeEventListener("keydown",h);}};document.addEventListener("keydown",h);}
 
-/* Wizard placeholder dialog (the real AI wizard is a shared pattern, shared later) */
-function openWizard(id){
-  const e=allEntries().find(x=>x.id===id);
-  document.getElementById("overlays").innerHTML=`
-    <div class="scrim" style="z-index:1100" onclick="closeOverlays()"></div>
+/* Wizard placeholder dialog (the real AI wizard design will replace this later).
+   Renders in its own layer so it stacks over the detail / new-entry modals. */
+function renderWizard(desc,onConfirmJs){
+  document.getElementById("wizlayer").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
     <div class="wizdlg" role="dialog" aria-modal="true">
-      <div class="head"><h3>Improve emission factor</h3><button class="close" onclick="closeOverlays()">${svg("close",16)}</button></div>
-      <p class="subx">Forward AI deconstructs <b>${e.desc}</b> into components and builds a synthetic emission factor to replace the current spend-based match.</p>
+      <div class="head"><h3>Improve emission factor</h3><button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+      <p class="subx">Forward AI deconstructs <b>${desc}</b> into components and builds a synthetic emission factor to replace the current spend-based match.</p>
       <div class="steps">
         <div class="wstep"><span class="k">Step 1</span><span class="t">Context</span><span class="d">Line-item context, add guidance for the AI.</span></div>
         <span class="warrow">${svg("arrow",14)}</span>
@@ -481,11 +513,15 @@ function openWizard(id){
       </div>
       <div class="wiznote">${svg("info",13)}<span>Placeholder — the wizard is a shared pattern (also used by PCF “Deconstruct with AI”) and is designed separately. This mock skips ahead.</span></div>
       <div class="wizfoot">
-        <button class="btn secondary" onclick="closeOverlays()">Cancel</button>
-        <button class="btn primary" style="height:38px;padding:0 18px" onclick="startImprove('${id}')">Apply and confirm</button>
+        <button class="btn secondary" onclick="closeWiz()">Cancel</button>
+        <button class="btn primary" style="height:38px;padding:0 18px" onclick="${onConfirmJs}">Apply and confirm</button>
       </div>
     </div>`;
-  esc(closeOverlays);
+  esc(closeWiz);
+}
+function openWizard(id){
+  const e=allEntries().find(x=>x.id===id);
+  renderWizard(e.desc,`startImprove('${id}')`);
 }
 
 /* Detail modal */
@@ -583,16 +619,164 @@ function toggleCalc(){
   fold.classList.toggle("collapsed",open);
 }
 
-/* Add new entry — placeholder */
+/* ─── New data entry modal — create an entry and pick or generate an EF.
+   The EF dropdown offers "Create synthetic emission factor with AI" (opens
+   the same wizard hand-off) and "Create custom emission factor". ─── */
+const EF_CHOICES=[
+  "Fabricated metal products, EU average",
+  "Aluminium products, EU average",
+  "Machined metal components, global average",
+];
+let newState=null; // null = closed
+let newTimer=null;
+
 function openNew(){
-  document.getElementById("overlays").innerHTML=`
-    <div class="scrim" style="z-index:1100" onclick="closeOverlays()"></div>
-    <div class="wizdlg" role="dialog" aria-modal="true" style="width:520px">
-      <div class="head"><h3>New data entry</h3><button class="close" onclick="closeOverlays()">${svg("close",16)}</button></div>
-      <p class="subx">Placeholder — the create-entry flow (with “Create synthetic emission factor with AI”) is designed separately and will be shared later.</p>
-      <div class="wizfoot"><button class="btn secondary" onclick="closeOverlays()">Close</button></div>
+  newState={
+    activity:"Purchased goods & services",bu:"Operations DE",
+    supplier:"Aurora Precision GmbH",desc:"CNC-machined aluminium brackets",
+    cur:"EUR",price:"25,000",
+    efName:"",synthetic:false,custom:false,synthPhase:"idle", // idle | improving | done
+    efOpen:false,
+  };
+  renderNew();
+  esc(closeNew);
+}
+function closeNew(){newState=null;clearTimeout(newTimer);closeOverlays();}
+function setNew(k,v){if(newState){newState[k]=v;}}
+function toggleEfMenu(){newState.efOpen=!newState.efOpen;renderNew();}
+function pickEf(v){
+  newState.efOpen=false;
+  if(v==="__synthetic__"){renderNew();renderWizard(newState.desc||"this line item","startSynthNew()");return;}
+  if(v==="__custom__"){
+    Object.assign(newState,{synthetic:false,custom:true,synthPhase:"idle",
+      efName:"Custom factor · "+(newState.supplier||"supplier-specific")});
+    renderNew();toast("Custom emission factor added");return;
+  }
+  Object.assign(newState,{synthetic:false,custom:false,synthPhase:"idle",efName:v});
+  renderNew();
+}
+function startSynthNew(){
+  closeWiz();
+  Object.assign(newState,{efName:"",synthetic:false,custom:false,synthPhase:"improving"});
+  renderNew();
+  newTimer=setTimeout(()=>{
+    if(!newState)return;
+    Object.assign(newState,{efName:"Aluminium brackets, EU supplier mix",synthetic:true,synthPhase:"done"});
+    renderNew();toast("Synthetic emission factor generated · confidence 90%");
+  },IMPROVE_MS);
+}
+function changeEf(){Object.assign(newState,{efName:"",synthetic:false,custom:false,synthPhase:"idle",efOpen:false});renderNew();}
+function submitNew(){
+  const f=newState;
+  const priceNum=parseFloat(String(f.price).replace(/[^0-9.]/g,""))||0;
+  const val=f.synthetic?0.31:f.custom?0.28:0.42;
+  const co2t=priceNum?(priceNum*val/1000).toFixed(2):"12.00";
+  const kind=f.synthetic?"synthetic":f.custom?"custom":"standard";
+  const id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+  const entry={
+    id,supplier:f.supplier||"—",desc:f.desc||"New data entry",bu:f.bu,act:f.activity,
+    user:"Johannes Weber",input:"Manual entry",consType:"Spend data",
+    consV:f.price||"—",consU:f.cur,cons:(f.price||"—")+" "+f.cur,
+    start:"01/01/2026",end:"03/31/2026",lca:"Cradle-to-gate",
+    cat:"3.1 Purchased goods and services",low:false,
+    synthetic:!!f.synthetic,custom:!!f.custom,
+    before:{
+      ef:f.efName,
+      src:kind==="synthetic"?"Forward Earth synthetic v1":kind==="custom"?"Custom (primary data)":"EXIOBASE",
+      year:kind==="standard"?"2019":"2026",
+      basis:kind==="synthetic"?"AI-deconstructed":kind==="custom"?"supplier-specific":"spend-based",
+      conf:kind==="synthetic"?0.9:kind==="custom"?0.92:0.85,co2t,
+      val:String(val),unit:"kgCO₂e/"+f.cur,
+      co2:(priceNum*val).toLocaleString(undefined,{maximumFractionDigits:0})+" kg",
+    },
+    after:null,
+  };
+  state.created.unshift(entry);
+  closeNew();renderTable();
+  toast(id.slice(0,8)+"… submitted · "+(kind==="standard"?"emission factor":kind+" emission factor")+" applied");
+}
+function inputFld(label,key){
+  return `<div class="fld"><span class="lab">${label}</span>
+    <input class="control" value="${(newState[key]||"").replace(/"/g,'&quot;')}" oninput="setNew('${key}',this.value)"></div>`;
+}
+function selectFld(label,key,options){
+  return `<div class="fld"><span class="lab">${label}</span>
+    <select class="control" onchange="setNew('${key}',this.value)">
+      ${options.map(o=>`<option${o===newState[key]?" selected":""}>${o}</option>`).join("")}
+    </select></div>`;
+}
+function renderNew(){
+  const f=newState;
+  const efTag=(f.synthetic&&f.synthPhase==="done")?'<span class="synth">Synthetic</span>':f.custom?'<span class="synth custom">Custom</span>':"";
+  let efControl;
+  if(f.synthPhase==="improving"){
+    efControl=`<div class="control"><span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span></div>`;
+  } else if(f.efName){
+    efControl=`<div class="control" style="justify-content:space-between">
+      <span>${f.efName}</span><button type="button" class="changelink" onclick="changeEf()">Change</button></div>`;
+  } else {
+    efControl=`<div class="efselect">
+      <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="${f.efOpen}" onclick="toggleEfMenu()">
+        <span class="ph">Select an emission factor…</span>${svg("chev",16)}
+      </button>
+      ${f.efOpen?`<div class="efselect-menu" role="listbox">
+        ${EF_CHOICES.map(o=>`<button type="button" role="option" class="efselect-item" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")}
+        <div class="efselect-sep"></div>
+        <button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
+          ${svg("plus",15)}<span><b>Create synthetic emission factor with AI</b><span class="subline">Deconstruct the line item into components</span></span>
+        </button>
+        <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
+          ${svg("info",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
+        </button>
+      </div>`:""}
     </div>`;
-  esc(closeOverlays);
+  }
+  let efNote="";
+  if(f.synthPhase==="done") efNote=`<div class="match" style="margin-top:14px"><span>${svg("check",15)}</span><span><b>Synthetic emission factor generated.</b> Confidence 90%. You can submit the entry now.</span></div>`;
+  else if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
+  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Create synthetic emission factor with AI</b> to generate a tailored one, or <b>create a custom factor</b> from your own data.</p>`;
+  const canSubmit=!!f.efName&&f.synthPhase!=="improving";
+
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" onclick="closeNew()"></div>
+    <div class="modal-wrap" onclick="if(event.target===event.currentTarget)closeNew()">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h2>New data entry</h2>
+          <span class="chip draft">Draft</span>
+          <button class="close" onclick="closeNew()">${svg("close",18)}</button>
+        </div>
+        <section class="form-card">
+          <h3>General information</h3>
+          <div class="grid">
+            ${selectFld("Business activity","activity",["Purchased goods & services","Capital goods","Upstream transport"])}
+            ${selectFld("Business unit","bu",["Operations DE","Operations IT","Logistics","Shared services"])}
+            ${inputFld("Supplier name","supplier")}
+          </div>
+        </section>
+        <section class="form-card">
+          <h3>Consumption details</h3>
+          <div class="grid">
+            <div class="grid two">
+              ${selectFld("Currency","cur",["EUR","USD","GBP"])}
+              ${inputFld("Price","price")}
+            </div>
+            ${inputFld("Description","desc")}
+          </div>
+        </section>
+        <section class="form-card">
+          <div class="card-head-row"><h3>Emission factor details</h3>${efTag}</div>
+          <div class="grid">
+            <div class="fld"><span class="lab">Emission factor name</span>${efControl}</div>
+          </div>
+          ${efNote}
+        </section>
+        <div class="modal-foot">
+          <button class="btn secondary" onclick="closeNew()">Cancel</button>
+          <button class="btn primary" style="height:38px;padding:0 18px" ${canSubmit?"":"disabled"} onclick="submitNew()">Submit data entry</button>
+        </div>
+      </div>
+    </div>`;
 }
 
 renderTable();
