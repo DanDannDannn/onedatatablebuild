@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Forward Earth — Data entries (Improve EF)</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────
+   Forward Earth — Data entries page (sandbox clone) + Improve EF feature.
+   Single self-contained file. Colors/typography pulled from the live product.
+   ───────────────────────────────────────────────────────────────────────── */
+:root{
+  --violet:#5A4DFF; --violet-hover:#472AD8; --violet-50:#ECEFFF; --violet-700:#5B21B6;
+  --header-violet:#8F4AFF; --header-violet-2:#7C3AED;
+  --text:#101019; --text-strong:#1A1B22; --text-muted:#7A7A91; --text-subtle:#A6A6B8;
+  --border:#EBEBEE; --border-strong:#D7D7E0; --bg-page:#FFFFFF; --bg-subtle:#F9F9FA;
+  --bg-shell:#F4F3FB;
+  --success-bg:#DCFCE7; --success-fg:#15803D; --success-50:#ECFDF5; --success-fg2:#047857; --success-200:#A7F3D0;
+  --alert-bg:#FEF3C7; --alert-fg:#B45309; --alert-200:#FDE68A;
+  --low-bg:#FEE2E2; --low-fg:#991B1B;
+  --danger:#F35151;
+  --radius-sm:6px; --radius-md:8px; --radius-lg:12px;
+  --shadow-card:0 1px 3px rgba(16,16,25,.06), 0 1px 2px rgba(16,16,25,.04);
+  --shadow-pop:0 12px 32px -10px rgba(16,16,40,.30);
+  --font:"Satoshi","Satoshi Variable",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:var(--font);color:var(--text);background:var(--bg-shell);font-size:14px;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;}
+h1,h2,h3,h4{margin:0;}
+
+/* ── App layout ── */
+.app{display:flex;min-height:100vh;}
+.sidebar{width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--border);
+  padding:18px 16px 40px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;height:100vh;position:sticky;top:0;}
+.brand{display:flex;align-items:center;gap:9px;padding:2px 6px 18px;}
+.brand svg{width:30px;height:30px;}
+.brand .name{font-weight:700;font-size:16px;line-height:1.05;letter-spacing:-.01em;}
+.brand .name small{display:block;font-weight:700;}
+
+.nav-getting{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-md);
+  font-weight:500;color:var(--text);cursor:pointer;}
+.nav-getting:hover{background:var(--bg-subtle);}
+.nav-getting .badge{margin-left:auto;background:var(--violet);color:#fff;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:var(--radius-sm);}
+
+.nav-section{font-size:12px;font-weight:500;color:var(--text-muted);padding:16px 12px 6px;letter-spacing:.01em;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:var(--radius-md);
+  color:var(--text);cursor:pointer;font-size:14px;font-weight:500;transition:background .12s;}
+.nav-item svg{width:20px;height:20px;flex:0 0 auto;color:var(--text);}
+.nav-item:hover{background:var(--bg-subtle);}
+.nav-item.active{background:var(--violet);color:#fff;box-shadow:0 6px 16px -6px rgba(90,77,255,.5);}
+.nav-item.active svg{color:#fff;}
+.nav-item .chev{margin-left:auto;width:16px;height:16px;color:var(--text-muted);}
+
+/* ── Main column ── */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 28px;}
+.topbar .collapse{width:44px;height:44px;display:grid;place-items:center;border-radius:var(--radius-md);
+  border:none;background:var(--violet-50);color:var(--violet);cursor:pointer;}
+.topbar .spacer{flex:1;}
+.company{min-width:280px;border:1px solid var(--border-strong);border-radius:var(--radius-md);
+  background:#fff;padding:7px 14px;position:relative;cursor:pointer;}
+.company .lab{font-size:11px;color:var(--text-muted);}
+.company .val{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500;}
+.company .val svg{margin-left:auto;width:18px;height:18px;color:var(--text-muted);}
+.topbar .icon-btn{width:44px;height:44px;border-radius:50%;background:var(--violet-50);border:none;
+  display:grid;place-items:center;color:var(--violet);cursor:pointer;}
+.topbar .icon-group{display:flex;gap:8px;background:var(--violet-50);border-radius:26px;padding:3px;}
+.topbar .icon-group .icon-btn{width:40px;height:40px;}
+
+/* ── Page card ── */
+.page{padding:0 28px 40px;}
+.card{background:#fff;border-radius:16px;box-shadow:var(--shadow-card);padding:28px 28px 34px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.card-head h1{font-size:20px;font-weight:700;color:var(--text);}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:var(--radius-sm);cursor:pointer;
+  font-family:inherit;font-weight:500;transition:background .12s,border-color .12s,color .12s;white-space:nowrap;}
+.btn svg{width:18px;height:18px;flex:0 0 auto;}
+.btn.primary{background:var(--violet);color:#fff;border:none;font-size:14px;padding:12px 18px;height:46px;
+  box-shadow:0 8px 18px -8px rgba(90,77,255,.6);}
+.btn.primary:hover{background:var(--violet-hover);}
+.btn.primary:disabled{opacity:.5;cursor:default;box-shadow:none;}
+.btn.tool{background:#fff;color:var(--text-muted);border:1px solid var(--border);font-size:13px;
+  padding:0 16px;height:44px;}
+.btn.tool svg{width:16px;height:16px;}
+.btn.tool:hover{border-color:var(--border-strong);background:var(--bg-subtle);color:var(--text-strong);}
+.btn.secondary{background:#fff;color:var(--text-strong);border:1px solid var(--border-strong);font-size:13px;padding:0 16px;height:38px;}
+.btn.secondary:hover{background:var(--bg-subtle);}
+.btn.danger{background:var(--danger);color:#fff;border:none;font-size:13px;padding:0 18px;height:38px;}
+.btn.danger:hover{background:#d63b3b;}
+
+.toolbar{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-bottom:16px;}
+.toolbar .filter-count{margin-left:4px;background:var(--bg-subtle);color:var(--text-muted);
+  font-size:11px;font-weight:700;border-radius:10px;padding:1px 6px;}
+
+/* ── Table ── */
+.tablewrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{background:var(--header-violet);color:#fff;text-align:left;font-weight:500;font-size:12.5px;
+  padding:14px 14px;white-space:nowrap;position:relative;}
+thead th.col-conf{background:var(--header-violet-2);}
+thead th.col-check{width:44px;padding-left:18px;}
+thead th.col-act{position:sticky;right:0;width:0;min-width:0;max-width:0;padding:0;background:transparent;}
+tbody td{padding:13px 14px;border-top:1px solid var(--border);color:var(--text-strong);
+  vertical-align:middle;white-space:nowrap;}
+tbody td.col-check{padding-left:18px;}
+tbody tr{cursor:pointer;}
+tbody tr:nth-child(odd){background:#fff;}
+tbody tr:nth-child(even){background:var(--bg-subtle);}
+tbody tr:hover{background:#F3EFFE;}
+td.id-cell{font-variant-numeric:tabular-nums;color:var(--text-muted);font-size:12px;max-width:150px;
+  overflow:hidden;text-overflow:ellipsis;}
+td.muted{color:var(--text-muted);}
+.check{width:18px;height:18px;border:1.5px solid var(--border-strong);border-radius:4px;background:#fff;
+  display:inline-block;vertical-align:middle;}
+
+/* status + confidence + tags */
+.chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:500;}
+.chip.submitted{background:var(--success-bg);color:var(--success-fg);}
+.chip.draft{background:#F3F4F6;color:#374151;}
+.confpill{display:inline-block;padding:3px 10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;line-height:16px;}
+.confpill.high{background:var(--success-bg);color:var(--success-fg);}
+.confpill.med{background:var(--alert-bg);color:var(--alert-fg);}
+.confpill.low{background:var(--low-bg);color:var(--low-fg);}
+.synth{display:inline-flex;align-items:center;margin-right:8px;padding:2px 8px;border-radius:var(--radius-sm);
+  background:var(--violet-50);color:var(--violet-700);font-size:11px;font-weight:600;}
+.synth.custom{background:#EEF1F6;color:#475569;}
+.efbusy{display:inline-flex;align-items:center;gap:6px;color:var(--violet);font-weight:600;}
+.conf-improving{display:inline-flex;align-items:center;gap:6px;color:var(--violet);font-weight:600;font-size:12px;}
+
+/* hover action tray (zero-width sticky anchor) */
+td.col-act{position:sticky;right:0;width:0;min-width:0;max-width:0;padding:0;background:transparent;overflow:visible;z-index:2;}
+.actions{position:absolute;right:12px;top:50%;transform:translateY(-50%) translateX(6px);
+  display:inline-flex;align-items:center;gap:6px;padding:4px 6px;background:#fff;border:1px solid var(--border);
+  border-radius:var(--radius-md);box-shadow:0 6px 16px -6px rgba(11,16,49,.28);opacity:0;pointer-events:none;
+  transition:opacity .12s,transform .12s;white-space:nowrap;}
+tbody tr:hover .actions{opacity:1;pointer-events:auto;transform:translateY(-50%);}
+.rowcta{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:var(--radius-sm);cursor:pointer;
+  background:var(--violet);color:#fff;font-size:12px;font-weight:600;padding:6px 12px;transition:background .12s;}
+.rowcta:hover{background:var(--violet-hover);}
+.iconbtn{width:28px;height:28px;flex:0 0 auto;display:inline-grid;place-items:center;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:#fff;color:var(--text-muted);cursor:pointer;transition:.12s;}
+.iconbtn:hover{background:var(--bg-subtle);color:var(--text-strong);border-color:var(--border-strong);}
+.iconbtn.danger:hover{background:var(--low-bg);color:var(--danger);border-color:#FCA5A5;}
+.iconbtn svg{width:15px;height:15px;}
+
+/* pagination */
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:20px;margin-top:22px;
+  font-size:13px;color:var(--text-muted);}
+.pages{display:flex;align-items:center;gap:4px;}
+.pages button{min-width:32px;height:32px;border:none;background:transparent;border-radius:var(--radius-sm);
+  color:var(--text-strong);font-size:13px;cursor:pointer;font-family:inherit;}
+.pages button:hover{background:var(--bg-subtle);}
+.pages button.active{background:var(--violet);color:#fff;}
+.pages button.nav{color:var(--text-muted);}
+
+/* ── Scrim + modal ── */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;}
+.modal-wrap{position:fixed;inset:0;z-index:1001;display:flex;align-items:flex-start;justify-content:center;
+  padding:40px 24px;overflow-y:auto;}
+.modal{width:100%;max-width:860px;display:flex;flex-direction:column;gap:16px;animation:modalIn .2s cubic-bezier(.32,.72,0,1);}
+@keyframes modalIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.modal-head{background:#fff;border-radius:var(--radius-lg);padding:24px 26px;display:flex;align-items:center;gap:14px;}
+.modal-head h2{font-size:21px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.modal-head .link-ic,.modal-head .close{width:34px;height:34px;border:none;background:transparent;border-radius:var(--radius-sm);
+  display:grid;place-items:center;color:var(--text-muted);cursor:pointer;}
+.modal-head .link-ic:hover,.modal-head .close:hover{background:var(--bg-subtle);color:var(--text-strong);}
+.form-card{background:#fff;border-radius:var(--radius-lg);padding:22px 26px 26px;}
+.form-card h3{font-size:16px;font-weight:700;color:var(--violet);margin-bottom:4px;}
+.form-card .sub{font-size:13px;color:var(--text-muted);margin:0 0 14px;}
+.card-head-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.card-head-row h3{margin:0;flex:1;}
+.card-fold{width:30px;height:30px;border:none;background:transparent;border-radius:var(--radius-sm);
+  display:grid;place-items:center;color:var(--text-muted);cursor:pointer;transition:transform .15s;}
+.card-fold.collapsed{transform:rotate(-90deg);}
+.card-fold:hover{background:var(--bg-subtle);}
+.collapsed-sum{font-size:13px;color:var(--text-muted);margin:0;}
+
+.grid{display:grid;gap:16px;}
+.grid.two{grid-template-columns:1fr 1fr;}
+.fld{display:flex;flex-direction:column;gap:6px;}
+.fld .lab{font-size:12px;color:var(--text-muted);}
+.fld .lab .opt{color:var(--text-subtle);}
+.fld .control{min-height:52px;display:flex;align-items:center;padding:0 14px;border-radius:var(--radius-md);
+  background:rgba(90,77,255,.03);border:1px solid var(--border);font-size:14px;color:var(--text-strong);}
+.fld .control.placeholder{color:var(--text-subtle);}
+
+.dropzone{border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);background:var(--bg-subtle);
+  padding:26px;text-align:center;color:var(--text-subtle);display:flex;flex-direction:column;align-items:center;gap:8px;}
+.dropzone svg{width:26px;height:26px;color:var(--text-subtle);}
+
+.modal-foot{background:#fff;border-radius:var(--radius-lg);padding:16px 26px;display:flex;justify-content:flex-end;gap:12px;
+  position:sticky;bottom:0;}
+
+/* banners inside EF card */
+.banner{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--radius-lg);font-size:13px;line-height:1.5;
+  border:1px solid var(--alert-200);background:var(--alert-bg);color:var(--alert-fg);}
+.banner .tx{flex:1;min-width:0;}
+.banner b{font-weight:700;}
+.banner .btn{flex:0 0 auto;}
+.banner.busy{border-color:#C9C2FF;background:#F5F3FF;color:var(--violet-700);}
+.banner.ok{border-color:var(--success-200);background:var(--success-50);color:var(--success-fg2);}
+.match{margin-top:16px;padding:11px 13px;border-radius:var(--radius-md);border:1px solid var(--success-200);
+  background:var(--success-50);color:var(--success-fg2);display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.5;}
+.match b{font-weight:700;}
+.match svg{flex:0 0 auto;margin-top:1px;}
+
+.processing{border:1.5px dashed #C9C2FF;border-radius:var(--radius-md);background:#F5F3FF;padding:30px 20px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:8px;}
+.processing .big{font-size:14px;font-weight:700;color:var(--violet);display:inline-flex;align-items:center;gap:8px;}
+.processing .why{font-size:12.5px;color:var(--text-muted);max-width:420px;line-height:1.5;}
+
+/* ── Wizard placeholder dialog ── */
+.wizdlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1101;width:620px;max-width:calc(100vw - 48px);
+  background:#fff;border-radius:14px;padding:22px;box-shadow:0 32px 80px -24px rgba(16,16,40,.45);
+  display:flex;flex-direction:column;gap:16px;animation:modalIn .2s cubic-bezier(.32,.72,0,1);}
+.wizdlg h3{font-size:16.5px;font-weight:700;color:var(--text-strong);flex:1;}
+.wizdlg .head{display:flex;align-items:center;gap:10px;}
+.wizdlg .head .close{width:30px;height:30px;border:none;background:transparent;color:var(--text-muted);
+  display:grid;place-items:center;border-radius:var(--radius-sm);cursor:pointer;}
+.wizdlg .head .close:hover{background:var(--bg-subtle);}
+.wizdlg .subx{margin:0;font-size:13px;line-height:1.55;color:var(--text-muted);}
+.wizdlg .subx b{color:var(--text-strong);font-weight:600;}
+.steps{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:stretch;}
+.wstep{border:1px solid var(--border-strong);border-radius:10px;background:var(--bg-subtle);padding:11px 12px;
+  display:flex;flex-direction:column;gap:3px;}
+.wstep .k{font-size:10.5px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:.04em;}
+.wstep .t{font-size:13px;font-weight:700;color:var(--text-strong);}
+.wstep .d{font-size:11.5px;color:var(--text-muted);line-height:1.45;}
+.warrow{align-self:center;color:var(--text-subtle);}
+.wiznote{font-size:12px;color:var(--text-muted);display:flex;align-items:flex-start;gap:7px;line-height:1.5;
+  background:var(--bg-subtle);border-radius:var(--radius-md);padding:10px 12px;}
+.wiznote svg{flex:0 0 auto;margin-top:1px;}
+.wizfoot{display:flex;justify-content:flex-end;gap:10px;}
+
+/* spinner + toast */
+.spin{animation:spin 1.4s linear infinite;transform-origin:center;display:inline-flex;}
+.spinner{width:20px;height:20px;border-radius:50%;border:2.5px solid #C9C2FF;border-top-color:var(--violet);animation:spin .9s linear infinite;}
+.spinner.sm{width:16px;height:16px;border-width:2px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);z-index:2000;
+  background:#1A1B22;color:#fff;font-size:13px;font-weight:500;padding:11px 18px;border-radius:var(--radius-md);
+  box-shadow:0 12px 30px -8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:460px;}
+#toast.show{opacity:1;transform:translateX(-50%);}
+.changelink{border:none;background:transparent;cursor:pointer;color:var(--violet);font-size:12px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none"><path d="M4 22 L14 8 a2 2 0 0 1 3.2 0.2 L20 13" stroke="#FF9E0D" stroke-width="4" stroke-linecap="round"/><path d="M12 24 L22 10 a2 2 0 0 1 3.2 0.2 L28 15" stroke="#5A4DFF" stroke-width="4" stroke-linecap="round"/></svg>
+      <div class="name">forward<small>earth</small></div>
+    </div>
+    <div class="nav-getting"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Getting started<span class="badge">0/3</span></div>
+
+    <div class="nav-section">Analyse</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Overview</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Trends</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/></svg>Calculations<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+
+    <div class="nav-section">Collect</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Data entries</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="13" x2="15" y2="13"/></svg>Bulk import</div>
+
+    <div class="nav-section">Product Footprint</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg>Products</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><polyline points="7 12 10 9 13 12 17 8"/></svg>Assessments</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Product emissions</div>
+
+    <div class="nav-section">Manage</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>Company</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Emission factors</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <button class="collapse" title="Collapse sidebar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg></button>
+      <div class="spacer"></div>
+      <div class="company"><div class="lab">Active company</div><div class="val">Company for E2E tests<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      <div class="icon-group">
+        <button class="icon-btn" title="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+        <button class="icon-btn" title="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <div class="card-head">
+          <h1>Data entries</h1>
+          <button class="btn primary" onclick="openNew()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add new entry</button>
+        </div>
+        <div class="toolbar">
+          <button class="btn tool" onclick="toast('Export — CSV of the current view')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
+          <button class="btn tool" onclick="toast('Columns — show/hide grid columns')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Columns</button>
+          <button class="btn tool" onclick="toast('Filters')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filters<span class="filter-count">0</span></button>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-check"><span class="check"></span></th>
+                <th>ID</th><th>Status</th><th>Business unit</th><th>Business activity</th>
+                <th>User assigned</th><th>Start date</th><th>End date</th><th>Data input type</th>
+                <th>Consumption details</th><th>Emission factor details</th>
+                <th class="col-conf">EF confidence</th>
+                <th class="col-act" aria-hidden="true"></th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="pagecount">1–14 of 156,918</span>
+          <div class="pages">
+            <button class="nav">‹</button>
+            <button class="active">1</button><button>2</button><button>3</button><button>4</button><button>5</button>
+            <span style="padding:0 4px;color:var(--text-subtle)">…</span><button>6277</button>
+            <button class="nav">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="overlays"></div>
+<div id="toast"></div>
+
+<script>
+/* ─── Icons ─── */
+const IC = {
+  chev:'<polyline points="6 9 12 15 18 9"/>',
+  close:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  warn:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="8"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  arrow:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+};
+const svg=(name,size=16)=>`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[name]}</svg>`;
+
+/* ─── Data (SCCF Category-1 entries mapped onto the product grid) ─── */
+const IMPROVE_MS = 6000;
+const RAW = [
+  // id, supplier, desc, bu, activity, user, input, consType, consV, consU, ef, src, year, basis, conf, co2t
+  ["e4793f48-2c71-4fb2-b8b2-e779d8a12a1c","Meridian Components GmbH","Stainless steel fasteners — Q1 replenishment","Operations DE","Purchased goods & services","Johannes Weber","Bulk import","Spend data","48,200","EUR","Fabricated metal products, EU average","EXIOBASE","2019","spend-based",0.42,"27.96"],
+  ["4fa5fb0d-cda8-45ed-ac30-830d292f4954","Polyform S.r.l.","Injection-moulded housings, ABS","Operations IT","Purchased goods & services","Marta Ruiz","Bulk import","Spend data","31,900","EUR","Plastic products, EU average","EXIOBASE","2019","spend-based",0.58,"11.05"],
+  ["cc04e4b1-7ce9-418d-a62b-63a852ccc6cc","PackNord AB","Corrugated packaging, recycled","Operations SE","Purchased goods & services","Anna Keller","Bulk import","Material/service data","12,400","kg","Corrugated board, 70% recycled","ecoinvent","2024","activity-based",0.93,"8.12"],
+  ["7b1e0a5c-90f3-4c22-9d18-2c4b6f0a1e33","TransCargo GmbH","Road freight, inbound EU","Logistics","Upstream transport","Tom Berger","Bulk import","Material/service data","184,000","t·km","Lorry 16–32t, EURO 6","GLEC","2025","activity-based",0.88,"19.70"],
+  ["a2d9c7e1-5f44-4b90-8a71-1e6d3b8c9f02","Nordal Extrusion AS","Aluminium extrusions, 6060","Operations NO","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","9,850","kg","Aluminium extrusion, EU mix","ecoinvent","2024","activity-based",0.95,"63.40"],
+  ["f3068b2a-1c9d-42e7-b5a0-7d2e4f6a8c11","Voss Stahl GmbH","Steel sheet, hot-rolled","Operations DE","Purchased goods & services","Anna Keller","Bulk import","Material/service data","28,300","kg","Steel hot-rolled coil, EU","worldsteel","2024","activity-based",0.96,"71.60"],
+  ["d5a1f8b6-3e70-4a12-9c88-5b0f2d7e6a44","TechSource BV","IT hardware — laptop refresh","Shared services","Capital goods","Tom Berger","Manual entry","Spend data","86,500","EUR","Computers and peripherals, EU average","EXIOBASE","2019","spend-based",0.77,"21.63"],
+  ["b8c2e4d0-6a15-4f83-a291-3c7d5e9b1f66","Concur travel export","Business flights, Q1","Sales","Business travel","Marta Ruiz","Bulk import","Material/service data","412,000","pax·km","Air travel, short-haul economy","DEFRA","2025","activity-based",0.94,"63.50"],
+  ["c1f7a3b9-8d24-4e56-b0a7-9f2c6d1e3a88","EnviroServ GmbH","Waste to landfill, mixed","Operations DE","Waste in operations","Johannes Weber","Manual entry","Material/service data","8,900","kg","Municipal waste to landfill","DEFRA","2025","activity-based",0.92,"4.10"],
+  ["e6b0d2c8-4f91-4a37-8c15-7e3a9b5d2f00","Shenzhen ElecParts Ltd","Electronic components, PCBs","Operations DE","Purchased goods & services","Anna Keller","Bulk import","Spend data","54,700","EUR","Electronic components, global average","EXIOBASE","2019","spend-based",0.64,"16.40"],
+  ["a9d3f1e7-2b60-4c88-9a04-5d1f7e2c6b33","PalletPoint OY","Wooden pallets, softwood","Logistics","Purchased goods & services","Tom Berger","Bulk import","Material/service data","6,300","kg","Sawnwood, softwood, kiln-dried","ecoinvent","2024","activity-based",0.90,"3.10"],
+  ["f2c8b6a4-7d13-4e09-b5f2-1a6c9d3e8b55","ChemCoat S.p.A.","Solvent-based coatings","Operations IT","Purchased goods & services","Marta Ruiz","Bulk import","Material/service data","3,850","kg","Paint, solvent-borne","ecoinvent","2024","activity-based",0.87,"9.60"],
+  ["b4e9c1d5-3a82-4f70-8d16-2c5b7e0a9f22","CuproTech GmbH","Copper wire, 2.5mm","Operations DE","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","4,120","kg","Copper wire, EU mix","ecoinvent","2024","activity-based",0.94,"17.40"],
+  ["d0a6f4b2-8c51-4e93-a7d0-6f1c3b8e5a77","VetriPack S.p.A.","Glass bottles, 330ml","Operations IT","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","31,000","kg","Container glass, EU average","FEVE","2024","activity-based",0.93,"26.70"],
+];
+const AFTER = {
+  "e4793f48-2c71-4fb2-b8b2-e779d8a12a1c":{ef:"Stainless steel fasteners, EU supplier mix",val:"0.31",unit:"kgCO₂e/EUR",src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",co2:"14,942 kg",co2t:"14.94",conf:0.91,note:"Built from 4 deconstructed components (steel wire rod, forming, plating, transport)."},
+  "4fa5fb0d-cda8-45ed-ac30-830d292f4954":{ef:"ABS injection-moulded housings, EU mix",val:"0.22",unit:"kgCO₂e/EUR",src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",co2:"7,018 kg",co2t:"7.02",conf:0.89,note:"Built from 3 deconstructed components (ABS granulate, injection moulding, transport)."},
+};
+const fmtDate = "08/01/2019";
+const ENTRIES = RAW.map((r,i)=>{
+  const [id,supplier,desc,bu,act,user,input,consType,consV,consU,ef,src,year,basis,conf,co2t]=r;
+  const spend = consU==="EUR";
+  return {
+    id,supplier,desc,bu,act,user,input,consType,consV,consU,
+    cons:consV+" "+consU,
+    start:"08/01/2019",end:"11/01/2019",
+    lca: spend?"Cradle-to-gate":(consU==="t·km"||consU==="pax·km"?"Well-to-wheel":"Cradle-to-gate"),
+    cat:act==="Upstream transport"?"3.4 Upstream transportation and distribution":act==="Capital goods"?"3.2 Capital goods":act==="Business travel"?"3.6 Business travel":act==="Waste in operations"?"3.5 Waste generated in operations":"3.1 Purchased goods and services",
+    low: conf<0.62,
+    before:{ef,src,year,basis,conf,co2t,val:spend?"0.58":"—",unit:spend?"kgCO₂e/EUR":"kgCO₂e/"+consU,co2:(Number(co2t.replace(",",""))*1000).toLocaleString()+" kg"},
+    after: AFTER[id]||null,
+    synthetic:false,custom:false,
+  };
+});
+
+/* ─── State ─── */
+const state = { phases:{}, timers:{}, deleted:new Set(), created:[] };
+const phaseOf = id => state.phases[id]||"before";
+const allEntries = () => [...state.created, ...ENTRIES];
+const calc = (e,ph) => (ph==="after"&&e.after)?e.after:e.before;
+
+/* ─── Toast ─── */
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
+
+/* ─── Confidence pill ─── */
+function confPill(v){const lvl=v<0.6?"low":v<0.8?"med":"high";const lab=lvl==="low"?"Low":lvl==="med"?"Med":"High";
+  return `<span class="confpill ${lvl}">${lab}</span>`;}
+
+/* ─── Render table ─── */
+function renderTable(){
+  const tb=document.getElementById("tbody");
+  tb.innerHTML = allEntries().filter(e=>!state.deleted.has(e.id)).map(e=>{
+    const ph=phaseOf(e.id);const c=calc(e,ph);
+    const improving = ph==="improving";
+    const improved = ph==="after"||e.synthetic;
+    let efCell;
+    if(improving) efCell=`<span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span>`;
+    else if(improved) efCell=`<span class="synth">Synthetic</span>${c.ef}`;
+    else if(e.custom) efCell=`<span class="synth custom">Custom</span>${c.ef}`;
+    else efCell=c.ef;
+    const confCell = improving?`<span class="conf-improving"><span class="spin">${svg("refresh",12)}</span>Improving…</span>`:confPill(c.conf);
+    const showCta = e.low && ph==="before";
+    return `<tr onclick="openDetail('${e.id}')" ${state.created.includes(e)?'style="box-shadow:inset 3px 0 0 var(--violet)"':""}>
+      <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
+      <td class="id-cell">${e.id}</td>
+      <td><span class="chip submitted">Submitted</span></td>
+      <td>${e.bu}</td>
+      <td>${e.act}</td>
+      <td>${e.user}</td>
+      <td class="muted">${e.start}</td>
+      <td class="muted">${e.end}</td>
+      <td>${e.input}</td>
+      <td>${e.consType} · ${e.cons}</td>
+      <td>${efCell}</td>
+      <td>${confCell}</td>
+      <td class="col-act" onclick="event.stopPropagation()">
+        <span class="actions">
+          ${showCta?`<button class="rowcta" onclick="openWizard('${e.id}')">Improve EF</button>`:""}
+          <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
+          <button class="iconbtn danger" title="Delete entry" onclick="deleteRow('${e.id}')">${svg("trash",15)}</button>
+        </span>
+      </td>
+    </tr>`;
+  }).join("");
+}
+function deleteRow(id){state.deleted.add(id);renderTable();toast(id.slice(0,8)+"… deleted");}
+
+/* ─── Improve flow ─── */
+function startImprove(id){
+  const e=allEntries().find(x=>x.id===id);
+  state.phases[id]="improving";
+  closeOverlays();renderTable();
+  toast(id.slice(0,8)+"… · generating improved EF");
+  state.timers[id]=setTimeout(()=>{
+    state.phases[id]="after";renderTable();
+    const conf=Math.round((e.after?.conf||0.9)*100);
+    toast(id.slice(0,8)+"… · improved EF applied — confidence "+conf+"%");
+    if(document.querySelector(".modal-wrap")) openDetail(id); // refresh modal if open
+  },IMPROVE_MS);
+}
+
+/* ─── Overlays ─── */
+function closeOverlays(){document.getElementById("overlays").innerHTML="";}
+function esc(fn){const h=ev=>{if(ev.key==="Escape"){fn();document.removeEventListener("keydown",h);}};document.addEventListener("keydown",h);}
+
+/* Wizard placeholder dialog (the real AI wizard is a shared pattern, shared later) */
+function openWizard(id){
+  const e=allEntries().find(x=>x.id===id);
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeOverlays()"></div>
+    <div class="wizdlg" role="dialog" aria-modal="true">
+      <div class="head"><h3>Improve emission factor</h3><button class="close" onclick="closeOverlays()">${svg("close",16)}</button></div>
+      <p class="subx">Forward AI deconstructs <b>${e.desc}</b> into components and builds a synthetic emission factor to replace the current spend-based match.</p>
+      <div class="steps">
+        <div class="wstep"><span class="k">Step 1</span><span class="t">Context</span><span class="d">Line-item context, add guidance for the AI.</span></div>
+        <span class="warrow">${svg("arrow",14)}</span>
+        <div class="wstep"><span class="k">Step 2</span><span class="t">Review</span><span class="d">Deconstruction summary, component list.</span></div>
+        <span class="warrow">${svg("arrow",14)}</span>
+        <div class="wstep"><span class="k">Step 3</span><span class="t">Apply and confirm</span><span class="d">Summary, save EF, success.</span></div>
+      </div>
+      <div class="wiznote">${svg("info",13)}<span>Placeholder — the wizard is a shared pattern (also used by PCF “Deconstruct with AI”) and is designed separately. This mock skips ahead.</span></div>
+      <div class="wizfoot">
+        <button class="btn secondary" onclick="closeOverlays()">Cancel</button>
+        <button class="btn primary" style="height:38px;padding:0 18px" onclick="startImprove('${id}')">Apply and confirm</button>
+      </div>
+    </div>`;
+  esc(closeOverlays);
+}
+
+/* Detail modal */
+function field(label,value,opt){return `<div class="fld"><span class="lab">${label}${opt?'<span class="opt"> (optional)</span>':""}</span><div class="control${value==="—"?" placeholder":""}">${value}</div></div>`;}
+function openDetail(id){
+  const e=allEntries().find(x=>x.id===id);const ph=phaseOf(id);const c=calc(e,ph);
+  const spend=e.consType==="Spend data";
+  let banner="";
+  if(e.low){
+    if(ph==="before") banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openWizard('${id}')">Improve emission factor</button></div>`;
+    else if(ph==="improving") banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating an improved emission factor…</b> This can take a few minutes — you can leave this page.</span></div>`;
+    else banner=`<div class="banner ok"><span style="flex:0 0 auto">${svg("check",18)}</span><span class="tx"><b>Emission factor improved.</b> Confidence is now ${Math.round(c.conf*100)}% — the previous factor is kept in the audit log.</span></div>`;
+  }
+  const efTag = (ph==="after"||e.synthetic)?'<span class="synth">Synthetic</span>':e.custom?'<span class="synth custom">Custom</span>':"";
+  const efName = ph==="improving"?`<span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span>`:c.ef;
+
+  let calcSection;
+  if(ph==="improving"){
+    calcSection=`<section class="form-card"><div class="processing"><div class="spinner"></div><div class="big">Generating an improved emission factor…</div><div class="why">Forward AI is deconstructing this line item into components and building a synthetic EF. This can take a few minutes — you can leave this page.</div></div></section>`;
+  } else {
+    calcSection=`<section class="form-card">
+      <div class="card-head-row"><h3>Calculation</h3><button class="card-fold collapsed" id="calcfold" onclick="toggleCalc()">${svg("chev",16)}</button></div>
+      <p class="collapsed-sum" id="calcsum">${c.ef} · ${c.co2}CO₂e</p>
+      <div id="calcbody" style="display:none">
+        <div class="grid" style="margin-top:14px">${field("Emission factor name",c.ef)}</div>
+        <div class="grid two" style="margin-top:16px">
+          ${field("Emission factor value",c.val)}${field("Emission factor unit",c.unit)}
+          ${field("Emission factor source",c.src)}${field("Emission factor year",c.year)}
+          ${field("Emission factor region","Europe")}${field("Emission factor LCA activity",e.lca)}
+          ${field("Scope","3")}${field("Scope 3 category",e.cat)}
+        </div>
+        <div class="grid two" style="margin-top:16px">${field("CO₂e emission",c.co2)}${field("CO₂e emission unit","kgCO₂e")}</div>
+        <div class="grid" style="margin-top:16px">${field("CO₂e calculation method","GWP100")}</div>
+        ${ph==="after"?`<div class="match"><span>${svg("check",15)}</span><span><b>Emission factor improved.</b> ${c.note} Confidence ${Math.round(c.conf*100)}%. The previous spend-based factor is kept in the audit log.</span></div>`:""}
+      </div>
+    </section>`;
+  }
+
+  let footer;
+  if(ph==="improving") footer=`<button class="btn secondary" onclick="toast('Cancel improvement — would return the entry to its previous state')">Cancel improvement</button>`;
+  else if(ph==="after") footer=`<button class="btn secondary" onclick="toast('Would show the previous factor and the change log')">View previous factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… · calculation confirmed');closeOverlays()">${svg("check",16)}Confirm calculation</button>`;
+  else if(e.low) footer=`<button class="btn secondary" onclick="toast('Would open the manual factor picker')">Swap factor manually</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="openWizard('${id}')">Improve emission factor</button>`;
+  else footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
+
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" onclick="closeOverlays()"></div>
+    <div class="modal-wrap" onclick="if(event.target===event.currentTarget)closeOverlays()">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h2>${e.act} | ${e.bu} | ${e.desc}</h2>
+          <span class="chip submitted">Submitted</span>
+          <button class="link-ic" title="Copy link to this entry" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",17)}</button>
+          <button class="close" onclick="closeOverlays()">${svg("close",18)}</button>
+        </div>
+        <section class="form-card">
+          <h3>General information</h3>
+          <div class="grid">${field("Business activity",e.act)}${field("Business unit",e.bu)}${field("User assigned",e.user)}
+            <div class="grid two">${field("Start date",e.start)}${field("End date",e.end)}</div></div>
+        </section>
+        <section class="form-card">
+          <h3>Data entry type</h3><p class="sub">How the data in this entry was provided</p>
+          <div class="grid">${field("Data input type",e.input)}${field("Consumption data type",e.consType)}</div>
+        </section>
+        <section class="form-card">
+          <h3>Consumption details</h3>
+          <div class="grid">
+            ${spend?`<div class="grid two">${field("Currency","EUR – Euro")}${field("Price",e.consV)}</div>`
+                   :`<div class="grid two">${field("Material/service quantity",e.consV)}${field("Material/service unit",e.consU)}</div>`}
+            ${field("Description",e.desc,true)}${field("Supplier name",e.supplier,true)}
+          </div>
+        </section>
+        <section class="form-card">
+          <div class="card-head-row"><h3>Emission factor details</h3>${efTag}</div>
+          <div class="grid">${field("Emission factor name",efName)}</div>
+          ${banner?`<div style="margin-top:14px">${banner}</div>`:""}
+        </section>
+        ${calcSection}
+        <section class="form-card">
+          <h3>Attachments</h3><p class="sub">Upload supporting documents (images or PDFs, max 2MB) as proof of your entries</p>
+          <div class="dropzone">${svg("upload",26)}<span>You can't add files to a submitted data entry</span></div>
+        </section>
+        <section class="form-card">
+          <h3>Notes</h3>
+          <div class="fld"><span class="lab">Notes</span><div class="control placeholder" style="min-height:80px;align-items:flex-start;padding-top:14px">—</div></div>
+        </section>
+        <div class="modal-foot">${footer}</div>
+      </div>
+    </div>`;
+  esc(closeOverlays);
+}
+function toggleCalc(){
+  const body=document.getElementById("calcbody"),sum=document.getElementById("calcsum"),fold=document.getElementById("calcfold");
+  const open=body.style.display!=="none";
+  body.style.display=open?"none":"block";sum.style.display=open?"block":"none";
+  fold.classList.toggle("collapsed",open);
+}
+
+/* Add new entry — placeholder */
+function openNew(){
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeOverlays()"></div>
+    <div class="wizdlg" role="dialog" aria-modal="true" style="width:520px">
+      <div class="head"><h3>New data entry</h3><button class="close" onclick="closeOverlays()">${svg("close",16)}</button></div>
+      <p class="subx">Placeholder — the create-entry flow (with “Create synthetic emission factor with AI”) is designed separately and will be shared later.</p>
+      <div class="wizfoot"><button class="btn secondary" onclick="closeOverlays()">Close</button></div>
+    </div>`;
+  esc(closeOverlays);
+}
+
+renderTable();
+</script>
+</body>
+</html>
