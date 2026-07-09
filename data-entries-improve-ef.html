@@ -102,7 +102,6 @@ h1,h2,h3,h4{margin:0;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead th{background:var(--header-violet);color:#fff;text-align:left;font-weight:500;font-size:12.5px;
   padding:14px 14px;white-space:nowrap;position:relative;}
-thead th.col-conf{background:var(--header-violet-2);}
 thead th.col-check{width:44px;padding-left:18px;}
 thead th.col-act{position:sticky;right:0;width:0;min-width:0;max-width:0;padding:0;background:transparent;}
 tbody td{padding:13px 14px;border-top:1px solid var(--border);color:var(--text-strong);
@@ -123,15 +122,10 @@ td.muted{color:var(--text-muted);}
   font-size:12px;font-weight:500;}
 .chip.submitted{background:var(--success-bg);color:var(--success-fg);}
 .chip.draft{background:#F3F4F6;color:#374151;}
-.confpill{display:inline-block;padding:3px 10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;line-height:16px;}
-.confpill.high{background:var(--success-bg);color:var(--success-fg);}
-.confpill.med{background:var(--alert-bg);color:var(--alert-fg);}
-.confpill.low{background:var(--low-bg);color:var(--low-fg);}
 .synth{display:inline-flex;align-items:center;margin-right:8px;padding:2px 8px;border-radius:var(--radius-sm);
   background:var(--violet-50);color:var(--violet-700);font-size:11px;font-weight:600;}
 .synth.custom{background:#EEF1F6;color:#475569;}
 .efbusy{display:inline-flex;align-items:center;gap:6px;color:var(--violet);font-weight:600;}
-.conf-improving{display:inline-flex;align-items:center;gap:6px;color:var(--violet);font-weight:600;font-size:12px;}
 
 /* hover action tray (zero-width sticky anchor) */
 td.col-act{position:sticky;right:0;width:0;min-width:0;max-width:0;padding:0;background:transparent;overflow:visible;z-index:2;}
@@ -340,7 +334,6 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
                 <th>ID</th><th>Status</th><th>Business unit</th><th>Business activity</th>
                 <th>User assigned</th><th>Start date</th><th>End date</th><th>Data input type</th>
                 <th>Consumption details</th><th>Emission factor details</th>
-                <th class="col-conf">EF confidence</th>
                 <th class="col-act" aria-hidden="true"></th>
               </tr>
             </thead>
@@ -433,10 +426,6 @@ let toastT;
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");
   clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
 
-/* ─── Confidence pill ─── */
-function confPill(v){const lvl=v<0.6?"low":v<0.8?"med":"high";const lab=lvl==="low"?"Low":lvl==="med"?"Med":"High";
-  return `<span class="confpill ${lvl}">${lab}</span>`;}
-
 /* ─── Render table ─── */
 function renderTable(){
   const tb=document.getElementById("tbody");
@@ -449,7 +438,6 @@ function renderTable(){
     else if(improved) efCell=`<span class="synth">Synthetic</span>${c.ef}`;
     else if(e.custom) efCell=`<span class="synth custom">Custom</span>${c.ef}`;
     else efCell=c.ef;
-    const confCell = improving?`<span class="conf-improving"><span class="spin">${svg("refresh",12)}</span>Improving…</span>`:confPill(c.conf);
     const showCta = e.low && ph==="before";
     return `<tr onclick="openDetail('${e.id}')" ${state.created.includes(e)?'style="box-shadow:inset 3px 0 0 var(--violet)"':""}>
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
@@ -463,7 +451,6 @@ function renderTable(){
       <td>${e.input}</td>
       <td>${e.consType} · ${e.cons}</td>
       <td>${efCell}</td>
-      <td>${confCell}</td>
       <td class="col-act" onclick="event.stopPropagation()">
         <span class="actions">
           ${showCta?`<button class="rowcta" onclick="openWizard('${e.id}')">Improve EF</button>`:""}
