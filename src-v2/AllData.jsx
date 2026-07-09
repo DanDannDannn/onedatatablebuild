@@ -478,17 +478,19 @@ function AllData({
   const tdPinClass = (k) => [pinnedSet.has(k) ? "td-pin" : "", k === lastPinned ? "td-pin-last" : ""].filter(Boolean).join(" ");
 
   const muted = { color: "var(--fe-fg-subtle)" };
-  const Multi = <span style={{ color: "var(--fe-fg-muted)", fontStyle: "italic" }}>Multiple</span>;
-  // "Data 2" experiment: show the underlying values behind "Multiple" so users
-  // can see (and partially filter) what the aggregate hides. Falls back to the
-  // plain chip on the normal Data page or when no values are supplied.
+  // DS alignment: aggregate cells are DEFAULT text (text-primary), same as any
+  // other value — "Multiple" keeps only the italic as its aggregate cue.
+  const Multi = <span style={{ color: "var(--fe-fg-default)", fontStyle: "italic" }}>Multiple</span>;
+  // Show the underlying values behind "Multiple" so users can see (and
+  // partially filter) what the aggregate hides. Falls back to the plain chip
+  // on the archived classic page or when no values are supplied.
   const multiVals = (vals, mapLabel) => {
     if (!window.FE_MULTI_ROUTE || !vals || !vals.length) return Multi;
     const list = [...vals].map(v => mapLabel ? mapLabel(v) : String(v)).join(", ");
     return (
-      <span title={"Multiple, " + list}>
-        <span style={{ color: "var(--fe-fg-muted)", fontStyle: "italic" }}>Multiple</span>
-        <span style={{ color: "var(--fe-fg-muted)" }}>{", " + list}</span>
+      <span title={"Multiple, " + list} style={{ color: "var(--fe-fg-default)" }}>
+        <span style={{ fontStyle: "italic" }}>Multiple</span>
+        {", " + list}
       </span>
     );
   };

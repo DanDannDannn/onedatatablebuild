@@ -262,12 +262,12 @@
 .data-table .row-disc { width: 22px; height: 22px; }
 .data-table .row-disc svg { width: 15px; height: 15px; }
 
-/* "Data 2" filter experiment: sub-rows that don't match the active per-calc
-   filter stay visible but recede; the matching leg(s) keep full contrast.
-   Only the cell CONTENT dims (td > *) — the row background must stay identical
-   to the other sub-rows. Hover restores contrast so dimmed legs stay readable. */
-.data-table tbody tr.calc-childrow.is-dim td > * { opacity: 0.38; }
-.data-table tbody tr.calc-childrow.is-dim:hover td > * { opacity: 0.8; }
+/* Sub-rows that don't match the active per-calc filter recede to the DS
+   text-secondary colour (--fe-fg-muted); matching legs keep text-primary.
+   Colour only — the row background stays identical to the other sub-rows. */
+.data-table tbody tr.calc-childrow.is-dim td,
+.data-table tbody tr.calc-childrow.is-dim td span,
+.data-table tbody tr.calc-childrow.is-dim td a { color: var(--fe-fg-muted) !important; }
 
 /* Expanded sub-rows match their PARENT's zebra colour (extras-v2 paints every
    child row --fe-bg-subtle, which read as a state change on white parents).
