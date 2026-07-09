@@ -409,7 +409,7 @@ const ENTRIES = RAW.map((r,i)=>{
     start:"08/01/2019",end:"11/01/2019",
     lca: spend?"Cradle-to-gate":(consU==="t·km"||consU==="pax·km"?"Well-to-wheel":"Cradle-to-gate"),
     cat:act==="Upstream transport"?"3.4 Upstream transportation and distribution":act==="Capital goods"?"3.2 Capital goods":act==="Business travel"?"3.6 Business travel":act==="Waste in operations"?"3.5 Waste generated in operations":"3.1 Purchased goods and services",
-    status: [2,6,10,13].includes(i)?"Ready to submit":[4,8,12].includes(i)?"Draft":"Submitted",
+    status: [0,2,6,10,13].includes(i)?"Ready to submit":[4,8,12].includes(i)?"Draft":"Submitted",
     low: conf<0.62,
     before:{ef,src,year,basis,conf,co2t,val:spend?"0.58":"—",unit:spend?"kgCO₂e/EUR":"kgCO₂e/"+consU,co2:(Number(co2t.replace(",",""))*1000).toLocaleString()+" kg"},
     after: AFTER[id]||null,
@@ -440,9 +440,9 @@ function renderTable(){
     else if(improved) efCell=`<span class="synth">Synthetic</span>${c.ef}`;
     else if(e.custom) efCell=`<span class="synth custom">Custom</span>${c.ef}`;
     else efCell=c.ef;
-    // Improve EF is offered pre-submission (Draft / Ready to submit) and on
-    // low-match submitted rows.
-    const showCta = ph==="before" && (e.low || e.status==="Draft" || e.status==="Ready to submit");
+    // Improve EF is offered only on Ready-to-submit entries (not Draft, not
+    // Submitted — a submitted calculation is locked until unsubmitted).
+    const showCta = ph==="before" && e.status==="Ready to submit";
     const stCls = e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted";
     return `<tr onclick="openDetail('${e.id}')" ${state.created.includes(e)?'style="box-shadow:inset 3px 0 0 var(--violet)"':""}>
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
@@ -533,7 +533,7 @@ function openDetail(id){
   const spend=e.consType==="Spend data";
   let banner="";
   if(e.low){
-    if(ph==="before") banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openWizard('${id}')">Improve emission factor</button></div>`;
+    if(ph==="before") banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span>${e.status==="Ready to submit"?`<button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openWizard('${id}')">Improve emission factor</button>`:""}</div>`;
     else if(ph==="improving") banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating an improved emission factor…</b> This can take a few minutes — you can leave this page.</span></div>`;
     else banner=`<div class="banner ok"><span style="flex:0 0 auto">${svg("check",18)}</span><span class="tx"><b>Emission factor improved.</b> Confidence is now ${Math.round(c.conf*100)}% — the previous factor is kept in the audit log.</span></div>`;
   }
@@ -565,8 +565,8 @@ function openDetail(id){
   let footer;
   if(ph==="improving") footer=`<button class="btn secondary" onclick="toast('Cancel improvement — would return the entry to its previous state')">Cancel improvement</button>`;
   else if(ph==="after") footer=`<button class="btn secondary" onclick="toast('Would show the previous factor and the change log')">View previous factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… · calculation confirmed');closeOverlays()">${svg("check",16)}Confirm calculation</button>`;
-  else if(e.low) footer=`<button class="btn secondary" onclick="toast('Would open the manual factor picker')">Swap factor manually</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="openWizard('${id}')">Improve emission factor</button>`;
-  else if(e.status==="Draft"||e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="openWizard('${id}')">Improve emission factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
+  else if(e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="openWizard('${id}')">Improve emission factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
+  else if(e.status==="Draft") footer=`<button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
 
   document.getElementById("overlays").innerHTML=`
