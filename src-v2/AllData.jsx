@@ -538,11 +538,11 @@ function AllData({
         return <span>{vals[0]}</span>;
       }
       case "selection_type": return <span>{getCol(e, "selection_type")}</span>;
-      case "start_date": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.start_date}</span>;
-      case "end_date": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.end_date}</span>;
+      case "start_date": return <span>{e.start_date}</span>;
+      case "end_date": return <span>{e.end_date}</span>;
       case "user_assigned": return <span>{e.user_assigned}</span>;
-      case "last_updated": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.last_updated}</span>;
-      case "created_on": return <span style={{ color: "var(--fe-fg-muted)" }}>{e.created_on}</span>;
+      case "last_updated": return <span>{e.last_updated}</span>;
+      case "created_on": return <span>{e.created_on}</span>;
       case "scope": {
         if (c) return <span>{c.scope}</span>;
         const ss = [...new Set(r.mine.map(x => x.scope))].sort();
@@ -587,7 +587,7 @@ function AllData({
       case "ef_unit":    return efCell(fa => fa.unit, v => <span style={{ fontSize: 12 }}>{`kgCO₂e/${v}`}</span>);
       case "ef_source":  return efCell(fa => fa.source, v => <span>{v}</span>);
       case "ef_dataset": return efCell(fa => fa.dataset || fa.source, v => <span style={{ fontSize: 12 }}>{v}</span>);
-      case "ef_year":    return efCell(fa => fa.vintage, v => <span style={{ color: "var(--fe-fg-muted)" }}>{v}</span>);
+      case "ef_year":    return efCell(fa => fa.vintage, v => <span>{v}</span>);
       case "ef_region":  return efCell(fa => fa.region || "Global", v => <span>{v}</span>);
       case "ef_lca":     return efCell(fa => fa.lca || "Cradle-to-gate", v => <span style={{ fontSize: 12 }}>{v}</span>);
       case "notes": return <span title={e.notes || ""} style={{ color: e.notes ? "var(--fe-fg-default)" : "var(--fe-fg-subtle)", fontSize: 12 }}>{e.notes || "—"}</span>;
