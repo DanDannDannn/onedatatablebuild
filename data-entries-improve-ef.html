@@ -212,7 +212,11 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .efselect-trigger svg{color:var(--text-muted);flex:0 0 auto;}
 .efselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:60;background:#fff;
   border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-pop);padding:6px;
-  display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto;}
+  display:flex;flex-direction:column;gap:2px;max-height:320px;overflow-y:auto;}
+.efselect-search{margin:2px 2px 6px;height:38px;padding:0 12px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);font-family:inherit;font-size:13px;color:var(--text-strong);outline:none;}
+.efselect-search:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(90,77,255,.14);}
+.efselect-empty{padding:10px 10px 6px;font-size:12.5px;color:var(--text-muted);}
 .efselect-menu.up{top:auto;bottom:calc(100% + 6px);}
 .efselect-item{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;
   border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text-strong);
@@ -733,14 +737,15 @@ function openNew(){
     supplier:"Aurora Precision GmbH",desc:"CNC-machined aluminium brackets",
     cur:"EUR",price:"25,000",
     efName:"",synthetic:false,custom:false,synthPhase:"idle", // idle | improving | done
-    efOpen:false,
+    efOpen:false,efQuery:"",
   };
   renderNew();
   esc(closeNew);
 }
 function closeNew(){newState=null;clearTimeout(newTimer);closeOverlays();}
 function setNew(k,v){if(newState){newState[k]=v;}}
-function toggleEfMenu(){newState.efOpen=!newState.efOpen;renderNew();}
+function toggleEfMenu(){newState.efOpen=!newState.efOpen;newState.efQuery="";renderNew();}
+function setEfQuery(v){newState.efQuery=v;renderNew();}
 function pickEf(v){
   newState.efOpen=false;
   if(v==="__synthetic__"){renderNew();renderWizard(newState.desc||"this line item","startSynthNew()");return;}
@@ -814,25 +819,34 @@ function renderNew(){
     efControl=`<div class="control" style="justify-content:space-between">
       <span>${efTag}${f.efName}</span><button type="button" class="changelink" onclick="changeEf()">Change</button></div>`;
   } else {
-    efControl=`<div class="efselect">
-      <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="${f.efOpen}" onclick="toggleEfMenu()">
-        <span class="ph">Select an emission factor…</span>${svg("chev",16)}
-      </button>
-      ${f.efOpen?`<div class="efselect-menu" role="listbox">
-        ${EF_CHOICES.map(o=>`<button type="button" role="option" class="efselect-item" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")}
+    // Searchable EF combobox. Matching factors are listed; the create actions
+    // (synthetic with AI / custom) appear ONLY when the search has no match.
+    const q=f.efQuery.trim().toLowerCase();
+    const matches=EF_CHOICES.filter(o=>o.toLowerCase().includes(q));
+    const menuBody=matches.length
+      ? matches.map(o=>`<button type="button" role="option" class="efselect-item" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")
+      : `<div class="efselect-empty">No emission factor matches “${f.efQuery.trim()}”.</div>
         <div class="efselect-sep"></div>
         <button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
           ${svg("plus",15)}<span><b>Create synthetic emission factor with AI</b><span class="subline">Deconstruct the line item into components</span></span>
         </button>
         <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
           ${svg("info",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
-        </button>
+        </button>`;
+    efControl=`<div class="efselect">
+      <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="${f.efOpen}" onclick="toggleEfMenu()">
+        <span class="ph">Select an emission factor…</span>${svg("chev",16)}
+      </button>
+      ${f.efOpen?`<div class="efselect-menu" role="listbox">
+        <input type="text" id="ef-search" class="efselect-search" placeholder="Search emission factors…"
+          value="${f.efQuery.replace(/"/g,'&quot;')}" oninput="setEfQuery(this.value)">
+        ${menuBody}
       </div>`:""}
     </div>`;
   }
   let efNote="";
   if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
-  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Create synthetic emission factor with AI</b> to generate a tailored one, or <b>create a custom factor</b> from your own data.</p>`;
+  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">Search the emission factor library — if no factor matches, you can <b>create a synthetic emission factor with AI</b> or <b>add a custom factor</b> from your own data.</p>`;
   const canSubmit=!!f.efName&&f.synthPhase!=="improving";
 
   document.getElementById("overlays").innerHTML=`
@@ -875,6 +889,9 @@ function renderNew(){
         </div>
       </div>
     </div>`;
+  // Re-rendering rebuilds the menu; put the caret back in the search field.
+  const si=document.getElementById("ef-search");
+  if(si){si.focus();const n=si.value.length;si.setSelectionRange(n,n);}
 }
 
 renderTable();
