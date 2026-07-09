@@ -343,8 +343,9 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
               <tr>
                 <th class="col-check"><span class="check"></span></th>
                 <th>ID</th><th>Status</th><th>Business unit</th><th>Business activity</th>
+                <th>Emission factor details</th>
                 <th>User assigned</th><th>Start date</th><th>End date</th><th>Data input type</th>
-                <th>Consumption details</th><th>Emission factor details</th>
+                <th>Consumption details</th>
                 <th class="col-act" aria-hidden="true"></th>
               </tr>
             </thead>
@@ -493,12 +494,12 @@ function renderTable(){
       <td><span class="chip ${stCls}">${e.status}</span></td>
       <td>${e.bu}</td>
       <td>${e.act}</td>
+      <td>${efCell}</td>
       <td>${e.user}</td>
       <td class="muted">${e.start}</td>
       <td class="muted">${e.end}</td>
       <td>${e.input}</td>
       <td>${e.consType} · ${e.cons}</td>
-      <td>${efCell}</td>
       <td class="col-act" onclick="event.stopPropagation()">
         <span class="actions">
           ${showCta?`<button class="rowcta" onclick="openWizard('${e.id}')">Improve EF</button>`:""}
