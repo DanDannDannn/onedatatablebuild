@@ -609,7 +609,8 @@ function renderTable(){
     else efCell=c.ef;
     // Improve EF is offered only on Ready-to-submit entries (not Draft, not
     // Submitted — a submitted calculation is locked until unsubmitted).
-    const showCta = ph==="before" && e.status==="Ready to submit";
+    // Eligibility (per epic DAM-7718): Ready-to-submit + has a description.
+    const showCta = ph==="before" && e.status==="Ready to submit" && !!(e.desc&&e.desc.trim());
     const busyTray = ph==="improving"||ph==="review";
     const stCls = e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted";
     return `<tr onclick="openDetail('${e.id}')">
@@ -960,10 +961,10 @@ function openDetail(id){
         </button>
         <div class="efselect-menu" id="detail-ef-menu" role="listbox" style="display:none">
           ${alts.map(a=>`<button type="button" role="option" class="efselect-item${a===c.ef?" current":""}" onclick="pickDetailEf('${id}','${a.replace(/'/g,"\\'")}')">${a}</button>`).join("")}
-          <div class="efselect-sep"></div>
+          ${(e.desc&&e.desc.trim())?`<div class="efselect-sep"></div>
           <button type="button" class="efselect-item create" onclick="improveEF('${id}')">
             ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic EF with AI for this line item</span></span>
-          </button>
+          </button>`:""}
         </div>
       </div></div>`;
   } else {
@@ -1165,10 +1166,13 @@ function renderNew(){
     const matches=EF_CHOICES.filter(o=>o.toLowerCase().includes(q));
     // The create actions are always available at the bottom of the menu; on
     // a no-match search they follow the "no results" notice.
+    // Generate EF needs a description to build the BOM from (epic DAM-7718);
+    // custom factor is always available.
+    const hasDesc=!!(f.desc&&f.desc.trim());
     const createActions=`<div class="efselect-sep"></div>
-        <button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
+        ${hasDesc?`<button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
           ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic emission factor with AI</span></span>
-        </button>
+        </button>`:`<div class="efselect-item" style="cursor:default;color:var(--text-subtle)">${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Add a description to generate a synthetic factor</span></span></div>`}
         <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
           ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
         </button>`;
