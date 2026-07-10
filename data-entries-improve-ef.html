@@ -250,6 +250,8 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .banner .btn{flex:0 0 auto;}
 .banner.busy{border-color:#C9C2FF;background:#F5F3FF;color:var(--violet-700);}
 .banner.ok{border-color:var(--success-200);background:var(--success-50);color:var(--success-fg2);}
+.banner.fail{border-color:#FCA5A5;background:var(--low-bg);color:var(--low-fg);}
+.pill-status.fail{background:var(--low-bg);color:var(--low-fg);}
 .match{margin-top:16px;padding:11px 13px;border-radius:var(--radius-md);border:1px solid var(--success-200);
   background:var(--success-50);color:var(--success-fg2);display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.5;}
 .match b{font-weight:700;}
@@ -547,7 +549,7 @@ const svg=(name,size=16)=>`<svg width="${size}" height="${size}" viewBox="0 0 24
 const IMPROVE_MS = 6000;
 const RAW = [
   // id, supplier, desc, bu, activity, user, input, consType, consV, consU, ef, src, year, basis, conf, co2t
-  ["e4793f48-2c71-4fb2-b8b2-e779d8a12a1c","Meridian Components GmbH","Stainless steel fasteners — Q1 replenishment","Operations DE","Purchased goods & services","Johannes Weber","Bulk import","Spend data","48,200","EUR","Fabricated metal products, EU average","EXIOBASE","2019","spend-based",0.42,"27.96"],
+  ["e4793f48-2c71-4fb2-b8b2-e779d8a12a1c","Meridian Components GmbH","Stainless steel fasteners — Q1 replenishment","Operations DE","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","18,500","kg","Fabricated metal products, EU average","EXIOBASE","2019","activity-based",0.42,"27.96"],
   ["4fa5fb0d-cda8-45ed-ac30-830d292f4954","Polyform S.r.l.","Injection-moulded housings, ABS","Operations IT","Purchased goods & services","Marta Ruiz","Bulk import","Spend data","31,900","EUR","Plastic products, EU average","EXIOBASE","2019","spend-based",0.58,"11.05"],
   ["cc04e4b1-7ce9-418d-a62b-63a852ccc6cc","PackNord AB","Corrugated packaging, recycled","Operations SE","Purchased goods & services","Anna Keller","Bulk import","Material/service data","12,400","kg","Corrugated board, 70% recycled","ecoinvent","2024","activity-based",0.93,"8.12"],
   ["7b1e0a5c-90f3-4c22-9d18-2c4b6f0a1e33","TransCargo GmbH","Road freight, inbound EU","Logistics","Upstream transport","Tom Berger","Bulk import","Material/service data","184,000","t·km","Lorry 16–32t, EURO 6","GLEC","2025","activity-based",0.88,"19.70"],
@@ -563,7 +565,7 @@ const RAW = [
   ["d0a6f4b2-8c51-4e93-a7d0-6f1c3b8e5a77","VetriPack S.p.A.","Glass bottles, 330ml","Operations IT","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","31,000","kg","Container glass, EU average","FEVE","2024","activity-based",0.93,"26.70"],
 ];
 const AFTER = {
-  "e4793f48-2c71-4fb2-b8b2-e779d8a12a1c":{ef:"Stainless steel fasteners, EU supplier mix",val:"0.31",unit:"kgCO₂e/EUR",src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",co2:"14,942 kg",co2t:"14.94",conf:0.91,note:"Built from 4 deconstructed components (steel wire rod, forming, plating, transport)."},
+  "e4793f48-2c71-4fb2-b8b2-e779d8a12a1c":{ef:"Stainless steel fasteners, EU supplier mix",val:"0.81",unit:"kgCO₂e/kg",src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",co2:"14,942 kg",co2t:"14.94",conf:0.91,note:"Built from 4 deconstructed components (steel wire rod, forming, plating, transport)."},
   "4fa5fb0d-cda8-45ed-ac30-830d292f4954":{ef:"ABS injection-moulded housings, EU mix",val:"0.22",unit:"kgCO₂e/EUR",src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",co2:"7,018 kg",co2t:"7.02",conf:0.89,note:"Built from 3 deconstructed components (ABS granulate, injection moulding, transport)."},
 };
 const fmtDate = "08/01/2019";
@@ -587,6 +589,21 @@ const ENTRIES = RAW.map((r,i)=>{
 /* ─── State ─── */
 const state = { phases:{}, timers:{}, deleted:new Set(), created:[] };
 const phaseOf = id => state.phases[id]||"before";
+// Eligibility (epic DAM-7718): weight-based entries in scope 3.1/3.2, in an
+// editable status (Ready to submit or Draft), with a description.
+const efEligible = e => (e.status==="Ready to submit"||e.status==="Draft")
+  && e.consU==="kg" && /^3\.[12]/.test(e.cat) && !!(e.desc&&e.desc.trim());
+// Up to 5 generation jobs may run at once (epic DAM-7718).
+const activeGens = () => Object.values(state.phases).filter(p=>p==="improving").length
+  + MATS.filter(m=>m.state==="generating").length
+  + ((typeof newState!=="undefined"&&newState&&newState.synthPhase==="improving")?1:0);
+// Registry naming (epic DAM-7718): "Synthetic EF" + description + N if multiple.
+function synthName(desc){
+  const base="Synthetic EF – "+(desc||"data entry").trim();
+  const names=[...state.efNew,...EF_SEED].map(r=>r[0]);
+  const n=names.filter(x=>x===base||x.startsWith(base+" ")).length;
+  return n?`${base} ${n+1}`:base;
+}
 const allEntries = () => [...state.created, ...ENTRIES];
 const calc = (e,ph) => (ph==="after"&&e.after)?e.after:e.before;
 
@@ -610,8 +627,8 @@ function renderTable(){
     // Improve EF is offered only on Ready-to-submit entries (not Draft, not
     // Submitted — a submitted calculation is locked until unsubmitted).
     // Eligibility (per epic DAM-7718): Ready-to-submit + has a description.
-    const showCta = ph==="before" && e.status==="Ready to submit" && !!(e.desc&&e.desc.trim());
-    const busyTray = ph==="improving"||ph==="review";
+    const showCta = ph==="before" && efEligible(e);
+    const busyTray = ph==="improving"||ph==="review"||ph==="failed";
     const stCls = e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted";
     return `<tr onclick="openDetail('${e.id}')">
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
@@ -630,6 +647,7 @@ function renderTable(){
           ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate EF</button>`:""}
           ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
           ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
+          ${ph==="failed"?`<span class="pill-status fail" title="Synthetic EF generation failed — current EF stays applied">Failed</span><button class="rowcta" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate again</button><button class="iconbtn" title="Dismiss" onclick="dismissFailed('entry','${e.id}')">${svg("close",14)}</button>`:""}
           <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
           <button class="iconbtn danger" title="Delete entry" onclick="deleteRow('${e.id}')">${svg("trash",15)}</button>
         </span>
@@ -643,8 +661,8 @@ function deleteRow(id){state.deleted.add(id);renderTable();toast(id.slice(0,8)+"
 // Company's own factors: custom (user-entered primary data) and synthetic
 // (AI-generated). Newly generated synthetic EFs are prepended.
 const EF_SEED=[
-  ["Synthetic Onboard unit (Bosch) – 2026","06/15/2026","Ruben Korenke","2026","kgCO₂e/kg","1.03","Secondary","Synthetic EF","—","1"],
-  ["Synthetic Machined aluminium housings, EU supplier mix","07/08/2026","Marta Ruiz","2026","kgCO₂e/EUR","0.27","Secondary","Synthetic EF","—","1"],
+  ["Synthetic EF – Onboard unit (Bosch)","06/15/2026","Ruben Korenke","2026","kgCO₂e/kg","1.03","Secondary","Synthetic EF","—","1"],
+  ["Synthetic EF – Machined aluminium housings","07/08/2026","Marta Ruiz","2026","kgCO₂e/kg","0.27","Secondary","Synthetic EF","—","1"],
   ["Custom emission factor for green electricity tariff","06/30/2026","Anna Keller","2025","GCO2e_KWH","203","Primary","Supplier contract","1","3"],
   ["Custom emission factor for district heating Berlin","06/23/2026","Johannes Weber","2025","kgCO₂e/kWh","0.18","Primary","Utility invoice","1","2"],
   ["Custom emission factor for hotel nights, DACH","06/19/2026","Marta Ruiz","2024","kgCO₂e/night","11.9","Primary","Internal survey","—","5"],
@@ -749,7 +767,8 @@ function ensureAfter(e){
     co2t:co2tNum.toFixed(2),conf:0.9,
     note:"Built from deconstructed components (materials, processing, transport)."};
 }
-let job=null;          // {kind:'entry'|'material'|'newentry', id, name, context}
+let job=null;          // job of the currently open dialog {kind, id, name, context}
+const jobCtx={};       // per-row job store keyed kind:id — survives concurrent jobs
 let genTimers=[];
 const STAGES=["Building bill of materials","Estimating component weights","Estimating energy consumption","Matching emission factors"];
 
@@ -770,7 +789,6 @@ function pickDetailEf(id,name){
 }
 function openSetup(kind,id,name){
   job={kind,id,name,context:""};
-  genTimers.forEach(clearTimeout);genTimers=[];
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
     <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
@@ -782,7 +800,7 @@ function openSetup(kind,id,name){
         <p style="margin:0 0 6px;font-size:13px;font-weight:600">Add contextual info <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
         <textarea id="gen-ctx" rows="4" placeholder="Materials, components, certifications, or supplier details all improve the estimate."></textarea>
       </div>
-      <div class="dlg-foot"><p class="hint">Takes a few minutes.</p>
+      <div class="dlg-foot"><p class="hint">Takes 5–10 minutes.</p>
         <button class="btn primary" style="height:38px;padding:0 18px" onclick="startGeneration()">Generate</button></div>
     </div>
     </div>`;
@@ -790,16 +808,24 @@ function openSetup(kind,id,name){
 }
 function startGeneration(){
   const j=job; if(!j)return;
+  // Concurrency cap (epic DAM-7718): up to 5 jobs at once, each row tracks
+  // its own state — a 6th attempt is refused with an error message.
+  if(activeGens()>=5){toast("Up to 5 EF generations can run at once — wait for one to finish before starting another.");return;}
   j.context=(document.getElementById("gen-ctx")||{}).value||"";
+  // Demo hook: a context containing "fail" produces the failure state.
+  j.willFail=/fail/i.test(j.context);
+  j.key=j.kind+":"+(j.id||"new");
+  jobCtx[j.key]=j; // per-row job store — concurrent jobs don't share state
   // Mark the source row as generating (its current EF stays applied)
   if(j.kind==="entry"){state.phases[j.id]="improving";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
   else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){m.state="generating";renderAssessment();}}
   else if(j.kind==="newentry"&&newState){newState.synthPhase="improving";renderNew();}
-  // Dialog switches to the staged-progress view
+  // Dialog switches to the staged-progress view (tagged with the job key so a
+  // concurrently running job can't drive another job's dialog)
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
     <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
-    <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px" id="gen-dlg">
+    <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px" id="gen-dlg" data-job="${j.key}">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="spin" style="color:var(--violet)">${svg("refresh",20)}</span>
         <h3 style="margin:0;font-size:15px;font-weight:600">Generating synthetic EF</h3>
@@ -807,27 +833,46 @@ function startGeneration(){
       <div id="stages">${STAGES.map((s,i)=>`<div class="stage" data-i="${i}"><span class="st-ic">${svg("circle",13)}</span>${s}</div>`).join("")}</div>
       <p class="subx" style="margin:0">You can close this window and keep working — the row will show progress and tell you when it's ready. <b>Your current EF stays applied</b> until you apply the proposal.</p>
       <div style="display:flex;justify-content:center;padding-top:2px">
-        <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes a few minutes. Your current EF stays applied until you review.')">Close window</button>
+        <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes 5–10 minutes. Your current EF stays applied until you review.')">Close window</button>
       </div>
     </div>
     </div>`;
   const durations=[1800,1800,1600,1400];let t=0;
-  const setStage=(i,st)=>{const el=document.querySelector(`.stage[data-i="${i}"]`);if(!el)return;
+  const setStage=(i,st)=>{
+    const dlg=document.getElementById("gen-dlg");
+    if(!dlg||dlg.dataset.job!==j.key)return; // another job's dialog (or none) is open
+    const el=dlg.querySelector(`.stage[data-i="${i}"]`);if(!el)return;
     el.className="stage "+st;
     el.querySelector(".st-ic").innerHTML=st==="active"?`<span class="spin" style="color:var(--violet)">${svg("refresh",13)}</span>`:`<span style="color:var(--success-fg)">${svg("check",13)}</span>`;};
   durations.forEach((d,i)=>{genTimers.push(setTimeout(()=>setStage(i,"active"),t));genTimers.push(setTimeout(()=>setStage(i,"done"),t+d));t+=d;});
   genTimers.push(setTimeout(()=>finishGeneration(j),t+400));
 }
 function finishGeneration(j){
-  // The synthetic EF is written to the registry the moment generation
-  // completes — it exists whether or not the user goes on to apply it
-  // (per PM alignment: "EF is saved when the user generates").
-  if(j.kind==="entry"){const e=allEntries().find(x=>x.id===j.id);if(!e)return;ensureAfter(e);j.efSaved="Synthetic "+e.after.ef;saveEF(j.efSaved,e.after.unit,e.after.val,"Synthetic EF");state.phases[j.id]="review";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
-  else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){j.efSaved="Synthetic "+m.appliedName;saveEF(j.efSaved,"kgCO₂e/kg","1.03","Synthetic EF");m.state="review";renderAssessment();}}
-  else if(j.kind==="newentry"){if(!newState)return;j.efSaved="Synthetic Aluminium brackets, EU supplier mix";saveEF(j.efSaved,"kgCO₂e/EUR","0.31","Synthetic EF");newState.synthPhase="review";renderNew();}
-  const dlgOpen=!!document.getElementById("gen-dlg");
+  const dlg=document.getElementById("gen-dlg");
+  const dlgOpen=!!(dlg&&dlg.dataset.job===j.key);
+  // Failure path (no reason surfaced): the row offers Dismiss / Generate again.
+  if(j.willFail){
+    if(j.kind==="entry"){state.phases[j.id]="failed";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
+    else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){m.state="failed";renderAssessment();}}
+    else if(j.kind==="newentry"&&newState){newState.synthPhase="failed";renderNew();}
+    if(dlgOpen)closeWiz();
+    toast("Synthetic EF generation failed — "+j.name+". Your current EF stays applied.");
+    return;
+  }
+  // Success: the synthetic EF is written to the registry the moment
+  // generation completes — whether or not the user goes on to apply it.
+  // Name = "Synthetic EF" + description + N if multiple (epic DAM-7718).
+  if(j.kind==="entry"){const e=allEntries().find(x=>x.id===j.id);if(!e)return;ensureAfter(e);j.efSaved=synthName(e.desc);e.after.ef=j.efSaved;saveEF(j.efSaved,e.after.unit,e.after.val,"Synthetic EF");state.phases[j.id]="review";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
+  else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){j.efSaved=synthName(m.item);saveEF(j.efSaved,"kgCO₂e/kg","1.03","Synthetic EF");m.state="review";renderAssessment();}}
+  else if(j.kind==="newentry"){if(!newState)return;j.efSaved=synthName(newState.desc);saveEF(j.efSaved,"kgCO₂e/kg","0.31","Synthetic EF");newState.synthPhase="review";renderNew();}
   if(dlgOpen){openReview(j.kind,j.id,j.name,j.context);}
-  else{job=j;toast("Synthetic EF ready for review — "+j.name+".");}
+  else{toast("Synthetic EF ready for review — "+j.name+".");}
+}
+// Failed jobs can be dismissed (row returns to idle, current EF untouched).
+function dismissFailed(kind,id){
+  if(kind==="entry"){delete state.phases[id];renderTable();if(document.querySelector(".modal-wrap"))openDetail(id);}
+  else if(kind==="material"){const m=MATS.find(x=>x.id===id);if(m){m.state="idle";renderAssessment();}}
+  else if(kind==="newentry"&&newState){newState.synthPhase="idle";renderNew();}
 }
 function reviewStats(kind,id){
   // A synthetic EF is built from the item's bill of materials, so the
@@ -838,7 +883,8 @@ function reviewStats(kind,id){
   return {val:e.after.val==="—"?e.after.co2t:e.after.val,unit:"kg CO₂e / kg"};
 }
 function openReview(kind,id,name,context){
-  job={kind,id,name,context:context||job?.context||""};
+  const jc=jobCtx[kind+":"+(id||"new")];
+  job={kind,id,name,context:context??jc?.context??"",efSaved:jc?.efSaved};
   const s=reviewStats(kind,id);
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
@@ -917,10 +963,14 @@ function applySynth(){
     toast("Synthetic EF applied to "+j.name+" — submit the entry to start calculations.");
   } else if(j.kind==="material"){
     const m=MATS.find(x=>x.id===j.id);
-    if(m){m.state="applied";m.ef=m.appliedName;m.conf="synth";renderAssessment();}
+    if(m){
+      // Seeded review rows have no live job — name and register on apply.
+      if(!j.efSaved){j.efSaved=synthName(m.item);saveEF(j.efSaved,"kgCO₂e/kg","1.03","Synthetic EF");}
+      m.state="applied";m.ef=j.efSaved;m.conf="synth";renderAssessment();
+    }
     toast("Synthetic EF applied to "+j.name+".");
   } else if(j.kind==="newentry"&&newState){
-    Object.assign(newState,{efName:"Aluminium brackets, EU supplier mix",synthetic:true,custom:false,synthPhase:"done"});
+    Object.assign(newState,{efName:j.efSaved||synthName(newState.desc),synthetic:true,custom:false,synthPhase:"done"});
     renderNew();
     toast("Synthetic EF applied to this entry.");
   }
@@ -938,9 +988,11 @@ function openDetail(id){
   const spend=e.consType==="Spend data";
   let banner="";
   if(ph==="improving"){
-    banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes a few minutes — you can keep working. Your current EF stays applied until you apply the proposal.</span></div>`;
+    banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes 5–10 minutes — you can keep working. Your current EF stays applied until you apply the proposal.</span></div>`;
   } else if(ph==="review"){
     banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied until you apply it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
+  } else if(ph==="failed"){
+    banner=`<div class="banner fail"><span style="flex:0 0 auto">${svg("warn",17)}</span><span class="tx"><b>Synthetic EF generation failed.</b> Your current EF stays applied.</span><button class="btn secondary" style="height:36px" onclick="dismissFailed('entry','${id}')">Dismiss</button><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="improveEF('${id}')">Generate again</button></div>`;
   }
   // Provenance tag renders inline in the EF name field, in front of the name.
   // The current EF stays in place through generating/review.
@@ -961,7 +1013,7 @@ function openDetail(id){
         </button>
         <div class="efselect-menu" id="detail-ef-menu" role="listbox" style="display:none">
           ${alts.map(a=>`<button type="button" role="option" class="efselect-item${a===c.ef?" current":""}" onclick="pickDetailEf('${id}','${a.replace(/'/g,"\\'")}')">${a}</button>`).join("")}
-          ${(e.desc&&e.desc.trim())?`<div class="efselect-sep"></div>
+          ${efEligible(e)?`<div class="efselect-sep"></div>
           <button type="button" class="efselect-item create" onclick="improveEF('${id}')">
             ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic EF with AI for this line item</span></span>
           </button>`:""}
@@ -992,7 +1044,7 @@ function openDetail(id){
         <div class="grid two" style="margin-top:16px">${field("CO₂e emission",cc.co2)}${field("CO₂e emission unit","kgCO₂e")}</div>
         <div class="grid" style="margin-top:16px">${field("CO₂e calculation method","GWP100")}</div>
         ${recalcPending?`<div class="match" style="border-color:var(--alert-200);background:var(--alert-bg);color:var(--alert-fg)"><span>${svg("info",15)}</span><span><b>These values reflect the previous factor.</b> Submit the entry to recalculate with the synthetic EF.</span></div>`
-          :ph==="after"?`<div class="match"><span>${svg("check",15)}</span><span><b>Emission factor improved.</b> ${c.note} Confidence ${Math.round(c.conf*100)}%. The previous spend-based factor is kept in the audit log.</span></div>`:""}
+          :ph==="after"?`<div class="match"><span>${svg("check",15)}</span><span><b>Emission factor improved.</b> ${c.note} Confidence ${Math.round(c.conf*100)}%.</span></div>`:""}
       </div>
     </section>`;
   }
@@ -1081,8 +1133,9 @@ function openNew(){
   newState={
     activity:"Purchased goods & services",bu:"Operations DE",
     supplier:"Aurora Precision GmbH",desc:"CNC-machined aluminium brackets",
+    consType:"Material/service data",qty:"8,400",unitv:"kg",
     cur:"EUR",price:"25,000",
-    efName:"",synthetic:false,custom:false,synthPhase:"idle", // idle | improving | done
+    efName:"",synthetic:false,custom:false,synthPhase:"idle", // idle | improving | review | failed | done
     efOpen:false,efQuery:"",
   };
   renderNew();
@@ -1106,15 +1159,18 @@ function pickEf(v){
 }
 function submitNew(){
   const f=newState;
-  const priceNum=parseFloat(String(f.price).replace(/[^0-9.]/g,""))||0;
+  const spend=f.consType==="Spend data";
+  const amt=parseFloat(String(spend?f.price:f.qty).replace(/[^0-9.]/g,""))||0;
   const val=f.synthetic?0.31:f.custom?0.28:0.42;
-  const co2t=priceNum?(priceNum*val/1000).toFixed(2):"12.00";
+  const co2t=amt?(amt*val/1000).toFixed(2):"12.00";
   const kind=f.synthetic?"synthetic":f.custom?"custom":"standard";
   const id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+  const consV=spend?(f.price||"—"):(f.qty||"—");
+  const consU=spend?f.cur:f.unitv;
   const entry={
     id,supplier:f.supplier||"—",desc:f.desc||"New data entry",bu:f.bu,act:f.activity,status:"Submitted",
-    user:"Johannes Weber",input:"Manual entry",consType:"Spend data",
-    consV:f.price||"—",consU:f.cur,cons:(f.price||"—")+" "+f.cur,
+    user:"Johannes Weber",input:"Manual entry",consType:f.consType,
+    consV,consU,cons:consV+" "+consU,
     start:"01/01/2026",end:"03/31/2026",lca:"Cradle-to-gate",
     cat:"3.1 Purchased goods and services",low:false,
     synthetic:!!f.synthetic,custom:!!f.custom,
@@ -1122,10 +1178,10 @@ function submitNew(){
       ef:f.efName,
       src:kind==="synthetic"?"Forward Earth synthetic v1":kind==="custom"?"Custom (primary data)":"EXIOBASE",
       year:kind==="standard"?"2019":"2026",
-      basis:kind==="synthetic"?"AI-deconstructed":kind==="custom"?"supplier-specific":"spend-based",
+      basis:kind==="synthetic"?"AI-deconstructed":kind==="custom"?"supplier-specific":spend?"spend-based":"activity-based",
       conf:kind==="synthetic"?0.9:kind==="custom"?0.92:0.85,co2t,
-      val:String(val),unit:"kgCO₂e/"+f.cur,
-      co2:(priceNum*val).toLocaleString(undefined,{maximumFractionDigits:0})+" kg",
+      val:String(val),unit:"kgCO₂e/"+consU,
+      co2:(amt*val).toLocaleString(undefined,{maximumFractionDigits:0})+" kg",
     },
     after:null,
   };
@@ -1154,7 +1210,10 @@ function renderNew(){
   let efControl, efBanner="";
   if(f.synthPhase==="improving"){
     efControl=`<div class="control placeholder">Select an emission factor…</div>`;
-    efBanner=`<div class="banner busy" style="margin-top:14px"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes a few minutes — you can keep working.</span></div>`;
+    efBanner=`<div class="banner busy" style="margin-top:14px"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes 5–10 minutes — you can keep working.</span></div>`;
+  } else if(f.synthPhase==="failed"){
+    efControl=`<div class="control placeholder">Select an emission factor…</div>`;
+    efBanner=`<div class="banner fail" style="margin-top:14px"><span style="flex:0 0 auto">${svg("warn",17)}</span><span class="tx"><b>Synthetic EF generation failed.</b></span><button class="btn secondary" style="height:36px" onclick="dismissFailed('newentry')">Dismiss</button><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px;flex:0 0 auto" onclick="openSetup('newentry',null,'${(f.desc||"this line item").replace(/'/g,"\\'")}')">Generate again</button></div>`;
   } else if(f.synthPhase==="review"){
     efControl=`<div class="control placeholder">Select an emission factor…</div>`;
     efBanner=`<div class="banner busy" style="margin-top:14px"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b></span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px;flex:0 0 auto" onclick="openReview('newentry',null,'${(f.desc||"this line item").replace(/'/g,"\\'")}')">Review</button></div>`;
@@ -1168,11 +1227,13 @@ function renderNew(){
     // a no-match search they follow the "no results" notice.
     // Generate EF needs a description to build the BOM from (epic DAM-7718);
     // custom factor is always available.
-    const hasDesc=!!(f.desc&&f.desc.trim());
+    // Eligibility (epic DAM-7718): weight-based consumption + a description.
+    const genEligible=!!(f.desc&&f.desc.trim())&&f.consType==="Material/service data"&&f.unitv==="kg";
+    const genBlockedWhy=f.consType!=="Material/service data"?"Available for weight-based entries only":"Add a description to generate a synthetic factor";
     const createActions=`<div class="efselect-sep"></div>
-        ${hasDesc?`<button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
+        ${genEligible?`<button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
           ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic emission factor with AI</span></span>
-        </button>`:`<div class="efselect-item" style="cursor:default;color:var(--text-subtle)">${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Add a description to generate a synthetic factor</span></span></div>`}
+        </button>`:`<div class="efselect-item" style="cursor:default;color:var(--text-subtle)">${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">${genBlockedWhy}</span></span></div>`}
         <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
           ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
         </button>`;
@@ -1216,10 +1277,14 @@ function renderNew(){
         <section class="form-card">
           <h3>Consumption details</h3>
           <div class="grid">
-            <div class="grid two">
-              ${selectFld("Currency","cur",["EUR","USD","GBP"],1)}
-              ${inputFld("Price","price",1)}
-            </div>
+            <div class="fld"><span class="lab">Consumption data type <span class="req">*</span></span>
+              <select class="control" onchange="setNew('consType',this.value);renderNew()">
+                <option${f.consType==="Material/service data"?" selected":""}>Material/service data</option>
+                <option${f.consType==="Spend data"?" selected":""}>Spend data</option>
+              </select></div>
+            ${f.consType==="Spend data"
+              ?`<div class="grid two">${selectFld("Currency","cur",["EUR","USD","GBP"],1)}${inputFld("Price","price",1)}</div>`
+              :`<div class="grid two">${inputFld("Material/service quantity","qty",1)}${selectFld("Material/service unit","unitv",["kg"],1)}</div>`}
             ${inputFld("Description","desc")}
           </div>
         </section>
@@ -1261,6 +1326,7 @@ function matConf(m){
 function matAction(m){
   if(m.state==="generating")return `<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`;
   if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
+  if(m.state==="failed")return `<span class="pill-status fail" title="Synthetic EF generation failed — current EF stays applied">Failed</span><button class="matbtn" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate again</button><button class="iconbtn" title="Dismiss" onclick="dismissFailed('material','${m.id}')">${svg("close",14)}</button>`;
   if(m.state==="applied")return "";
   return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate EF</button>`;
 }
@@ -1309,7 +1375,7 @@ function renderAssessment(){
     <thead><tr><th>Item</th><th>Amt</th><th>Source</th><th>${svg("sparkles",12)} Emission factor name</th><th>Confidence</th><th>Supplier</th><th>Part no</th><th>HS</th><th class="col-act" aria-hidden="true"></th></tr></thead>
     <tbody>
       ${MATS.map(m=>{
-        const pin=m.state==="generating"||m.state==="review";
+        const pin=m.state==="generating"||m.state==="review"||m.state==="failed";
         return `<tr>
         <td>${m.item}</td><td>${m.amt}</td><td class="muted">BOM Provided</td>
         <td><span style="color:var(--violet)">${m.ef}</span></td>
@@ -1324,6 +1390,9 @@ function renderAssessment(){
   wrap.scrollLeft=prevX;
   const mw=document.querySelector(".modal-wrap");if(mw)mw.scrollTop=prevY;
 }
+
+// Seeded failure example (epic DAM-7718 failure state): Nordal draft entry.
+state.phases["a2d9c7e1-5f44-4b90-8a71-1e6d3b8c9f02"]="failed";
 
 renderTable();
 renderEF();

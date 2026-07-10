@@ -24,10 +24,13 @@ Generate EF (trigger) → Generate dialog (optional context) → staged generati
 4. **Apply ≠ recalculate.** Applying swaps the factor on the entry. Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
 5. **Synthetic EFs are not primary data.** In the registry a synthetic factor's type is *Secondary* and the *This is primary data* flag is unchecked (it is AI-estimated, not measured).
 6. **Dismiss is safe.** Dismissing the proposal from the Review dialog discards the row's link to it; the row returns to its previous state and the current EF (if any) stays applied. The factor remains in the registry (rule 2).
-7. **Availability is status-gated.** Generate EF is offered only on entries the user can edit: the new-entry form, and entries in *Ready to submit*. Submitted entries must be unsubmitted first. (Draft entries: not offered — an EF match is assigned at Ready-to-submit.)
+7. **Availability is eligibility-gated (epic DAM-7718).** Generate EF is offered only on **weight-based entries (kg) in scope 3.1/3.2 with a description**, in an editable status: the new-entry form, *Ready to submit*, and *Draft* — in both the grid hover CTA and the detail dropdown. Submitted entries must be unsubmitted first. Ineligible entries (spend-based, other categories, or no description) never see the trigger.
 8. **Submit is blocked while a proposal is open.** While an entry has a synthetic EF generating or awaiting review, *Submit to start calculations* is disabled — the user must apply or dismiss the proposal first. Save draft stays available.
 9. **Editing weight-driving inputs invalidates a pending proposal.** If the user edits the weight-based inputs (Cat 3.1 / 3.2) while a proposal is generating or awaiting review, applying it fails and an error is shown; editing any other field leaves the proposal applicable. **[edge case — not yet built in the prototype: the detail fields are read-only]**
 10. **Generation status is shown per step:** building bill of materials → estimating component weights → estimating energy consumption → matching emission factors. No public-source research step in v1 (context is a single free-text field). Expect roughly 5–10 minutes.
+11. **Naming (epic DAM-7718):** registry name = `Synthetic EF – {description}` plus ` N` when multiple factors exist for the same description. The entry cell shows the Synthetic badge next to this name after apply.
+12. **Failure state:** a job can fail (no reason surfaced). The row shows a pinned *Failed* pill with **Generate again** and **Dismiss**; the detail popup shows the same in a banner. Nothing is written to the registry on failure; the current EF stays applied. (Prototype demo hook: type "fail" in the context field.)
+13. **Concurrency:** up to 5 generation jobs run at once, each row tracking its own state; a 6th attempt is refused with an error message.
 
 **Entry state machine (EF axis, per entry)**
 
