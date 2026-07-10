@@ -227,6 +227,7 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .efselect-item.create svg{margin-top:2px;flex:0 0 auto;}
 .efselect-item.create b{display:block;font-weight:600;}
 .efselect-item.create .subline{display:block;margin-top:1px;font-size:11.5px;font-weight:400;color:var(--text-muted);}
+.efselect-item.current{background:var(--violet-50);font-weight:600;}
 
 .dropzone{border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);background:var(--bg-subtle);
   padding:26px;text-align:center;color:var(--text-subtle);display:flex;flex-direction:column;align-items:center;gap:8px;}
@@ -694,6 +695,12 @@ let genTimers=[];
 const STAGES=["Researching product information","Building bill of materials","Estimating component weights","Matching emission factors"];
 
 function improveEF(id){const e=allEntries().find(x=>x.id===id);openSetup('entry',id,e.desc);}
+// Manual swap from the detail-modal EF dropdown (Ready-to-submit entries).
+function pickDetailEf(id,name){
+  const e=allEntries().find(x=>x.id===id);
+  if(e&&name!==e.before.ef){e.before.ef=name;renderTable();toast("Emission factor updated · "+name);}
+  openDetail(id);
+}
 function openSetup(kind,id,name){
   job={kind,id,name,context:""};
   genTimers.forEach(clearTimeout);genTimers=[];
@@ -830,12 +837,36 @@ function openDetail(id){
   } else if(ph==="review"){
     banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied until you apply it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
   } else if(e.low&&ph==="before"){
-    banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span>${e.status==="Ready to submit"?`<button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="improveEF('${id}')">Improve emission factor</button>`:""}</div>`;
+    banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span></div>`;
   }
   // Provenance tag renders inline in the EF name field, in front of the name.
   // The current EF stays in place through generating/review.
   const efTag = (ph==="after"||e.synthetic)?'<span class="synth">Synthetic</span>':e.custom?'<span class="synth custom">Custom</span>':"";
   const efName = efTag+c.ef;
+  // For Ready-to-submit entries the EF name is an editable dropdown; the
+  // Improve action lives INSIDE the menu (not as a button in the card).
+  // Generating/review/after states fall back to the read-only field.
+  let efField;
+  if(ph==="before"&&e.status==="Ready to submit"){
+    const base=c.ef.split(",")[0].trim();
+    const alts=[c.ef,base+", global average",base+", DACH region"];
+    efField=`<div class="fld"><span class="lab">Emission factor name</span>
+      <div class="efselect">
+        <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="false"
+          onclick="const m=document.getElementById('detail-ef-menu');const open=m.style.display!=='none';m.style.display=open?'none':'flex';this.setAttribute('aria-expanded',String(!open));">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${efTag+c.ef}</span>${svg("chev",16)}
+        </button>
+        <div class="efselect-menu" id="detail-ef-menu" role="listbox" style="display:none">
+          ${alts.map(a=>`<button type="button" role="option" class="efselect-item${a===c.ef?" current":""}" onclick="pickDetailEf('${id}','${a.replace(/'/g,"\\'")}')">${a}</button>`).join("")}
+          <div class="efselect-sep"></div>
+          <button type="button" class="efselect-item create" onclick="improveEF('${id}')">
+            ${svg("sparkles",15)}<span><b>Improve emission factor</b><span class="subline">Generate a synthetic EF with AI for this line item</span></span>
+          </button>
+        </div>
+      </div></div>`;
+  } else {
+    efField=field("Emission factor name",efName);
+  }
 
   let calcSection;
   {
@@ -894,7 +925,7 @@ function openDetail(id){
         </section>
         <section class="form-card">
           <div class="card-head-row"><h3>Emission factor details</h3></div>
-          <div class="grid">${field("Emission factor name",efName)}</div>
+          <div class="grid">${efField}</div>
           ${banner?`<div style="margin-top:14px">${banner}</div>`:""}
         </section>
         ${calcSection}
