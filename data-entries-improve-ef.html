@@ -829,10 +829,12 @@ function finishGeneration(j){
   else{job=j;toast("Synthetic EF ready for review — "+j.name+".");}
 }
 function reviewStats(kind,id){
-  if(kind==="material"){const m=MATS.find(x=>x.id===id);return {val:"1.03",unit:"kg CO₂e / kg"};}
-  if(kind==="newentry")return {val:"0.31",unit:"kg CO₂e / EUR"};
+  // A synthetic EF is built from the item's bill of materials, so the
+  // estimated factor is always weight-based (kg CO₂e / kg).
+  if(kind==="material")return {val:"1.03",unit:"kg CO₂e / kg"};
+  if(kind==="newentry")return {val:"0.31",unit:"kg CO₂e / kg"};
   const e=allEntries().find(x=>x.id===id);ensureAfter(e);
-  return {val:e.after.val==="—"?e.after.co2t:e.after.val,unit:e.after.val==="—"?"tCO₂e total":"kg CO₂e / "+e.after.unit.replace("kgCO₂e/","")};
+  return {val:e.after.val==="—"?e.after.co2t:e.after.val,unit:"kg CO₂e / kg"};
 }
 function openReview(kind,id,name,context){
   job={kind,id,name,context:context||job?.context||""};
