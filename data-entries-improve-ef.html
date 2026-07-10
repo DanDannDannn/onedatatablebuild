@@ -142,9 +142,9 @@ td.col-act{position:sticky;right:0;width:0;min-width:0;max-width:0;padding:0;bac
   border-radius:var(--radius-md);box-shadow:0 6px 16px -6px rgba(11,16,49,.28);opacity:0;pointer-events:none;
   transition:opacity .12s,transform .12s;white-space:nowrap;}
 tbody tr:hover .actions{opacity:1;pointer-events:auto;transform:translateY(-50%);}
-.rowcta{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:var(--radius-sm);cursor:pointer;
-  background:var(--violet);color:#fff;font-size:12px;font-weight:600;padding:6px 12px;transition:background .12s;}
-.rowcta:hover{background:var(--violet-hover);}
+.rowcta{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--violet);border-radius:var(--radius-sm);cursor:pointer;
+  background:#fff;color:var(--violet);font-size:12px;font-weight:600;padding:5px 12px;transition:background .12s;}
+.rowcta:hover{background:var(--violet-50);}
 .iconbtn{width:28px;height:28px;flex:0 0 auto;display:inline-grid;place-items:center;border:1px solid var(--border);
   border-radius:var(--radius-sm);background:#fff;color:var(--text-muted);cursor:pointer;transition:.12s;}
 .iconbtn:hover{background:var(--bg-subtle);color:var(--text-strong);border-color:var(--border-strong);}
@@ -349,6 +349,11 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .matbtn:hover{border-color:var(--violet);background:var(--violet-50);}
 .matbtn.ready{border-color:var(--violet);}
 .mat-act{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+/* Same interaction pattern as the data grid: actions reveal on row hover.
+   In-flight states stay pinned — the Generating pill and the Review button. */
+.mat-act .matbtn,.mat-act .iconbtn{opacity:0;pointer-events:none;transition:opacity .12s;}
+tr:hover .mat-act .matbtn,tr:hover .mat-act .iconbtn,
+.mat-act .matbtn.ready{opacity:1;pointer-events:auto;}
 </style>
 </head>
 <body>
@@ -618,9 +623,9 @@ function renderTable(){
       <td>${e.consType} · ${e.cons}</td>
       <td class="col-act" onclick="event.stopPropagation()">
         <span class="actions${busyTray?" show":""}">
-          ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">Generate EF</button>`:""}
+          ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate EF</button>`:""}
           ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
-          ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">Review${svg("arrow",11)}</button>`:""}
+          ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
           <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
           <button class="iconbtn danger" title="Delete entry" onclick="deleteRow('${e.id}')">${svg("trash",15)}</button>
         </span>
@@ -1110,9 +1115,6 @@ function renderNew(){
       </div>`:""}
     </div>`;
   }
-  let efNote="";
-  if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
-  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Generate EF</b> to create a synthetic factor with AI, or <b>add a custom factor</b> from your own data.</p>`;
   const canSubmit=!!f.efName&&f.synthPhase!=="improving"&&f.synthPhase!=="review";
 
   document.getElementById("overlays").innerHTML=`
@@ -1147,7 +1149,6 @@ function renderNew(){
           <div class="grid">
             <div class="fld"><span class="lab">Emission factor name</span>${efControl}</div>
           </div>
-          ${efNote}
         </section>
         <div class="modal-foot">
           <button class="btn secondary" onclick="closeNew()">Cancel</button>
