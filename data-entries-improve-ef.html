@@ -701,6 +701,14 @@ let genTimers=[];
 const STAGES=["Researching product information","Building bill of materials","Estimating component weights","Matching emission factors"];
 
 function improveEF(id){const e=allEntries().find(x=>x.id===id);openSetup('entry',id,e.desc);}
+// Submitting locks the entry and (re)runs the calculation — after this the
+// Calculation card shows the values from the applied factor.
+function submitEntry(id){
+  const e=allEntries().find(x=>x.id===id);
+  if(e){e.status="Submitted";renderTable();}
+  closeOverlays();
+  toast(id.slice(0,8)+"… submitted · calculations started");
+}
 // Manual swap from the detail-modal EF dropdown (Ready-to-submit entries).
 function pickDetailEf(id,name){
   const e=allEntries().find(x=>x.id===id);
@@ -833,7 +841,7 @@ function applySynth(){
     state.phases[j.id]="after";renderTable();
     saveEF("Synthetic "+e.after.ef,e.after.unit,e.after.val,"Synthetic EF");
     if(document.querySelector(".modal-wrap"))openDetail(j.id);
-    toast("Synthetic EF applied to "+j.name+" — logged on the Emission factors page.");
+    toast("Synthetic EF applied to "+j.name+" — submit the entry to start calculations.");
   } else if(j.kind==="material"){
     const m=MATS.find(x=>x.id===j.id);
     if(m){
@@ -862,6 +870,8 @@ function openDetail(id){
     banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes a few minutes — you can keep working. Your current EF stays applied until you apply the proposal.</span></div>`;
   } else if(ph==="review"){
     banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied until you apply it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
+  } else if(ph==="after"&&e.status!=="Submitted"){
+    banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF applied.</b> Submit the entry to start calculations with the new factor — the previous one is kept in the audit log.</span></div>`;
   } else if(e.low&&ph==="before"){
     banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span></div>`;
   }
@@ -894,22 +904,28 @@ function openDetail(id){
     efField=field("Emission factor name",efName);
   }
 
+  // Applying a synthetic EF does NOT recalculate: until the entry is
+  // re-submitted, the Calculation card keeps the PREVIOUS factor's values
+  // and flags the pending recalculation.
+  const recalcPending = ph==="after" && e.status!=="Submitted";
+  const cc = recalcPending ? e.before : c;
   let calcSection;
   {
     calcSection=`<section class="form-card">
       <div class="card-head-row"><h3>Calculation</h3><button class="card-fold collapsed" id="calcfold" onclick="toggleCalc()">${svg("chev",16)}</button></div>
-      <p class="collapsed-sum" id="calcsum">${c.ef} · ${c.co2}CO₂e</p>
+      <p class="collapsed-sum" id="calcsum">${cc.ef} · ${cc.co2}CO₂e${recalcPending?" · recalculation pending":""}</p>
       <div id="calcbody" style="display:none">
-        <div class="grid" style="margin-top:14px">${field("Emission factor name",c.ef)}</div>
+        <div class="grid" style="margin-top:14px">${field("Emission factor name",cc.ef)}</div>
         <div class="grid two" style="margin-top:16px">
-          ${field("Emission factor value",c.val)}${field("Emission factor unit",c.unit)}
-          ${field("Emission factor source",c.src)}${field("Emission factor year",c.year)}
+          ${field("Emission factor value",cc.val)}${field("Emission factor unit",cc.unit)}
+          ${field("Emission factor source",cc.src)}${field("Emission factor year",cc.year)}
           ${field("Emission factor region","Europe")}${field("Emission factor LCA activity",e.lca)}
           ${field("Scope","3")}${field("Scope 3 category",e.cat)}
         </div>
-        <div class="grid two" style="margin-top:16px">${field("CO₂e emission",c.co2)}${field("CO₂e emission unit","kgCO₂e")}</div>
+        <div class="grid two" style="margin-top:16px">${field("CO₂e emission",cc.co2)}${field("CO₂e emission unit","kgCO₂e")}</div>
         <div class="grid" style="margin-top:16px">${field("CO₂e calculation method","GWP100")}</div>
-        ${ph==="after"?`<div class="match"><span>${svg("check",15)}</span><span><b>Emission factor improved.</b> ${c.note} Confidence ${Math.round(c.conf*100)}%. The previous spend-based factor is kept in the audit log.</span></div>`:""}
+        ${recalcPending?`<div class="match" style="border-color:var(--alert-200);background:var(--alert-bg);color:var(--alert-fg)"><span>${svg("info",15)}</span><span><b>These values reflect the previous factor.</b> Submit the entry to recalculate with the synthetic EF.</span></div>`
+          :ph==="after"?`<div class="match"><span>${svg("check",15)}</span><span><b>Emission factor improved.</b> ${c.note} Confidence ${Math.round(c.conf*100)}%. The previous spend-based factor is kept in the audit log.</span></div>`:""}
       </div>
     </section>`;
   }
@@ -919,7 +935,7 @@ function openDetail(id){
   // details card and the row tray).
   let footer;
   if(e.status==="Submitted") footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
-  else footer=`<button class="btn secondary" onclick="toast('${id.slice(0,8)}… saved as draft');closeOverlays()">Save draft</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted · calculations started');closeOverlays()">Submit to start calculations</button>`;
+  else footer=`<button class="btn secondary" onclick="toast('${id.slice(0,8)}… saved as draft');closeOverlays()">Save draft</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="submitEntry('${id}')">Submit to start calculations</button>`;
 
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeOverlays()"></div>
