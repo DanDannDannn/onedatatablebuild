@@ -642,8 +642,8 @@ function deleteRow(id){state.deleted.add(id);renderTable();toast(id.slice(0,8)+"
 // Company's own factors: custom (user-entered primary data) and synthetic
 // (AI-generated). Newly generated synthetic EFs are prepended.
 const EF_SEED=[
-  ["Synthetic Onboard unit (Bosch) – 2026","06/15/2026","Ruben Korenke","2026","kgCO₂e/kg","1.03","Primary","Synthetic EF","—","1"],
-  ["Synthetic Machined aluminium housings, EU supplier mix","07/08/2026","Marta Ruiz","2026","kgCO₂e/EUR","0.27","Primary","Synthetic EF","—","1"],
+  ["Synthetic Onboard unit (Bosch) – 2026","06/15/2026","Ruben Korenke","2026","kgCO₂e/kg","1.03","Secondary","Synthetic EF","—","1"],
+  ["Synthetic Machined aluminium housings, EU supplier mix","07/08/2026","Marta Ruiz","2026","kgCO₂e/EUR","0.27","Secondary","Synthetic EF","—","1"],
   ["Custom emission factor for green electricity tariff","06/30/2026","Anna Keller","2025","GCO2e_KWH","203","Primary","Supplier contract","1","3"],
   ["Custom emission factor for district heating Berlin","06/23/2026","Johannes Weber","2025","kgCO₂e/kWh","0.18","Primary","Utility invoice","1","2"],
   ["Custom emission factor for hotel nights, DACH","06/19/2026","Marta Ruiz","2024","kgCO₂e/night","11.9","Primary","Internal survey","—","5"],
@@ -655,7 +655,9 @@ const EF_SEED=[
 ];
 state.efNew=[]; // generated this session (synthetic / custom), prepended
 function saveEF(name,unit,value,source){
-  state.efNew.unshift([name,"07/09/2026","Johannes Weber","2026",unit,value,"Primary",source,"—","1"]);
+  // Synthetic (AI-estimated) factors are not primary data → type Secondary.
+  const type=source==="Synthetic EF"?"Secondary":"Primary";
+  state.efNew.unshift([name,"07/09/2026","Johannes Weber","2026",unit,value,type,source,"—","1"]);
   renderEF();
 }
 function renderEF(){
@@ -702,7 +704,7 @@ function openEFDetail(i){
             ${field("Source",r[7])}
           </div>
           <div style="display:flex;align-items:center;gap:10px;margin-top:18px;color:var(--text-muted);font-size:15px">
-            <span class="check" style="display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted)">${svg("check",13)}</span>
+            <span class="check" style="display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted)">${synthetic?"":svg("check",13)}</span>
             This is primary data
             <span class="h-help" style="color:var(--text-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg></span>
           </div>
@@ -748,7 +750,7 @@ function ensureAfter(e){
 }
 let job=null;          // {kind:'entry'|'material'|'newentry', id, name, context}
 let genTimers=[];
-const STAGES=["Researching product information","Building bill of materials","Estimating component weights","Matching emission factors"];
+const STAGES=["Building bill of materials","Estimating component weights","Estimating energy consumption","Matching emission factors"];
 
 function improveEF(id){const e=allEntries().find(x=>x.id===id);openSetup('entry',id,e.desc);}
 // Submitting locks the entry and (re)runs the calculation — after this the
@@ -774,6 +776,7 @@ function openSetup(kind,id,name){
     <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px">
       <div class="head"><div style="flex:1"><h3>Generate synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
         <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+      <p class="subx" style="margin:-4px 0 0">AI builds a product-specific factor from the item's bill of materials to improve on the current broad match.</p>
       <div>
         <p style="margin:0 0 6px;font-size:13px;font-weight:600">Add contextual info <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
         <textarea id="gen-ctx" rows="4" placeholder="Materials, components, certifications, or supplier details all improve the estimate."></textarea>
@@ -815,9 +818,12 @@ function startGeneration(){
   genTimers.push(setTimeout(()=>finishGeneration(j),t+400));
 }
 function finishGeneration(j){
-  if(j.kind==="entry"){const e=allEntries().find(x=>x.id===j.id);if(!e)return;ensureAfter(e);state.phases[j.id]="review";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
-  else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){m.state="review";renderAssessment();}}
-  else if(j.kind==="newentry"){if(!newState)return;newState.synthPhase="review";renderNew();}
+  // The synthetic EF is written to the registry the moment generation
+  // completes — it exists whether or not the user goes on to apply it
+  // (per PM alignment: "EF is saved when the user generates").
+  if(j.kind==="entry"){const e=allEntries().find(x=>x.id===j.id);if(!e)return;ensureAfter(e);j.efSaved="Synthetic "+e.after.ef;saveEF(j.efSaved,e.after.unit,e.after.val,"Synthetic EF");state.phases[j.id]="review";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
+  else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){j.efSaved="Synthetic "+m.appliedName;saveEF(j.efSaved,"kgCO₂e/kg","1.03","Synthetic EF");m.state="review";renderAssessment();}}
+  else if(j.kind==="newentry"){if(!newState)return;j.efSaved="Synthetic Aluminium brackets, EU supplier mix";saveEF(j.efSaved,"kgCO₂e/EUR","0.31","Synthetic EF");newState.synthPhase="review";renderNew();}
   const dlgOpen=!!document.getElementById("gen-dlg");
   if(dlgOpen){openReview(j.kind,j.id,j.name,j.context);}
   else{job=j;toast("Synthetic EF ready for review — "+j.name+".");}
@@ -846,13 +852,21 @@ function openReview(kind,id,name,context){
         <p style="margin:0 0 8px;font-size:13px;font-weight:600">Components <span style="color:var(--text-muted);font-weight:400">· 12</span></p>
         <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
         <table>
-          <thead><tr><th>Component</th><th>Wt %</th><th>g</th><th>Emission factor</th><th>Conf.</th></tr></thead>
+          <thead><tr><th>Component</th><th>Weight %</th><th>g</th><th>Emission factor</th><th>Conf.</th></tr></thead>
           <tbody>
             <tr><td>PCB_MAIN</td><td>38</td><td>122</td><td style="color:var(--violet)">market for printed wiring board</td><td><span class="confchip high">High</span></td></tr>
             <tr><td>ABS_HOUSING</td><td>24</td><td>77</td><td style="color:var(--violet)">market for ABS granulate</td><td><span class="confchip high">High</span></td></tr>
             <tr><td>LI_BATTERY</td><td>14</td><td>45</td><td style="color:var(--violet)">market for battery cell, NMC</td><td><span class="confchip med">Med</span></td></tr>
             <tr><td>STEEL_BRACKET</td><td>9</td><td>29</td><td style="color:var(--violet)">market for steel, low-alloyed</td><td><span class="confchip high">High</span></td></tr>
-            <tr><td colspan="5" style="color:var(--text-muted)">+ 8 more components</td></tr>
+            <tr class="comp-more" hidden><td>COPPER_WIRING</td><td>4</td><td>13</td><td style="color:var(--violet)">market for copper, cathode</td><td><span class="confchip high">High</span></td></tr>
+            <tr class="comp-more" hidden><td>SOLDER_SNCU</td><td>3</td><td>10</td><td style="color:var(--violet)">market for solder, SnCu</td><td><span class="confchip med">Med</span></td></tr>
+            <tr class="comp-more" hidden><td>GPS_ANTENNA</td><td>2.5</td><td>8</td><td style="color:var(--violet)">market for electronics, unspecified</td><td><span class="confchip med">Med</span></td></tr>
+            <tr class="comp-more" hidden><td>LTE_MODEM</td><td>2</td><td>6</td><td style="color:var(--violet)">market for integrated circuit, logic</td><td><span class="confchip med">Med</span></td></tr>
+            <tr class="comp-more" hidden><td>CONNECTOR_SET</td><td>1.5</td><td>5</td><td style="color:var(--violet)">market for brass</td><td><span class="confchip high">High</span></td></tr>
+            <tr class="comp-more" hidden><td>SCREWS_M2</td><td>1</td><td>3</td><td style="color:var(--violet)">market for steel, low-alloyed</td><td><span class="confchip high">High</span></td></tr>
+            <tr class="comp-more" hidden><td>THERMAL_PAD</td><td>0.5</td><td>2</td><td style="color:var(--violet)">market for silicone product</td><td><span class="confchip med">Med</span></td></tr>
+            <tr class="comp-more" hidden><td>LABEL_PET</td><td>0.5</td><td>1</td><td style="color:var(--violet)">market for polyethylene terephthalate</td><td><span class="confchip high">High</span></td></tr>
+            <tr class="comp-toggle"><td colspan="5" style="color:var(--violet);cursor:pointer;font-weight:600" onclick="toggleComponents(this)">Show all 12 components</td></tr>
           </tbody>
         </table>
         </div>
@@ -891,24 +905,21 @@ function dismissSynth(){
 }
 function applySynth(){
   const j=job; if(!j)return; closeWiz();
+  // The factor was already saved to the registry at generation time; Apply
+  // only points this row at it and (for entries) marks the recalculation.
   if(j.kind==="entry"){
     const e=allEntries().find(x=>x.id===j.id);ensureAfter(e);
     state.phases[j.id]="after";renderTable();
-    saveEF("Synthetic "+e.after.ef,e.after.unit,e.after.val,"Synthetic EF");
     if(document.querySelector(".modal-wrap"))openDetail(j.id);
     toast("Synthetic EF applied to "+j.name+" — submit the entry to start calculations.");
   } else if(j.kind==="material"){
     const m=MATS.find(x=>x.id===j.id);
-    if(m){
-      m.state="applied";m.ef=m.appliedName;m.conf="synth";renderAssessment();
-      saveEF("Synthetic "+m.appliedName,"kgCO₂e/kg","1.03","Synthetic EF");
-    }
-    toast("Synthetic EF applied to "+j.name+" — logged on the Emission factors page.");
+    if(m){m.state="applied";m.ef=m.appliedName;m.conf="synth";renderAssessment();}
+    toast("Synthetic EF applied to "+j.name+".");
   } else if(j.kind==="newentry"&&newState){
     Object.assign(newState,{efName:"Aluminium brackets, EU supplier mix",synthetic:true,custom:false,synthPhase:"done"});
-    saveEF("Synthetic Aluminium brackets, EU supplier mix","kgCO₂e/EUR","0.31","Synthetic EF");
     renderNew();
-    toast("Synthetic EF applied — logged on the Emission factors page.");
+    toast("Synthetic EF applied to this entry.");
   }
   job=null;
 }
@@ -1037,6 +1048,13 @@ function openDetail(id){
     </div>`;
   document.querySelector(".modal-wrap").scrollTop=prevScroll;
   esc(closeOverlays);
+}
+function toggleComponents(el){
+  const tb=el.closest("tbody");
+  const more=[...tb.querySelectorAll(".comp-more")];
+  const hidden=more[0].hidden;
+  more.forEach(r=>r.hidden=!hidden);
+  el.textContent=hidden?"Show fewer components":"Show all 12 components";
 }
 function toggleCalc(){
   const body=document.getElementById("calcbody"),sum=document.getElementById("calcsum"),fold=document.getElementById("calcfold");

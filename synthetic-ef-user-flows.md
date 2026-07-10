@@ -18,12 +18,16 @@ Generate EF (trigger) → Generate dialog (optional context) → staged generati
 
 **Core rules**
 
-1. **Non-destructive until Apply.** The currently assigned EF stays applied through generation and review. Nothing changes on the entry until the user clicks *Apply synthetic EF*.
-2. **Generation is backgroundable.** The dialog can be closed mid-generation; the row shows a pinned *Generating* pill, then a pinned *Review →* button. A toast announces readiness.
-3. **Apply ≠ recalculate.** Applying swaps the factor on the entry and logs the synthetic EF in Manage → Emission factors (source: *Synthetic EF*). Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
-4. **Dismiss is safe.** Dismissing the proposal from the Review dialog discards it; the row returns to its previous state and the current EF (if any) stays applied.
-5. **Availability is status-gated.** Generate EF is offered only on entries the user can edit: the new-entry form, and entries in *Ready to submit*. Submitted entries must be unsubmitted first. (Draft entries: not offered — an EF match is assigned at Ready-to-submit.)
-6. **Submit is blocked while a proposal is open.** While an entry has a synthetic EF generating or awaiting review, *Submit to start calculations* is disabled — the user must apply or dismiss the proposal first. Save draft stays available.
+1. **Non-destructive to the entry until Apply.** The currently assigned EF stays applied to the entry through generation and review. The entry's factor does not change until the user clicks *Apply synthetic EF*.
+2. **The factor is saved at generation, not at Apply.** The synthetic EF is written to Manage → Emission factors (source: *Synthetic EF*) the moment generation completes, whether or not the user goes on to apply it. Apply only points the row at the already-saved factor; Dismiss leaves it in the registry unused. (PM alignment, 2026-07-10.)
+3. **Generation is backgroundable.** The dialog can be closed mid-generation; the row shows a pinned *Generating* pill, then a pinned *Review →* button. A toast announces readiness.
+4. **Apply ≠ recalculate.** Applying swaps the factor on the entry. Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
+5. **Synthetic EFs are not primary data.** In the registry a synthetic factor's type is *Secondary* and the *This is primary data* flag is unchecked (it is AI-estimated, not measured).
+6. **Dismiss is safe.** Dismissing the proposal from the Review dialog discards the row's link to it; the row returns to its previous state and the current EF (if any) stays applied. The factor remains in the registry (rule 2).
+7. **Availability is status-gated.** Generate EF is offered only on entries the user can edit: the new-entry form, and entries in *Ready to submit*. Submitted entries must be unsubmitted first. (Draft entries: not offered — an EF match is assigned at Ready-to-submit.)
+8. **Submit is blocked while a proposal is open.** While an entry has a synthetic EF generating or awaiting review, *Submit to start calculations* is disabled — the user must apply or dismiss the proposal first. Save draft stays available.
+9. **Editing weight-driving inputs invalidates a pending proposal.** If the user edits the weight-based inputs (Cat 3.1 / 3.2) while a proposal is generating or awaiting review, applying it fails and an error is shown; editing any other field leaves the proposal applicable. **[edge case — not yet built in the prototype: the detail fields are read-only]**
+10. **Generation status is shown per step:** building bill of materials → estimating component weights → estimating energy consumption → matching emission factors. No public-source research step in v1 (context is a single free-text field). Expect roughly 5–10 minutes.
 
 **Entry state machine (EF axis, per entry)**
 
@@ -62,7 +66,7 @@ Key behaviours:
 - The *Generate EF* and *Create custom emission factor* options sit at the bottom of the dropdown menu in every search state (full list, filtered, no-match).
 - While generating, the EF field shows the in-progress state and **Submit is disabled** — the entry cannot be saved with a factor still in flight.
 - After Apply, the field remains a dropdown: the user can still swap to a library factor or regenerate before submitting.
-- The synthetic EF is written to the registry **at Apply**, not at submit, so it is reusable even if the entry is discarded. **[open — confirm with Eng]**
+- The synthetic EF is written to the registry **at generation** (shared rule 2), so it is reusable even if the entry is discarded or the proposal dismissed.
 
 ---
 
@@ -148,9 +152,23 @@ The flow itself is unchanged — same CTA (*Generate EF*), same dialog, same app
 | Any | generating | Pinned *Generating* pill | *Generating…* banner | Field shows generating |
 | Any | ready for review | Pinned *Review →* | *Ready for review* banner + Review | Field shows *Review →* |
 
+## Resolved (board review, 2026-07-10)
+
+- **Registry write timing:** at generation, not Apply (shared rule 2). Consequence: dismissed and abandoned generations still leave a factor in the registry — see archive question below.
+- **Synthetic EFs are not primary data:** type *Secondary*, primary-data flag off (rule 5).
+- **Review is whole-BOM:** the user reviews all components + energy consumption and applies or dismisses; no per-component review or editing in v1.
+- **No public-source research step in v1;** context is a single free-text field. Status shown per step (rule 10).
+
 ## Open questions
 
-1. Registry write timing in scenario 1: at Apply (current prototype) or at first submit? Apply is simpler and makes the factor reusable, but can create factors from abandoned entries.
-2. Archive/cleanup interaction for superseded synthetic EFs with 0 associated items.
-3. Does Unsubmit return the entry to *Ready to submit* in all cases (assumed here), and who has permission to unsubmit?
-4. Concurrency: one generation per entry at a time is enforced by the UI; confirm the backend contract if two users open the same entry.
+1. **CTA wording:** board leans toward *"Improve EF match quality"* and rejects "Generate BOM"; the prototype currently uses *"Generate EF"*. Pick one label.
+2. **Storage model:** reuse the existing shared custom-EF functionality to store synthetic EFs, or a distinct type? (Leaning custom-EF; confirm in standup.)
+3. **Archive/cleanup** for synthetic EFs with 0 associated items (now more relevant since factors are saved at generation).
+4. **Apply-fail edge case (rule 9):** exact set of weight-driving fields that invalidate a pending proposal, and the error copy.
+5. Does Unsubmit return the entry to *Ready to submit* in all cases (assumed here), and who has permission to unsubmit?
+6. Concurrency: one generation per entry at a time is enforced by the UI; confirm the backend contract if two users open the same entry.
+
+## Not yet reflected in the prototype
+
+- **Review dialog "two columns like right side"** (board note): the intended two-column layout of the review body needs the anchored frame to build precisely — flagged for Dan to point at the reference.
+- **Apply-fail error state** (rule 9): the prototype's detail fields are read-only, so there is nothing to invalidate a proposal; documented as logic only.
