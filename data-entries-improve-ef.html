@@ -553,7 +553,7 @@ const RAW = [
   ["4fa5fb0d-cda8-45ed-ac30-830d292f4954","Polyform S.r.l.","Injection-moulded housings, ABS","Operations IT","Purchased goods & services","Marta Ruiz","Bulk import","Spend data","31,900","EUR","Plastic products, EU average","EXIOBASE","2019","spend-based",0.58,"11.05"],
   ["cc04e4b1-7ce9-418d-a62b-63a852ccc6cc","PackNord AB","Corrugated packaging, recycled","Operations SE","Purchased goods & services","Anna Keller","Bulk import","Material/service data","12,400","kg","Corrugated board, 70% recycled","ecoinvent","2024","activity-based",0.93,"8.12"],
   ["7b1e0a5c-90f3-4c22-9d18-2c4b6f0a1e33","TransCargo GmbH","Road freight, inbound EU","Logistics","Upstream transport","Tom Berger","Bulk import","Material/service data","184,000","t·km","Lorry 16–32t, EURO 6","GLEC","2025","activity-based",0.88,"19.70"],
-  ["a2d9c7e1-5f44-4b90-8a71-1e6d3b8c9f02","Nordal Extrusion AS","Aluminium extrusions, 6060","Operations NO","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","9,850","kg","Aluminium extrusion, EU mix","ecoinvent","2024","activity-based",0.95,"63.40"],
+  ["a2d9c7e1-5f44-4b90-8a71-1e6d3b8c9f02","Nordal Extrusion AS","Aluminium extrusions, 6060 (failed example)","Operations NO","Purchased goods & services","Johannes Weber","Bulk import","Material/service data","9,850","kg","Aluminium extrusion, EU mix","ecoinvent","2024","activity-based",0.95,"63.40"],
   ["f3068b2a-1c9d-42e7-b5a0-7d2e4f6a8c11","Voss Stahl GmbH","Steel sheet, hot-rolled","Operations DE","Purchased goods & services","Anna Keller","Bulk import","Material/service data","28,300","kg","Steel hot-rolled coil, EU","worldsteel","2024","activity-based",0.96,"71.60"],
   ["d5a1f8b6-3e70-4a12-9c88-5b0f2d7e6a44","TechSource BV","IT hardware — laptop refresh","Shared services","Capital goods","Tom Berger","Manual entry","Spend data","86,500","EUR","Computers and peripherals, EU average","EXIOBASE","2019","spend-based",0.77,"21.63"],
   ["b8c2e4d0-6a15-4f83-a291-3c7d5e9b1f66","Concur travel export","Business flights, Q1","Sales","Business travel","Marta Ruiz","Bulk import","Material/service data","412,000","pax·km","Air travel, short-haul economy","DEFRA","2025","activity-based",0.94,"63.50"],
@@ -825,7 +825,9 @@ function startGeneration(){
   if(activeGens()>=5){toast("Up to 5 EF generations can run at once — wait for one to finish before starting another.");return;}
   j.context=(document.getElementById("gen-ctx")||{}).value||"";
   // Demo hook: a context containing "fail" produces the failure state.
-  j.willFail=/fail/i.test(j.context);
+  // …or when the item itself is the seeded failure example ("failed" in its
+  // description), so regenerating it keeps demonstrating the failure path.
+  j.willFail=/fail/i.test(j.context)||/fail/i.test(j.name||"");
   j.key=j.kind+":"+(j.id||"new");
   jobCtx[j.key]=j; // per-row job store — concurrent jobs don't share state
   // Mark the source row as generating (its current EF stays applied)
