@@ -1128,13 +1128,15 @@ function renderNew(){
   const prevScroll=document.querySelector(".modal-wrap")?.scrollTop||0;
   const f=newState;
   const efTag=(f.synthetic&&f.synthPhase==="done")?'<span class="synth">Synthetic</span>':f.custom?'<span class="synth custom">Custom</span>':"";
-  let efControl;
+  // Same pattern as the detail popup: during generating/review the field is
+  // an inert control and the status lives in the banner below it.
+  let efControl, efBanner="";
   if(f.synthPhase==="improving"){
-    efControl=`<div class="control"><span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Generating synthetic EF…</span></div>`;
+    efControl=`<div class="control placeholder">Select an emission factor…</div>`;
+    efBanner=`<div class="banner busy" style="margin-top:14px"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes a few minutes — you can keep working.</span></div>`;
   } else if(f.synthPhase==="review"){
-    efControl=`<div class="control" style="justify-content:space-between">
-      <span class="efbusy">Synthetic EF ready for review</span>
-      <button type="button" class="rowcta" onclick="openReview('newentry',null,'${(f.desc||"this line item").replace(/'/g,"\\'")}')">Review${svg("arrow",11)}</button></div>`;
+    efControl=`<div class="control placeholder">Select an emission factor…</div>`;
+    efBanner=`<div class="banner busy" style="margin-top:14px"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b></span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px;flex:0 0 auto" onclick="openReview('newentry',null,'${(f.desc||"this line item").replace(/'/g,"\\'")}')">Review</button></div>`;
   } else {
     // Searchable EF combobox — both before AND after a factor is chosen: the
     // selected EF (with its provenance tag) shows in the trigger, and opening
@@ -1202,6 +1204,7 @@ function renderNew(){
           <div class="grid">
             <div class="fld"><span class="lab">Emission factor name</span>${efControl}</div>
           </div>
+          ${efBanner}
         </section>
         <div class="modal-foot">
           <button class="btn secondary" onclick="closeNew()">Cancel</button>
