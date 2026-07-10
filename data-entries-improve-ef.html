@@ -612,7 +612,7 @@ function renderTable(){
       <td>${e.consType} · ${e.cons}</td>
       <td class="col-act" onclick="event.stopPropagation()">
         <span class="actions${busyTray?" show":""}">
-          ${showCta?`<button class="rowcta" onclick="improveEF('${e.id}')">Improve EF</button>`:""}
+          ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">Generate EF</button>`:""}
           ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
           ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">Review${svg("arrow",11)}</button>`:""}
           <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
@@ -860,7 +860,7 @@ function openDetail(id){
           ${alts.map(a=>`<button type="button" role="option" class="efselect-item${a===c.ef?" current":""}" onclick="pickDetailEf('${id}','${a.replace(/'/g,"\\'")}')">${a}</button>`).join("")}
           <div class="efselect-sep"></div>
           <button type="button" class="efselect-item create" onclick="improveEF('${id}')">
-            ${svg("sparkles",15)}<span><b>Improve emission factor</b><span class="subline">Generate a synthetic EF with AI for this line item</span></span>
+            ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic EF with AI for this line item</span></span>
           </button>
         </div>
       </div></div>`;
@@ -892,7 +892,7 @@ function openDetail(id){
   if(ph==="improving") footer=`<span class="pill-status" style="margin-right:auto"><span class="spin">${svg("refresh",11)}</span>Generating synthetic EF</span><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else if(ph==="review") footer=`<button class="btn secondary" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review synthetic EF</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else if(ph==="after") footer=`<button class="btn secondary" onclick="toast('Would show the previous factor and the change log')">View previous factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… · calculation confirmed');closeOverlays()">${svg("check",16)}Confirm calculation</button>`;
-  else if(e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="improveEF('${id}')">Improve emission factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
+  else if(e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="improveEF('${id}')">Generate EF</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else if(e.status==="Draft") footer=`<button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
 
@@ -1049,7 +1049,7 @@ function renderNew(){
     // a no-match search they follow the "no results" notice.
     const createActions=`<div class="efselect-sep"></div>
         <button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
-          ${svg("sparkles",15)}<span><b>Create synthetic emission factor with AI</b><span class="subline">Deconstruct the line item into components</span></span>
+          ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic emission factor with AI</span></span>
         </button>
         <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
           ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
@@ -1071,7 +1071,7 @@ function renderNew(){
   }
   let efNote="";
   if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
-  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Create a synthetic emission factor with AI</b> or <b>add a custom factor</b> from your own data.</p>`;
+  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Generate EF</b> to create a synthetic factor with AI, or <b>add a custom factor</b> from your own data.</p>`;
   const canSubmit=!!f.efName&&f.synthPhase!=="improving"&&f.synthPhase!=="review";
 
   document.getElementById("overlays").innerHTML=`
@@ -1139,7 +1139,7 @@ function matAction(m){
   if(m.state==="generating")return `<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`;
   if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
   if(m.state==="applied")return "";
-  return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate</button>`;
+  return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate EF</button>`;
 }
 function openAssessment(){
   document.getElementById("overlays").innerHTML=`
