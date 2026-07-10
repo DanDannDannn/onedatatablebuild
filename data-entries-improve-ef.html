@@ -983,12 +983,13 @@ function openDetail(id){
     </section>`;
   }
 
-  // Footer CTAs follow the entry STATUS only — the product's standard
-  // actions, untouched by the EF generation state (which lives in the EF
-  // details card and the row tray).
+  // Footer CTAs follow the entry STATUS — the product's standard actions.
+  // Submit is blocked while a synthetic EF is generating or awaiting review:
+  // the user must apply or dismiss the proposal first.
+  const efPending = ph==="improving"||ph==="review";
   let footer;
   if(e.status==="Submitted") footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
-  else footer=`<button class="btn secondary" onclick="toast('${id.slice(0,8)}… saved as draft');closeOverlays()">Save draft</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="submitEntry('${id}')">Submit to start calculations</button>`;
+  else footer=`<button class="btn secondary" onclick="toast('${id.slice(0,8)}… saved as draft');closeOverlays()">Save draft</button><button class="btn primary" style="height:38px;padding:0 18px" ${efPending?`disabled title="${ph==="review"?"Review the generated EF first — apply or dismiss it":"Wait for the EF generation to finish"}"`:""} onclick="submitEntry('${id}')">Submit to start calculations</button>`;
 
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeOverlays()"></div>
