@@ -92,6 +92,8 @@ h1,h2,h3,h4{margin:0;}
 .btn.secondary:hover{background:var(--bg-subtle);}
 .btn.danger{background:var(--danger);color:#fff;border:none;font-size:13px;padding:0 18px;height:38px;}
 .btn.danger:hover{background:#d63b3b;}
+.btn.danger-outline{background:#fff;color:var(--danger);border:1px solid var(--danger);font-size:13px;padding:0 16px;height:38px;}
+.btn.danger-outline:hover{background:var(--low-bg);}
 .btn.outline{background:#fff;color:var(--violet);border:1px solid var(--violet);font-size:14px;padding:0 18px;height:46px;}
 .btn.outline:hover{background:var(--violet-50);}
 .title-help{display:inline-flex;margin-left:8px;color:var(--text-muted);vertical-align:middle;}
@@ -800,9 +802,29 @@ function openReview(kind,id,name,context){
         </div>
       </div>
       <div class="dlg-foot"><p class="hint">Applying replaces the current EF for this row.</p>
-        <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button></div>
+        <div style="display:flex;gap:10px;flex:0 0 auto">
+          <button class="btn danger-outline" title="Discard this proposal — your current EF stays applied" onclick="dismissSynth()">Dismiss</button>
+          <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button>
+        </div></div>
     </div>`;
   esc(closeWiz);
+}
+// Dismiss the proposal: nothing is applied, the row returns to its previous
+// state and the current EF stays in place.
+function dismissSynth(){
+  const j=job; if(!j)return; closeWiz();
+  if(j.kind==="entry"){
+    delete state.phases[j.id];renderTable();
+    if(document.querySelector(".modal-wrap"))openDetail(j.id);
+  } else if(j.kind==="material"){
+    const m=MATS.find(x=>x.id===j.id);
+    if(m){m.state="idle";renderAssessment();}
+  } else if(j.kind==="newentry"&&newState){
+    Object.assign(newState,{efName:"",synthetic:false,custom:false,synthPhase:"idle"});
+    renderNew();
+  }
+  toast(j.kind==="newentry"?"Synthetic EF dismissed — pick or generate another factor.":"Synthetic EF dismissed — your current EF stays applied.");
+  job=null;
 }
 function applySynth(){
   const j=job; if(!j)return; closeWiz();
