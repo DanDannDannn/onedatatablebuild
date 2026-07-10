@@ -946,21 +946,26 @@ function openReview(kind,id,name,context){
         <p style="margin:0 0 8px;font-size:13px;font-weight:600">Components <span style="color:var(--text-muted);font-weight:400">· 12</span></p>
         <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
         <table>
-          <thead><tr><th>Component</th><th>Weight %</th><th>g</th><th>Emission factor</th><th>Conf.</th></tr></thead>
+          <thead><tr><th>Item</th><th>Amount</th><th>Unit</th><th>Source</th><th>${svg("sparkles",12)} <b style="font-weight:700;margin-right:2px">AI</b> Emission factor name</th><th>Confidence</th></tr></thead>
           <tbody>
-            <tr><td>PCB_MAIN</td><td>38</td><td>122</td><td style="color:var(--violet)">market for printed wiring board</td><td><span class="confchip high">High</span></td></tr>
-            <tr><td>ABS_HOUSING</td><td>24</td><td>77</td><td style="color:var(--violet)">market for ABS granulate</td><td><span class="confchip high">High</span></td></tr>
-            <tr><td>LI_BATTERY</td><td>14</td><td>45</td><td style="color:var(--violet)">market for battery cell, NMC</td><td><span class="confchip med">Med</span></td></tr>
-            <tr><td>STEEL_BRACKET</td><td>9</td><td>29</td><td style="color:var(--violet)">market for steel, low-alloyed</td><td><span class="confchip high">High</span></td></tr>
-            <tr class="comp-more" hidden><td>COPPER_WIRING</td><td>4</td><td>13</td><td style="color:var(--violet)">market for copper, cathode</td><td><span class="confchip high">High</span></td></tr>
-            <tr class="comp-more" hidden><td>SOLDER_SNCU</td><td>3</td><td>10</td><td style="color:var(--violet)">market for solder, SnCu</td><td><span class="confchip med">Med</span></td></tr>
-            <tr class="comp-more" hidden><td>GPS_ANTENNA</td><td>2.5</td><td>8</td><td style="color:var(--violet)">market for electronics, unspecified</td><td><span class="confchip med">Med</span></td></tr>
-            <tr class="comp-more" hidden><td>LTE_MODEM</td><td>2</td><td>6</td><td style="color:var(--violet)">market for integrated circuit, logic</td><td><span class="confchip med">Med</span></td></tr>
-            <tr class="comp-more" hidden><td>CONNECTOR_SET</td><td>1.5</td><td>5</td><td style="color:var(--violet)">market for brass</td><td><span class="confchip high">High</span></td></tr>
-            <tr class="comp-more" hidden><td>SCREWS_M2</td><td>1</td><td>3</td><td style="color:var(--violet)">market for steel, low-alloyed</td><td><span class="confchip high">High</span></td></tr>
-            <tr class="comp-more" hidden><td>THERMAL_PAD</td><td>0.5</td><td>2</td><td style="color:var(--violet)">market for silicone product</td><td><span class="confchip med">Med</span></td></tr>
-            <tr class="comp-more" hidden><td>LABEL_PET</td><td>0.5</td><td>1</td><td style="color:var(--violet)">market for polyethylene terephthalate</td><td><span class="confchip high">High</span></td></tr>
-            <tr class="comp-toggle"><td colspan="5" style="color:var(--violet);cursor:pointer;font-weight:600" onclick="toggleComponents(this)">Show all 12 components</td></tr>
+            ${[
+              ["PCB_MAIN","122","market for printed wiring board","high","High",0],
+              ["ABS_HOUSING","77","market for ABS granulate","high","High",0],
+              ["LI_BATTERY","45","market for battery cell, NMC","med","Medium",0],
+              ["STEEL_BRACKET","29","market for steel, low-alloyed","high","High",0],
+              ["COPPER_WIRING","13","market for copper, cathode","high","High",1],
+              ["SOLDER_SNCU","10","market for solder, SnCu","med","Medium",1],
+              ["GPS_ANTENNA","8","market for electronics, unspecified","med","Medium",1],
+              ["LTE_MODEM","6","market for integrated circuit, logic","med","Medium",1],
+              ["CONNECTOR_SET","5","market for brass","high","High",1],
+              ["SCREWS_M2","3","market for steel, low-alloyed","high","High",1],
+              ["THERMAL_PAD","2","market for silicone product","med","Medium",1],
+              ["LABEL_PET","1","market for polyethylene terephthalate","high","High",1],
+            ].map(([item,g,ef,cls,lab,more])=>`<tr${more?' class="comp-more" hidden':""}>
+              <td>${item}</td><td>${g}</td><td class="muted">g</td><td class="muted">AI estimated</td>
+              <td><span class="dd"><span class="efn">${ef}</span></span></td>
+              <td><span class="confchip ${cls}">${lab}</span></td></tr>`).join("")}
+            <tr class="comp-toggle"><td colspan="6" style="color:var(--violet);cursor:pointer;font-weight:600" onclick="toggleComponents(this)">Show all 12 components</td></tr>
           </tbody>
         </table>
         </div>
