@@ -1028,7 +1028,6 @@ function pickEf(v){
   Object.assign(newState,{synthetic:false,custom:false,synthPhase:"idle",efName:v});
   renderNew();
 }
-function changeEf(){Object.assign(newState,{efName:"",synthetic:false,custom:false,synthPhase:"idle",efOpen:false});renderNew();}
 function submitNew(){
   const f=newState;
   const priceNum=parseFloat(String(f.price).replace(/[^0-9.]/g,""))||0;
@@ -1078,12 +1077,10 @@ function renderNew(){
     efControl=`<div class="control" style="justify-content:space-between">
       <span class="efbusy">Synthetic EF ready for review</span>
       <button type="button" class="rowcta" onclick="openReview('newentry',null,'${(f.desc||"this line item").replace(/'/g,"\\'")}')">Review${svg("arrow",11)}</button></div>`;
-  } else if(f.efName){
-    efControl=`<div class="control" style="justify-content:space-between">
-      <span>${efTag}${f.efName}</span><button type="button" class="changelink" onclick="changeEf()">Change</button></div>`;
   } else {
-    // Searchable EF combobox. Matching factors are listed; the create actions
-    // (synthetic with AI / custom) appear ONLY when the search has no match.
+    // Searchable EF combobox — both before AND after a factor is chosen: the
+    // selected EF (with its provenance tag) shows in the trigger, and opening
+    // the menu again lets the user swap it or generate/create another.
     const q=f.efQuery.trim().toLowerCase();
     const matches=EF_CHOICES.filter(o=>o.toLowerCase().includes(q));
     // The create actions are always available at the bottom of the menu; on
@@ -1096,12 +1093,15 @@ function renderNew(){
           ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
         </button>`;
     const menuBody=(matches.length
-      ? matches.map(o=>`<button type="button" role="option" class="efselect-item" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")
+      ? matches.map(o=>`<button type="button" role="option" class="efselect-item${o===f.efName?" current":""}" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")
       : `<div class="efselect-empty">No emission factor matches “${f.efQuery.trim()}”.</div>`)
       + createActions;
+    const triggerLabel=f.efName
+      ? `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">${efTag}${f.efName}</span>`
+      : `<span class="ph" style="flex:1">Select an emission factor…</span>`;
     efControl=`<div class="efselect${f.efOpen?" open":""}">
       <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="${f.efOpen}" onclick="toggleEfMenu()">
-        <span class="ph">Select an emission factor…</span>${svg("chev",16)}
+        ${triggerLabel}${svg("chev",16)}
       </button>
       ${f.efOpen?`<div class="efselect-menu" role="listbox">
         <input type="text" id="ef-search" class="efselect-search" placeholder="Search emission factors…"
