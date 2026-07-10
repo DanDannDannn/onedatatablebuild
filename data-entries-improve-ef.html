@@ -265,13 +265,14 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .efdrawer .modal{width:720px;max-width:calc(100vw - 32px);min-height:calc(100vh - 32px);height:auto;}
 .efdrawer .modal-foot{margin-top:auto;}
 
-/* ── Generate / Review dialogs (fixed-centered) ── */
-/* Own keyframes: the transform must keep the -50%,-50% centering during the
-   animation, or the dialog flies in from the bottom-right corner. */
-@keyframes dlgIn{from{opacity:0;transform:translate(-50%,-50%) translateY(8px);}to{opacity:1;transform:translate(-50%,-50%);}}
-.wizdlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1101;width:620px;max-width:calc(100vw - 48px);
+/* ── Generate / Review dialogs ──
+   Centered by a flex overlay (NOT by transform) so the entry animation can
+   never fight the positioning and fly the dialog in from a corner. */
+.wizoverlay{position:fixed;inset:0;z-index:1101;display:flex;align-items:center;justify-content:center;
+  padding:24px;overflow-y:auto;}
+.wizdlg{margin:auto;width:620px;max-width:calc(100vw - 48px);
   background:#fff;border-radius:14px;padding:22px;box-shadow:0 32px 80px -24px rgba(16,16,40,.45);
-  display:flex;flex-direction:column;gap:16px;animation:dlgIn .2s cubic-bezier(.32,.72,0,1);}
+  display:flex;flex-direction:column;gap:16px;animation:modalIn .2s cubic-bezier(.32,.72,0,1);}
 .wizdlg h3{font-size:16.5px;font-weight:700;color:var(--text-strong);flex:1;}
 .wizdlg .head{display:flex;align-items:center;gap:10px;}
 .wizdlg .head .close{width:30px;height:30px;border:none;background:transparent;color:var(--text-muted);
@@ -356,12 +357,6 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
   border-radius:9px;height:26px;padding:0 10px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;}
 .matbtn:hover{border-color:var(--violet);background:var(--violet-50);}
 .matbtn.ready{border-color:var(--violet);}
-.mat-act{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
-/* Same interaction pattern as the data grid: actions reveal on row hover.
-   In-flight states stay pinned — the Generating pill and the Review button. */
-.mat-act .matbtn,.mat-act .iconbtn{opacity:0;pointer-events:none;transition:opacity .12s;}
-tr:hover .mat-act .matbtn,tr:hover .mat-act .iconbtn,
-.mat-act .matbtn.ready{opacity:1;pointer-events:auto;}
 </style>
 </head>
 <body>
@@ -617,7 +612,7 @@ function renderTable(){
     const showCta = ph==="before" && e.status==="Ready to submit";
     const busyTray = ph==="improving"||ph==="review";
     const stCls = e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted";
-    return `<tr onclick="openDetail('${e.id}')" ${state.created.includes(e)?'style="box-shadow:inset 3px 0 0 var(--violet)"':""}>
+    return `<tr onclick="openDetail('${e.id}')">
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
       <td class="id-cell">${e.id}</td>
       <td><span class="chip ${stCls}">${e.status}</span></td>
@@ -671,9 +666,8 @@ function renderEF(){
      <th>Value${help}</th><th>Emission factor type${help}</th><th>Source${help}</th><th>Files</th><th>Associated items</th>`;
   const rows=[...state.efNew,...EF_SEED];
   document.getElementById("ef-tbody").innerHTML=rows.map((r,i)=>{
-    const isNew=i<state.efNew.length;
     const synthetic=r[7].startsWith("Synthetic");
-    return `<tr ${isNew?'style="box-shadow:inset 3px 0 0 var(--violet)"':""} onclick="openEFDetail(${i})">
+    return `<tr onclick="openEFDetail(${i})">
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
       <td class="name-cell" title="${r[0].replace(/"/g,'&quot;')}">${synthetic?'<span class="synth">Synthetic</span>':""}${r[0]}</td>
       <td class="muted">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td>
@@ -776,6 +770,7 @@ function openSetup(kind,id,name){
   genTimers.forEach(clearTimeout);genTimers=[];
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
     <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px">
       <div class="head"><div style="flex:1"><h3>Generate synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
         <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
@@ -785,6 +780,7 @@ function openSetup(kind,id,name){
       </div>
       <div class="dlg-foot"><p class="hint">Takes a few minutes.</p>
         <button class="btn primary" style="height:38px;padding:0 18px" onclick="startGeneration()">Generate</button></div>
+    </div>
     </div>`;
   esc(closeWiz);
 }
@@ -798,6 +794,7 @@ function startGeneration(){
   // Dialog switches to the staged-progress view
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
     <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px" id="gen-dlg">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="spin" style="color:var(--violet)">${svg("refresh",20)}</span>
@@ -808,6 +805,7 @@ function startGeneration(){
       <div style="display:flex;justify-content:center;padding-top:2px">
         <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes a few minutes. Your current EF stays applied until you review.')">Close window</button>
       </div>
+    </div>
     </div>`;
   const durations=[1800,1800,1600,1400];let t=0;
   const setStage=(i,st)=>{const el=document.querySelector(`.stage[data-i="${i}"]`);if(!el)return;
@@ -835,6 +833,7 @@ function openReview(kind,id,name,context){
   const s=reviewStats(kind,id);
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
     <div class="wizdlg rvw" role="dialog" aria-modal="true" style="width:620px">
       <div class="head"><div style="flex:1"><h3>Review synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
         <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
@@ -869,6 +868,7 @@ function openReview(kind,id,name,context){
         <button class="btn danger-outline" title="Discard this proposal — your current EF stays applied" onclick="dismissSynth()">Dismiss</button>
         <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button>
       </div>
+    </div>
     </div>`;
   esc(closeWiz);
 }
@@ -1278,15 +1278,19 @@ function renderAssessment(){
   if(!wrap)return;
   const prevX=wrap.scrollLeft, prevY=document.querySelector(".modal-wrap")?.scrollTop||0;
   wrap.innerHTML=`<table>
-    <thead><tr><th>Item</th><th>Amt</th><th>Source</th><th>${svg("sparkles",12)} Emission factor name</th><th>Confidence</th><th>Supplier</th><th>Part no</th><th>HS</th><th style="text-align:right"></th></tr></thead>
+    <thead><tr><th>Item</th><th>Amt</th><th>Source</th><th>${svg("sparkles",12)} Emission factor name</th><th>Confidence</th><th>Supplier</th><th>Part no</th><th>HS</th><th class="col-act" aria-hidden="true"></th></tr></thead>
     <tbody>
-      ${MATS.map(m=>`<tr>
+      ${MATS.map(m=>{
+        const pin=m.state==="generating"||m.state==="review";
+        return `<tr>
         <td>${m.item}</td><td>${m.amt}</td><td class="muted">BOM Provided</td>
         <td><span style="color:var(--violet)">${m.ef}</span></td>
         <td>${matConf(m)}</td>
         <td>${m.sup}</td><td class="muted">${m.part}…</td><td class="muted">${m.hs}</td>
-        <td><span class="mat-act">${matAction(m)}<button class="iconbtn" title="Edit details" onclick="toast('Edit ${m.item} — out of scope for this mock')">${svg("pencil",14)}</button></span></td>
-      </tr>`).join("")}
+        <td class="col-act" onclick="event.stopPropagation()">
+          <span class="actions${pin?" show":""}">${matAction(m)}<button class="iconbtn" title="Edit details" onclick="toast('Edit ${m.item} — out of scope for this mock')">${svg("pencil",14)}</button></span>
+        </td>
+      </tr>`;}).join("")}
     </tbody>
   </table>`;
   wrap.scrollLeft=prevX;
