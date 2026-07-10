@@ -23,6 +23,7 @@ Generate EF (trigger) → Generate dialog (optional context) → staged generati
 3. **Apply ≠ recalculate.** Applying swaps the factor on the entry and logs the synthetic EF in Manage → Emission factors (source: *Synthetic EF*). Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
 4. **Dismiss is safe.** Dismissing the proposal from the Review dialog discards it; the row returns to its previous state and the current EF (if any) stays applied.
 5. **Availability is status-gated.** Generate EF is offered only on entries the user can edit: the new-entry form, and entries in *Ready to submit*. Submitted entries must be unsubmitted first. (Draft entries: not offered — an EF match is assigned at Ready-to-submit.)
+6. **Submit is blocked while a proposal is open.** While an entry has a synthetic EF generating or awaiting review, *Submit to start calculations* is disabled — the user must apply or dismiss the proposal first. Save draft stays available.
 
 **Entry state machine (EF axis, per entry)**
 
