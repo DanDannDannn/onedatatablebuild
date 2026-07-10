@@ -260,10 +260,13 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .processing .big{font-size:14px;font-weight:700;color:var(--violet);display:inline-flex;align-items:center;gap:8px;}
 .processing .why{font-size:12.5px;color:var(--text-muted);max-width:420px;line-height:1.5;}
 
-/* ── Wizard placeholder dialog ── */
+/* ── Generate / Review dialogs (fixed-centered) ── */
+/* Own keyframes: the transform must keep the -50%,-50% centering during the
+   animation, or the dialog flies in from the bottom-right corner. */
+@keyframes dlgIn{from{opacity:0;transform:translate(-50%,-50%) translateY(8px);}to{opacity:1;transform:translate(-50%,-50%);}}
 .wizdlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1101;width:620px;max-width:calc(100vw - 48px);
   background:#fff;border-radius:14px;padding:22px;box-shadow:0 32px 80px -24px rgba(16,16,40,.45);
-  display:flex;flex-direction:column;gap:16px;animation:modalIn .2s cubic-bezier(.32,.72,0,1);}
+  display:flex;flex-direction:column;gap:16px;animation:dlgIn .2s cubic-bezier(.32,.72,0,1);}
 .wizdlg h3{font-size:16.5px;font-weight:700;color:var(--text-strong);flex:1;}
 .wizdlg .head{display:flex;align-items:center;gap:10px;}
 .wizdlg .head .close{width:30px;height:30px;border:none;background:transparent;color:var(--text-muted);
@@ -665,7 +668,7 @@ function renderEF(){
   document.getElementById("ef-tbody").innerHTML=rows.map((r,i)=>{
     const isNew=i<state.efNew.length;
     const synthetic=r[7].startsWith("Synthetic");
-    return `<tr ${isNew?'style="box-shadow:inset 3px 0 0 var(--violet)"':""} onclick="toast('${r[0].replace(/'/g,"\\'")}' + ' — factor detail out of scope for this mock')">
+    return `<tr ${isNew?'style="box-shadow:inset 3px 0 0 var(--violet)"':""} onclick="openEFDetail(${i})">
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
       <td class="name-cell" title="${r[0].replace(/"/g,'&quot;')}">${synthetic?'<span class="synth">Synthetic</span>':""}${r[0]}</td>
       <td class="muted">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td>
@@ -674,6 +677,49 @@ function renderEF(){
   }).join("");
   document.getElementById("ef-pagecount").textContent=`1–${rows.length} of ${rows.length}`;
 }
+/* EF detail popup (Emission factors page) — the product's simple read-only
+   layout: details card, primary-data checkbox, attachments, Cancel. The
+   Synthetic tag lives in the title. */
+function openEFDetail(i){
+  const r=[...state.efNew,...EF_SEED][i];
+  if(!r)return;
+  const synthetic=r[7].startsWith("Synthetic");
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" onclick="closeOverlays()"></div>
+    <div class="modal-wrap" onclick="if(event.target===event.currentTarget)closeOverlays()">
+      <div class="modal" role="dialog" aria-modal="true" style="max-width:760px">
+        <div class="modal-head">
+          <h2 class="trunc" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r[0]}</h2>
+          ${synthetic?'<span class="synth" style="margin:0">Synthetic</span>':""}
+          <button class="close" onclick="closeOverlays()">${svg("close",18)}</button>
+        </div>
+        <section class="form-card">
+          <h3>Emission factor details</h3>
+          <div class="grid" style="margin-top:16px">
+            ${field("Name",r[0],{req:1})}
+            ${field("Year",r[3],{req:1})}
+            ${field("Unit",r[4],{req:1,icon:"chev"})}
+            ${field("Emission factor value",r[5],{req:1})}
+            ${field("Source",r[7])}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:18px;color:var(--text-muted);font-size:15px">
+            <span class="check" style="display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted)">${svg("check",13)}</span>
+            This is primary data
+            <span class="h-help" style="color:var(--text-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17"/></svg></span>
+          </div>
+        </section>
+        <section class="form-card">
+          <h3>Attachments</h3>
+          <div class="dropzone" style="margin-top:14px">${svg("upload",26)}<span>Drag or upload up to 3 files</span></div>
+        </section>
+        <div class="modal-foot">
+          <button class="btn outline" style="height:44px" onclick="closeOverlays()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  esc(closeOverlays);
+}
+
 function showPage(p){
   ["data","ef","assess"].forEach(k=>{
     document.getElementById("page-"+k).style.display=p===k?"":"none";
@@ -814,11 +860,10 @@ function openReview(kind,id,name,context){
           <div><span>Natural gas, process heat</span><span style="color:var(--text-muted)">0.8 MJ / kg</span><span class="efref">market for natural gas, DE</span></div>
         </div>
       </div>
-      <div class="dlg-foot"><p class="hint">Applying replaces the current EF for this row.</p>
-        <div style="display:flex;gap:10px;flex:0 0 auto">
-          <button class="btn danger-outline" title="Discard this proposal — your current EF stays applied" onclick="dismissSynth()">Dismiss</button>
-          <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button>
-        </div></div>
+      <div class="dlg-foot" style="justify-content:flex-end">
+        <button class="btn danger-outline" title="Discard this proposal — your current EF stays applied" onclick="dismissSynth()">Dismiss</button>
+        <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button>
+      </div>
     </div>`;
   esc(closeWiz);
 }
