@@ -914,13 +914,12 @@ function openDetail(id){
     </section>`;
   }
 
+  // Footer CTAs follow the entry STATUS only — the product's standard
+  // actions, untouched by the EF generation state (which lives in the EF
+  // details card and the row tray).
   let footer;
-  if(ph==="improving") footer=`<span class="pill-status" style="margin-right:auto"><span class="spin">${svg("refresh",11)}</span>Generating synthetic EF</span><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
-  else if(ph==="review") footer=`<button class="btn secondary" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review synthetic EF</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
-  else if(ph==="after") footer=`<button class="btn secondary" onclick="toast('Would show the previous factor and the change log')">View previous factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… · calculation confirmed');closeOverlays()">${svg("check",16)}Confirm calculation</button>`;
-  else if(e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="improveEF('${id}')">Generate EF</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
-  else if(e.status==="Draft") footer=`<button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
-  else footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
+  if(e.status==="Submitted") footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
+  else footer=`<button class="btn secondary" onclick="toast('${id.slice(0,8)}… saved as draft');closeOverlays()">Save draft</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted · calculations started');closeOverlays()">Submit to start calculations</button>`;
 
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeOverlays()"></div>
