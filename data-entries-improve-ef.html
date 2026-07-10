@@ -945,11 +945,11 @@ function openDetail(id){
   // The current EF stays in place through generating/review.
   const efTag = (ph==="after"||e.synthetic)?'<span class="synth">Synthetic</span>':e.custom?'<span class="synth custom">Custom</span>':"";
   const efName = efTag+c.ef;
-  // For Ready-to-submit entries the EF name is an editable dropdown; the
-  // Improve action lives INSIDE the menu (not as a button in the card).
-  // Generating/review/after states fall back to the read-only field.
+  // For editable entries (Draft and Ready to submit) the EF name is a
+  // dropdown; the Generate EF action lives INSIDE the menu. Submitted entries
+  // and generating/review/after states fall back to the read-only field.
   let efField;
-  if(ph==="before"&&e.status==="Ready to submit"){
+  if(ph==="before"&&(e.status==="Ready to submit"||e.status==="Draft")){
     const base=c.ef.split(",")[0].trim();
     const alts=[c.ef,base+", global average",base+", DACH region"];
     efField=`<div class="fld"><span class="lab">Emission factor name</span>
