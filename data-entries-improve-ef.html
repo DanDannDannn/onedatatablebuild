@@ -260,6 +260,11 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .processing .big{font-size:14px;font-weight:700;color:var(--violet);display:inline-flex;align-items:center;gap:8px;}
 .processing .why{font-size:12.5px;color:var(--text-muted);max-width:420px;line-height:1.5;}
 
+/* ── Right-side panel variant (EF detail — matches the product's placement) ── */
+.modal-wrap.efdrawer{justify-content:flex-end;padding:16px;}
+.efdrawer .modal{width:720px;max-width:calc(100vw - 32px);min-height:calc(100vh - 32px);height:auto;}
+.efdrawer .modal-foot{margin-top:auto;}
+
 /* ── Generate / Review dialogs (fixed-centered) ── */
 /* Own keyframes: the transform must keep the -50%,-50% centering during the
    animation, or the dialog flies in from the bottom-right corner. */
@@ -686,8 +691,8 @@ function openEFDetail(i){
   const synthetic=r[7].startsWith("Synthetic");
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeOverlays()"></div>
-    <div class="modal-wrap" onclick="if(event.target===event.currentTarget)closeOverlays()">
-      <div class="modal" role="dialog" aria-modal="true" style="max-width:760px">
+    <div class="modal-wrap efdrawer" onclick="if(event.target===event.currentTarget)closeOverlays()">
+      <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-head">
           <h2 class="trunc" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r[0]}</h2>
           ${synthetic?'<span class="synth" style="margin:0">Synthetic</span>':""}
@@ -913,6 +918,8 @@ function field(label,value,o){o=o||{};
   return `<div class="fld"><span class="lab">${label}${o.req?' <span class="req">*</span>':""}</span>
     <div class="control ro${value==="—"?" placeholder":""}"><span style="flex:1;min-width:0">${value}</span>${o.icon?`<span class="fldic">${svg(o.icon,16)}</span>`:""}</div></div>`;}
 function openDetail(id){
+  // Re-renders (apply, dismiss, EF swap) must not reset the modal's scroll.
+  const prevScroll=document.querySelector(".modal-wrap")?.scrollTop||0;
   const e=allEntries().find(x=>x.id===id);const ph=phaseOf(id);const c=calc(e,ph);
   const spend=e.consType==="Spend data";
   let banner="";
@@ -920,10 +927,6 @@ function openDetail(id){
     banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes a few minutes — you can keep working. Your current EF stays applied until you apply the proposal.</span></div>`;
   } else if(ph==="review"){
     banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied until you apply it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
-  } else if(ph==="after"&&e.status!=="Submitted"){
-    banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF applied.</b> Submit the entry to start calculations with the new factor — the previous one is kept in the audit log.</span></div>`;
-  } else if(e.low&&ph==="before"){
-    banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span></div>`;
   }
   // Provenance tag renders inline in the EF name field, in front of the name.
   // The current EF stays in place through generating/review.
@@ -1031,6 +1034,7 @@ function openDetail(id){
         <div class="modal-foot">${footer}</div>
       </div>
     </div>`;
+  document.querySelector(".modal-wrap").scrollTop=prevScroll;
   esc(closeOverlays);
 }
 function toggleCalc(){
@@ -1118,6 +1122,9 @@ function selectFld(label,key,options,req){
     </select></div>`;
 }
 function renderNew(){
+  // Re-renders (search keystrokes, EF picks, state changes) must not reset
+  // the modal's scroll position.
+  const prevScroll=document.querySelector(".modal-wrap")?.scrollTop||0;
   const f=newState;
   const efTag=(f.synthetic&&f.synthPhase==="done")?'<span class="synth">Synthetic</span>':f.custom?'<span class="synth custom">Custom</span>':"";
   let efControl;
@@ -1201,9 +1208,10 @@ function renderNew(){
         </div>
       </div>
     </div>`;
+  document.querySelector(".modal-wrap").scrollTop=prevScroll;
   // Re-rendering rebuilds the menu; put the caret back in the search field.
   const si=document.getElementById("ef-search");
-  if(si){si.focus();const n=si.value.length;si.setSelectionRange(n,n);}
+  if(si){si.focus({preventScroll:true});const n=si.value.length;si.setSelectionRange(n,n);}
 }
 
 /* ─── Assessment detail (PCF · Screw draft) — Materials with the same
@@ -1268,6 +1276,7 @@ function openAssessment(){
 function renderAssessment(){
   const wrap=document.getElementById("mat-tablewrap");
   if(!wrap)return;
+  const prevX=wrap.scrollLeft, prevY=document.querySelector(".modal-wrap")?.scrollTop||0;
   wrap.innerHTML=`<table>
     <thead><tr><th>Item</th><th>Amt</th><th>Source</th><th>${svg("sparkles",12)} Emission factor name</th><th>Confidence</th><th>Supplier</th><th>Part no</th><th>HS</th><th style="text-align:right"></th></tr></thead>
     <tbody>
@@ -1280,6 +1289,8 @@ function renderAssessment(){
       </tr>`).join("")}
     </tbody>
   </table>`;
+  wrap.scrollLeft=prevX;
+  const mw=document.querySelector(".modal-wrap");if(mw)mw.scrollTop=prevY;
 }
 
 renderTable();
