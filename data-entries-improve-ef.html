@@ -647,7 +647,7 @@ function renderTable(){
           ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate EF</button>`:""}
           ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
           ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
-          ${ph==="failed"?`<button class="rowcta" title="Synthetic EF result ready to review" onclick="openDetail('${e.id}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
+          ${ph==="failed"?`<button class="rowcta" title="Synthetic EF result ready to review" onclick="openFailedDialog('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
           <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
           <button class="iconbtn danger" title="Delete entry" onclick="deleteRow('${e.id}')">${svg("trash",15)}</button>
         </span>
@@ -1024,7 +1024,9 @@ function openDetail(id){
   } else if(ph==="review"){
     banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied until you apply it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
   } else if(ph==="failed"){
-    banner=`<div class="banner fail"><span style="flex:0 0 auto">${svg("warn",17)}</span><span class="tx"><b>Synthetic EF generation failed.</b> Your current EF stays applied.</span><button class="btn secondary" style="height:36px" onclick="dismissFailed('entry','${id}')">Dismiss</button><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="improveEF('${id}')">Generate again</button></div>`;
+    // The error state lives only inside the review window — here the banner
+    // stays neutral, same as a successful result awaiting review.
+    banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openFailedDialog('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
   }
   // Provenance tag renders inline in the EF name field, in front of the name.
   // The current EF stays in place through generating/review.
