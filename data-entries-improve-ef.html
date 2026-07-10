@@ -286,6 +286,62 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
   box-shadow:0 12px 30px -8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:460px;}
 #toast.show{opacity:1;transform:translateX(-50%);}
 .changelink{border:none;background:transparent;cursor:pointer;color:var(--violet);font-size:12px;font-weight:600;}
+
+/* ── Generate / Review synthetic EF dialogs (shared component) ── */
+.wizdlg textarea{width:100%;box-sizing:border-box;font-size:13px;font-family:inherit;border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);padding:10px 12px;color:var(--text-strong);resize:vertical;}
+.wizdlg textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(90,77,255,.14);}
+.wizdlg .dlg-foot{display:flex;justify-content:space-between;align-items:center;gap:16px;
+  margin:4px -22px -22px;padding:14px 22px;border-top:1px solid var(--border);background:var(--bg-subtle);
+  border-radius:0 0 14px 14px;}
+.wizdlg .dlg-foot .hint{font-size:12px;color:var(--text-muted);margin:0;}
+.stage{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;color:var(--text-subtle);}
+.stage.active{color:var(--text-strong);}
+.stage.done{color:var(--text-muted);}
+.stage .st-ic{width:18px;display:inline-flex;justify-content:center;flex:0 0 auto;}
+.pill-status{display:inline-flex;align-items:center;gap:5px;background:var(--violet-50);color:var(--violet-700);
+  border-radius:999px;padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.pill-status .spin{color:var(--violet);}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.kpi{background:var(--bg-subtle);border-radius:var(--radius-md);padding:12px 14px;}
+.kpi .k{font-size:12px;color:var(--text-muted);margin:0 0 4px;}
+.kpi .v{font-size:19px;font-weight:600;margin:0;}
+.kpi .v small{font-size:12px;font-weight:400;color:var(--text-muted);}
+.ctx-details{margin:14px 0 0;background:var(--bg-subtle);border-radius:var(--radius-md);padding:8px 12px;font-size:12px;color:var(--text-muted);}
+.ctx-details summary{cursor:pointer;}
+.rvw table{font-size:12px;}
+.rvw tbody tr{cursor:default;}
+.rvw tbody tr:hover{background:inherit;}
+.rvw tbody tr:nth-child(even):hover{background:var(--bg-subtle);}
+.energy{border:1px solid var(--border);border-radius:var(--radius-md);}
+.energy>div{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;font-size:12px;}
+.energy>div+div{border-top:1px solid var(--border);}
+.energy .efref{color:var(--violet);}
+.actions.show{opacity:1;pointer-events:auto;transform:translateY(-50%);}
+.confchip{display:inline-block;padding:3px 10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;line-height:16px;}
+.confchip.high{background:var(--success-bg);color:var(--success-fg);}
+.confchip.med{background:var(--alert-bg);color:var(--alert-fg);}
+
+/* ── Assessments (PCF) ── */
+.seg{display:inline-flex;background:var(--bg-subtle);border:1px solid var(--border);border-radius:9px;padding:3px;gap:3px;font-size:13px;}
+.seg .on{background:var(--violet);color:#fff;border-radius:7px;padding:5px 14px;font-weight:500;}
+.seg .off{color:var(--text-muted);padding:5px 14px;}
+.chipx{background:var(--violet-50);color:var(--violet);font-size:12px;padding:3px 10px;border-radius:7px;white-space:nowrap;display:inline-block;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;vertical-align:middle;}
+.chip.calc{background:var(--success-bg);color:var(--success-fg);}
+.chip.adraft{background:#E3EEFB;color:#1D5FA6;}
+.chip.synthef{background:var(--violet-50);color:var(--violet-700);display:inline-flex;align-items:center;gap:4px;}
+.assess-body{display:flex;gap:0;}
+.assess-nav{width:210px;flex:0 0 210px;border-right:1px solid var(--border);padding:6px 14px 6px 0;font-size:13.5px;}
+.assess-nav-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--radius-md);margin-bottom:2px;color:var(--text-strong);}
+.assess-nav-item.active{background:var(--violet-50);font-weight:600;}
+.assess-nav-item .mut{color:var(--text-muted);font-weight:400;font-size:12px;}
+.assess-content{flex:1;min-width:0;padding-left:20px;}
+.matbtn{display:inline-flex;align-items:center;gap:5px;background:#fff;color:var(--violet);border:1px solid var(--border-strong);
+  border-radius:9px;height:26px;padding:0 10px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;}
+.matbtn:hover{border-color:var(--violet);background:var(--violet-50);}
+.matbtn.ready{border-color:var(--violet);}
+.mat-act{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
 </style>
 </head>
 <body>
@@ -309,7 +365,7 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 
     <div class="nav-section">Product Footprint</div>
     <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg>Products</div>
-    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><polyline points="7 12 10 9 13 12 17 8"/></svg>Assessments</div>
+    <div class="nav-item" id="nav-assess" onclick="showPage('assess')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/><polyline points="7 12 10 9 13 12 17 8"/></svg>Assessments</div>
     <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="9"/><line x1="18" y1="20" x2="18" y2="4"/></svg>Product emissions</div>
 
     <div class="nav-section">Manage</div>
@@ -399,6 +455,51 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
         </div>
       </div>
     </div>
+
+    <!-- ── Assessments page (PCF) ── -->
+    <div class="page" id="page-assess" style="display:none">
+      <div class="card">
+        <div class="card-head">
+          <h1>Assessments</h1>
+          <div style="display:flex;gap:12px">
+            <button class="btn outline" onclick="toast('Show instructions — how PCF assessments work')">Show instructions</button>
+            <button class="btn primary" onclick="toast('Start new assessment — flow out of scope for this mock')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Start new assessment</button>
+          </div>
+        </div>
+        <div class="toolbar" style="justify-content:space-between">
+          <div class="seg"><span class="on">PCF</span><span class="off">CBAM</span></div>
+          <div style="display:flex;gap:12px">
+            <button class="btn tool" onclick="toast('Export — CSV of the current view')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
+            <button class="btn tool" onclick="toast('Columns — show/hide grid columns')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Columns</button>
+            <button class="btn tool" onclick="toast('Filters')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filters</button>
+          </div>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-check"><span class="check"></span></th>
+                <th>Status</th><th>Assessment name</th><th>Standard</th><th>Level</th>
+                <th>Linked product</th><th>Business unit</th><th>Start date</th><th>End date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr onclick="toast('Assessment detail — only the Screw draft is wired in this mock')"><td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td><td><span class="chip calc">Calculated</span></td><td>Non mass units - Berlin - 2025</td><td><span class="chipx">PACT v3.0</span></td><td><span class="chipx">Product</span></td><td><span class="chipx">Non mass units</span></td><td>Berlin</td><td class="muted">01/01/2025</td><td class="muted">12/31/2025</td></tr>
+              <tr onclick="toast('Assessment detail — only the Screw draft is wired in this mock')"><td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td><td><span class="chip calc">Calculated</span></td><td>Product with no energy estimates</td><td><span class="chipx">ISO 14067:2018</span></td><td><span class="chipx">Product</span></td><td><span class="chipx">Product with no energy…</span></td><td>Eberswalde</td><td class="muted">01/01/2025</td><td class="muted">12/31/2025</td></tr>
+              <tr onclick="toast('Assessment detail — only the Screw draft is wired in this mock')"><td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td><td><span class="chip calc">Calculated</span></td><td>Non mass units - Berlin - 2025</td><td><span class="chipx">PACT v3.0</span></td><td><span class="chipx">Product</span></td><td><span class="chipx">Non mass units</span></td><td>Berlin</td><td class="muted">01/01/2025</td><td class="muted">12/31/2025</td></tr>
+              <tr onclick="toast('Assessment detail — only the Screw draft is wired in this mock')"><td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td><td><span class="chip calc">Calculated</span></td><td>GENERATOR_FRAME_STEEL - 2025</td><td><span class="chipx">ISO 14067:2018</span></td><td><span class="chipx">Product</span></td><td><span class="chipx">GENERATOR_FRAME_ST…</span></td><td>Petone</td><td class="muted">01/01/2025</td><td class="muted">12/31/2025</td></tr>
+              <tr onclick="openAssessment()" title="Open assessment"><td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td><td><span class="chip adraft">Draft</span></td><td style="font-weight:600">Screw</td><td><span class="chipx">ISO 14067:2018</span></td><td><span class="chipx">Product</span></td><td><span class="chipx">GENERATOR_FRAME_ST…</span></td><td>Wellington</td><td class="muted">01/01/2025</td><td class="muted">12/31/2025</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span>1–5 of 5</span>
+          <div class="pages">
+            <button class="nav">‹</button><button class="active">1</button><button class="nav">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -421,6 +522,9 @@ const IC = {
   arrow:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
   plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  sparkles:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+  pencil:'<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  circle:'<circle cx="12" cy="12" r="9"/>',
 };
 const svg=(name,size=16)=>`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[name]}</svg>`;
 
@@ -481,16 +585,17 @@ function renderTable(){
   const tb=document.getElementById("tbody");
   tb.innerHTML = allEntries().filter(e=>!state.deleted.has(e.id)).map(e=>{
     const ph=phaseOf(e.id);const c=calc(e,ph);
-    const improving = ph==="improving";
+    // During generating/review the CURRENT EF stays applied — the cell keeps
+    // the existing factor; progress lives in the (pinned-visible) action tray.
     const improved = ph==="after"||e.synthetic;
     let efCell;
-    if(improving) efCell=`<span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span>`;
-    else if(improved) efCell=`<span class="synth">Synthetic</span>${c.ef}`;
+    if(improved) efCell=`<span class="synth">Synthetic</span>${c.ef}`;
     else if(e.custom) efCell=`<span class="synth custom">Custom</span>${c.ef}`;
     else efCell=c.ef;
     // Improve EF is offered only on Ready-to-submit entries (not Draft, not
     // Submitted — a submitted calculation is locked until unsubmitted).
     const showCta = ph==="before" && e.status==="Ready to submit";
+    const busyTray = ph==="improving"||ph==="review";
     const stCls = e.status==="Draft"?"draft":e.status==="Ready to submit"?"ready":"submitted";
     return `<tr onclick="openDetail('${e.id}')" ${state.created.includes(e)?'style="box-shadow:inset 3px 0 0 var(--violet)"':""}>
       <td class="col-check" onclick="event.stopPropagation()"><span class="check"></span></td>
@@ -505,8 +610,10 @@ function renderTable(){
       <td>${e.input}</td>
       <td>${e.consType} · ${e.cons}</td>
       <td class="col-act" onclick="event.stopPropagation()">
-        <span class="actions">
-          ${showCta?`<button class="rowcta" onclick="openWizard('${e.id}')">Improve EF</button>`:""}
+        <span class="actions${busyTray?" show":""}">
+          ${showCta?`<button class="rowcta" onclick="improveEF('${e.id}')">Improve EF</button>`:""}
+          ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
+          ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">Review${svg("arrow",11)}</button>`:""}
           <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
           <button class="iconbtn danger" title="Delete entry" onclick="deleteRow('${e.id}')">${svg("trash",15)}</button>
         </span>
@@ -520,6 +627,7 @@ function deleteRow(id){state.deleted.add(id);renderTable();toast(id.slice(0,8)+"
 // Company's own factors: custom (user-entered primary data) and synthetic
 // (AI-generated). Newly generated synthetic EFs are prepended.
 const EF_SEED=[
+  ["Synthetic Onboard unit (Bosch) – 2026","06/15/2026","Ruben Korenke","2026","kgCO₂e/kg","1.03","Primary","Synthetic EF","—","1"],
   ["Synthetic Machined aluminium housings, EU supplier mix","07/08/2026","Marta Ruiz","2026","kgCO₂e/EUR","0.27","Primary","Synthetic EF","—","1"],
   ["Custom emission factor for green electricity tariff","06/30/2026","Anna Keller","2025","GCO2e_KWH","203","Primary","Supplier contract","1","3"],
   ["Custom emission factor for district heating Berlin","06/23/2026","Johannes Weber","2025","kgCO₂e/kWh","0.18","Primary","Utility invoice","1","2"],
@@ -555,37 +663,11 @@ function renderEF(){
   document.getElementById("ef-pagecount").textContent=`1–${rows.length} of ${rows.length}`;
 }
 function showPage(p){
-  document.getElementById("page-data").style.display=p==="data"?"":"none";
-  document.getElementById("page-ef").style.display=p==="ef"?"":"none";
-  document.getElementById("nav-data").classList.toggle("active",p==="data");
-  document.getElementById("nav-ef").classList.toggle("active",p==="ef");
-  location.hash=p==="ef"?"emission-factors":"data-entries";
-}
-
-/* ─── Improve flow ─── */
-function startImprove(id){
-  const e=allEntries().find(x=>x.id===id);
-  // Rows without a scripted result get a generic synthetic EF.
-  if(!e.after){
-    const co2tNum=parseFloat(e.before.co2t.replace(",",""))*0.68;
-    e.after={ef:e.desc.split("—")[0].split(",")[0].trim()+", supplier-specific mix",
-      val:e.before.val==="—"?"—":(parseFloat(e.before.val)*0.68).toFixed(2),unit:e.before.unit,
-      src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",
-      co2:(co2tNum*1000).toLocaleString(undefined,{maximumFractionDigits:0})+" kg",
-      co2t:co2tNum.toFixed(2),conf:0.9,
-      note:"Built from deconstructed components (materials, processing, transport)."};
-  }
-  state.phases[id]="improving";
-  closeWiz();renderTable();
-  if(document.querySelector(".modal-wrap")) openDetail(id); // refresh detail modal in place
-  toast(id.slice(0,8)+"… · generating improved EF");
-  state.timers[id]=setTimeout(()=>{
-    state.phases[id]="after";renderTable();
-    saveEF("Synthetic "+e.after.ef,e.after.unit,e.after.val,"Synthetic EF");
-    const conf=Math.round((e.after?.conf||0.9)*100);
-    toast(id.slice(0,8)+"… · improved EF applied — saved to Emission factors");
-    if(document.querySelector(".modal-wrap")) openDetail(id); // refresh modal if open
-  },IMPROVE_MS);
+  ["data","ef","assess"].forEach(k=>{
+    document.getElementById("page-"+k).style.display=p===k?"":"none";
+    document.getElementById("nav-"+k).classList.toggle("active",p===k);
+  });
+  location.hash=p==="ef"?"emission-factors":p==="assess"?"assessments":"data-entries";
 }
 
 /* ─── Overlays ─── */
@@ -593,32 +675,146 @@ function closeOverlays(){document.getElementById("overlays").innerHTML="";}
 function closeWiz(){document.getElementById("wizlayer").innerHTML="";}
 function esc(fn){const h=ev=>{if(ev.key==="Escape"){fn();document.removeEventListener("keydown",h);}};document.addEventListener("keydown",h);}
 
-/* Wizard placeholder dialog (the real AI wizard design will replace this later).
-   Renders in its own layer so it stacks over the detail / new-entry modals. */
-function renderWizard(desc,onConfirmJs){
+/* ─── Generate / Review synthetic EF — ONE dialog component, three entry
+   points: data-entry Improve EF, assessment materials, new-entry dropdown.
+   Pattern: Generate (context) → staged generation (current EF stays applied,
+   dialog closable) → Review (components, energy) → Apply. ─── */
+function ensureAfter(e){
+  if(e.after)return;
+  const co2tNum=parseFloat(e.before.co2t.replace(",",""))*0.68;
+  e.after={ef:e.desc.split("—")[0].split(",")[0].trim()+", supplier-specific mix",
+    val:e.before.val==="—"?"—":(parseFloat(e.before.val)*0.68).toFixed(2),unit:e.before.unit,
+    src:"Forward Earth synthetic v1",year:"2026",basis:"AI-deconstructed",
+    co2:(co2tNum*1000).toLocaleString(undefined,{maximumFractionDigits:0})+" kg",
+    co2t:co2tNum.toFixed(2),conf:0.9,
+    note:"Built from deconstructed components (materials, processing, transport)."};
+}
+let job=null;          // {kind:'entry'|'material'|'newentry', id, name, context}
+let genTimers=[];
+const STAGES=["Researching product information","Building bill of materials","Estimating component weights","Matching emission factors"];
+
+function improveEF(id){const e=allEntries().find(x=>x.id===id);openSetup('entry',id,e.desc);}
+function openSetup(kind,id,name){
+  job={kind,id,name,context:""};
+  genTimers.forEach(clearTimeout);genTimers=[];
   document.getElementById("wizlayer").innerHTML=`
     <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
-    <div class="wizdlg" role="dialog" aria-modal="true">
-      <div class="head"><h3>Improve emission factor</h3><button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
-      <p class="subx">Forward AI deconstructs <b>${desc}</b> into components and builds a synthetic emission factor to replace the current spend-based match.</p>
-      <div class="steps">
-        <div class="wstep"><span class="k">Step 1</span><span class="t">Context</span><span class="d">Line-item context, add guidance for the AI.</span></div>
-        <span class="warrow">${svg("arrow",14)}</span>
-        <div class="wstep"><span class="k">Step 2</span><span class="t">Review</span><span class="d">Deconstruction summary, component list.</span></div>
-        <span class="warrow">${svg("arrow",14)}</span>
-        <div class="wstep"><span class="k">Step 3</span><span class="t">Apply and confirm</span><span class="d">Summary, save EF, success.</span></div>
+    <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px">
+      <div class="head"><div style="flex:1"><h3>Generate synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
+        <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+      <div>
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600">Add contextual info <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
+        <textarea id="gen-ctx" rows="4" placeholder="Materials, components, certifications, or supplier details all improve the estimate."></textarea>
       </div>
-      <div class="wiznote">${svg("info",13)}<span>Placeholder — the wizard is a shared pattern (also used by PCF “Deconstruct with AI”) and is designed separately. This mock skips ahead.</span></div>
-      <div class="wizfoot">
-        <button class="btn secondary" onclick="closeWiz()">Cancel</button>
-        <button class="btn primary" style="height:38px;padding:0 18px" onclick="${onConfirmJs}">Apply and confirm</button>
-      </div>
+      <div class="dlg-foot"><p class="hint">Takes a few minutes.</p>
+        <button class="btn primary" style="height:38px;padding:0 18px" onclick="startGeneration()">Generate</button></div>
     </div>`;
   esc(closeWiz);
 }
-function openWizard(id){
-  const e=allEntries().find(x=>x.id===id);
-  renderWizard(e.desc,`startImprove('${id}')`);
+function startGeneration(){
+  const j=job; if(!j)return;
+  j.context=(document.getElementById("gen-ctx")||{}).value||"";
+  // Mark the source row as generating (its current EF stays applied)
+  if(j.kind==="entry"){state.phases[j.id]="improving";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
+  else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){m.state="generating";renderAssessment();}}
+  else if(j.kind==="newentry"&&newState){newState.synthPhase="improving";renderNew();}
+  // Dialog switches to the staged-progress view
+  document.getElementById("wizlayer").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px" id="gen-dlg">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="spin" style="color:var(--violet)">${svg("refresh",20)}</span>
+        <h3 style="margin:0;font-size:15px;font-weight:600">Generating synthetic EF</h3>
+      </div>
+      <div id="stages">${STAGES.map((s,i)=>`<div class="stage" data-i="${i}"><span class="st-ic">${svg("circle",13)}</span>${s}</div>`).join("")}</div>
+      <p class="subx" style="margin:0">You can close this window and keep working — the row will show progress and tell you when it's ready. <b>Your current EF stays applied</b> until you apply the proposal.</p>
+      <div style="display:flex;justify-content:center;padding-top:2px">
+        <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes a few minutes. Your current EF stays applied until you review.')">Close window</button>
+      </div>
+    </div>`;
+  const durations=[1800,1800,1600,1400];let t=0;
+  const setStage=(i,st)=>{const el=document.querySelector(`.stage[data-i="${i}"]`);if(!el)return;
+    el.className="stage "+st;
+    el.querySelector(".st-ic").innerHTML=st==="active"?`<span class="spin" style="color:var(--violet)">${svg("refresh",13)}</span>`:`<span style="color:var(--success-fg)">${svg("check",13)}</span>`;};
+  durations.forEach((d,i)=>{genTimers.push(setTimeout(()=>setStage(i,"active"),t));genTimers.push(setTimeout(()=>setStage(i,"done"),t+d));t+=d;});
+  genTimers.push(setTimeout(()=>finishGeneration(j),t+400));
+}
+function finishGeneration(j){
+  if(j.kind==="entry"){const e=allEntries().find(x=>x.id===j.id);if(!e)return;ensureAfter(e);state.phases[j.id]="review";renderTable();if(document.querySelector(".modal-wrap"))openDetail(j.id);}
+  else if(j.kind==="material"){const m=MATS.find(x=>x.id===j.id);if(m){m.state="review";renderAssessment();}}
+  else if(j.kind==="newentry"){if(!newState)return;newState.synthPhase="review";renderNew();}
+  const dlgOpen=!!document.getElementById("gen-dlg");
+  if(dlgOpen){openReview(j.kind,j.id,j.name,j.context);}
+  else{job=j;toast("Synthetic EF ready for review — "+j.name+".");}
+}
+function reviewStats(kind,id){
+  if(kind==="material"){const m=MATS.find(x=>x.id===id);return {val:"1.03",unit:"kg CO₂e / kg"};}
+  if(kind==="newentry")return {val:"0.31",unit:"kg CO₂e / EUR"};
+  const e=allEntries().find(x=>x.id===id);ensureAfter(e);
+  return {val:e.after.val==="—"?e.after.co2t:e.after.val,unit:e.after.val==="—"?"tCO₂e total":"kg CO₂e / "+e.after.unit.replace("kgCO₂e/","")};
+}
+function openReview(kind,id,name,context){
+  job={kind,id,name,context:context||job?.context||""};
+  const s=reviewStats(kind,id);
+  document.getElementById("wizlayer").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizdlg rvw" role="dialog" aria-modal="true" style="width:620px">
+      <div class="head"><div style="flex:1"><h3>Review synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
+        <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+      <div class="kpi-row">
+        <div class="kpi"><p class="k">Estimated EF</p><p class="v">${s.val} <small>${s.unit}</small></p></div>
+        <div class="kpi"><p class="k">Components</p><p class="v">12</p></div>
+      </div>
+      ${job.context?`<details class="ctx-details"><summary>Your context</summary><p style="margin:6px 0 0;line-height:1.6">${job.context}</p></details>`:""}
+      <div>
+        <p style="margin:0 0 8px;font-size:13px;font-weight:600">Components <span style="color:var(--text-muted);font-weight:400">· 12</span></p>
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <table>
+          <thead><tr><th>Component</th><th>Wt %</th><th>g</th><th>Emission factor</th><th>Conf.</th></tr></thead>
+          <tbody>
+            <tr><td>PCB_MAIN</td><td>38</td><td>122</td><td style="color:var(--violet)">market for printed wiring board</td><td><span class="confchip high">High</span></td></tr>
+            <tr><td>ABS_HOUSING</td><td>24</td><td>77</td><td style="color:var(--violet)">market for ABS granulate</td><td><span class="confchip high">High</span></td></tr>
+            <tr><td>LI_BATTERY</td><td>14</td><td>45</td><td style="color:var(--violet)">market for battery cell, NMC</td><td><span class="confchip med">Med</span></td></tr>
+            <tr><td>STEEL_BRACKET</td><td>9</td><td>29</td><td style="color:var(--violet)">market for steel, low-alloyed</td><td><span class="confchip high">High</span></td></tr>
+            <tr><td colspan="5" style="color:var(--text-muted)">+ 8 more components</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div>
+        <p style="margin:0 0 8px;font-size:13px;font-weight:600">Energy consumption</p>
+        <div class="energy">
+          <div><span>Electricity, assembly</span><span style="color:var(--text-muted)">3.1 kWh / kg</span><span class="efref">market for electricity, DE grid</span></div>
+          <div><span>Natural gas, process heat</span><span style="color:var(--text-muted)">0.8 MJ / kg</span><span class="efref">market for natural gas, DE</span></div>
+        </div>
+      </div>
+      <div class="dlg-foot"><p class="hint">Applying replaces the current EF for this row.</p>
+        <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button></div>
+    </div>`;
+  esc(closeWiz);
+}
+function applySynth(){
+  const j=job; if(!j)return; closeWiz();
+  if(j.kind==="entry"){
+    const e=allEntries().find(x=>x.id===j.id);ensureAfter(e);
+    state.phases[j.id]="after";renderTable();
+    saveEF("Synthetic "+e.after.ef,e.after.unit,e.after.val,"Synthetic EF");
+    if(document.querySelector(".modal-wrap"))openDetail(j.id);
+    toast("Synthetic EF applied to "+j.name+" — logged on the Emission factors page.");
+  } else if(j.kind==="material"){
+    const m=MATS.find(x=>x.id===j.id);
+    if(m){
+      m.state="applied";m.ef=m.appliedName;m.conf="synth";renderAssessment();
+      saveEF("Synthetic "+m.appliedName,"kgCO₂e/kg","1.03","Synthetic EF");
+    }
+    toast("Synthetic EF applied to "+j.name+" — logged on the Emission factors page.");
+  } else if(j.kind==="newentry"&&newState){
+    Object.assign(newState,{efName:"Aluminium brackets, EU supplier mix",synthetic:true,custom:false,synthPhase:"done"});
+    saveEF("Synthetic Aluminium brackets, EU supplier mix","kgCO₂e/EUR","0.31","Synthetic EF");
+    renderNew();
+    toast("Synthetic EF applied — logged on the Emission factors page.");
+  }
+  job=null;
 }
 
 /* Detail modal — read-only DS field (floating label, optional trailing icon) */
@@ -629,19 +825,20 @@ function openDetail(id){
   const e=allEntries().find(x=>x.id===id);const ph=phaseOf(id);const c=calc(e,ph);
   const spend=e.consType==="Spend data";
   let banner="";
-  if(e.low){
-    if(ph==="before") banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span>${e.status==="Ready to submit"?`<button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openWizard('${id}')">Improve emission factor</button>`:""}</div>`;
-    else if(ph==="improving") banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating an improved emission factor…</b> This can take a few minutes — you can leave this page.</span></div>`;
-    else banner="";
+  if(ph==="improving"){
+    banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes a few minutes — you can keep working. Your current EF stays applied until you apply the proposal.</span></div>`;
+  } else if(ph==="review"){
+    banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays applied until you apply it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
+  } else if(e.low&&ph==="before"){
+    banner=`<div class="banner"><span style="flex:0 0 auto">${svg("warn",18)}</span><span class="tx"><b>Low EF match (${Math.round(e.before.conf*100)}%).</b> Matched to a broad, spend-based sector average — the product is more specific than the factor.</span>${e.status==="Ready to submit"?`<button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="improveEF('${id}')">Improve emission factor</button>`:""}</div>`;
   }
   // Provenance tag renders inline in the EF name field, in front of the name.
+  // The current EF stays in place through generating/review.
   const efTag = (ph==="after"||e.synthetic)?'<span class="synth">Synthetic</span>':e.custom?'<span class="synth custom">Custom</span>':"";
-  const efName = ph==="improving"?`<span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span>`:efTag+c.ef;
+  const efName = efTag+c.ef;
 
   let calcSection;
-  if(ph==="improving"){
-    calcSection=`<section class="form-card"><div class="processing"><div class="spinner"></div><div class="big">Generating an improved emission factor…</div><div class="why">Forward AI is deconstructing this line item into components and building a synthetic EF. This can take a few minutes — you can leave this page.</div></div></section>`;
-  } else {
+  {
     calcSection=`<section class="form-card">
       <div class="card-head-row"><h3>Calculation</h3><button class="card-fold collapsed" id="calcfold" onclick="toggleCalc()">${svg("chev",16)}</button></div>
       <p class="collapsed-sum" id="calcsum">${c.ef} · ${c.co2}CO₂e</p>
@@ -661,9 +858,10 @@ function openDetail(id){
   }
 
   let footer;
-  if(ph==="improving") footer=`<button class="btn secondary" onclick="toast('Cancel improvement — would return the entry to its previous state')">Cancel improvement</button>`;
+  if(ph==="improving") footer=`<span class="pill-status" style="margin-right:auto"><span class="spin">${svg("refresh",11)}</span>Generating synthetic EF</span><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
+  else if(ph==="review") footer=`<button class="btn secondary" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review synthetic EF</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else if(ph==="after") footer=`<button class="btn secondary" onclick="toast('Would show the previous factor and the change log')">View previous factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… · calculation confirmed');closeOverlays()">${svg("check",16)}Confirm calculation</button>`;
-  else if(e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="openWizard('${id}')">Improve emission factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
+  else if(e.status==="Ready to submit") footer=`<button class="btn secondary" onclick="improveEF('${id}')">Improve emission factor</button><button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else if(e.status==="Draft") footer=`<button class="btn primary" style="height:38px;padding:0 18px" onclick="toast('${id.slice(0,8)}… submitted');closeOverlays()">Submit data entry</button>`;
   else footer=`<button class="btn danger" onclick="toast('${id.slice(0,8)}… unsubmitted');closeOverlays()">Unsubmit</button>`;
 
@@ -748,7 +946,7 @@ function toggleEfMenu(){newState.efOpen=!newState.efOpen;newState.efQuery="";ren
 function setEfQuery(v){newState.efQuery=v;renderNew();}
 function pickEf(v){
   newState.efOpen=false;
-  if(v==="__synthetic__"){renderNew();renderWizard(newState.desc||"this line item","startSynthNew()");return;}
+  if(v==="__synthetic__"){renderNew();openSetup("newentry",null,newState.desc||"this line item");return;}
   if(v==="__custom__"){
     Object.assign(newState,{synthetic:false,custom:true,synthPhase:"idle",
       efName:"Custom factor · "+(newState.supplier||"supplier-specific")});
@@ -757,17 +955,6 @@ function pickEf(v){
   }
   Object.assign(newState,{synthetic:false,custom:false,synthPhase:"idle",efName:v});
   renderNew();
-}
-function startSynthNew(){
-  closeWiz();
-  Object.assign(newState,{efName:"",synthetic:false,custom:false,synthPhase:"improving"});
-  renderNew();
-  newTimer=setTimeout(()=>{
-    if(!newState)return;
-    Object.assign(newState,{efName:"Aluminium brackets, EU supplier mix",synthetic:true,synthPhase:"done"});
-    saveEF("Synthetic Aluminium brackets, EU supplier mix","kgCO₂e/EUR","0.31","Synthetic EF");
-    renderNew();toast("Synthetic emission factor generated · saved to Emission factors");
-  },IMPROVE_MS);
 }
 function changeEf(){Object.assign(newState,{efName:"",synthetic:false,custom:false,synthPhase:"idle",efOpen:false});renderNew();}
 function submitNew(){
@@ -814,7 +1001,11 @@ function renderNew(){
   const efTag=(f.synthetic&&f.synthPhase==="done")?'<span class="synth">Synthetic</span>':f.custom?'<span class="synth custom">Custom</span>':"";
   let efControl;
   if(f.synthPhase==="improving"){
-    efControl=`<div class="control"><span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Improving EF…</span></div>`;
+    efControl=`<div class="control"><span class="efbusy"><span class="spin">${svg("refresh",13)}</span>Generating synthetic EF…</span></div>`;
+  } else if(f.synthPhase==="review"){
+    efControl=`<div class="control" style="justify-content:space-between">
+      <span class="efbusy">Synthetic EF ready for review</span>
+      <button type="button" class="rowcta" onclick="openReview('newentry',null,'${(f.desc||"this line item").replace(/'/g,"\\'")}')">Review${svg("arrow",11)}</button></div>`;
   } else if(f.efName){
     efControl=`<div class="control" style="justify-content:space-between">
       <span>${efTag}${f.efName}</span><button type="button" class="changelink" onclick="changeEf()">Change</button></div>`;
@@ -847,7 +1038,7 @@ function renderNew(){
   let efNote="";
   if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
   else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">Search the emission factor library — if no factor matches, you can <b>create a synthetic emission factor with AI</b> or <b>add a custom factor</b> from your own data.</p>`;
-  const canSubmit=!!f.efName&&f.synthPhase!=="improving";
+  const canSubmit=!!f.efName&&f.synthPhase!=="improving"&&f.synthPhase!=="review";
 
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeNew()"></div>
@@ -894,9 +1085,86 @@ function renderNew(){
   if(si){si.focus();const n=si.value.length;si.setSelectionRange(n,n);}
 }
 
+/* ─── Assessment detail (PCF · Screw draft) — Materials with the same
+   Generate → Generating → Review → Apply pattern per row ─── */
+const MATS=[
+  {id:"m0",item:"GENERATOR_FRAME_STEEL",amt:"285 g",ef:"market for steel, low-alloyed",conf:"high",sup:"thyssenkrupp",part:"THY-LC0076",hs:"870895",state:"idle",appliedName:"Generator frame steel – 2026"},
+  {id:"m1",item:"PA66_GLASS_FILLED",amt:"96 g",ef:"market for nylon 6-6, glass-filled",conf:"high",sup:"Kostal Kontakt",part:"KOS-LC0080",hs:"392690",state:"idle",appliedName:"PA66 glass-filled part – 2026"},
+  {id:"m2",item:"TELEMATICS_MODULE",amt:"320 g",ef:"market for electronics, unspecified",conf:"med",sup:"Bosch GmbH",part:"BOS-LC0090",hs:"852691",state:"idle",appliedName:"Telematics module (Bosch) – 2026"},
+  {id:"m3",item:"CONTROL_UNIT_A4",amt:"145 g",ef:"market for electronics, unspecified",conf:"med",sup:"Bosch GmbH",part:"BOS-LC0091",hs:"852690",state:"review",appliedName:"Control unit (Bosch) – 2026"},
+  {id:"m4",item:"PSU_BOARD_V2",amt:"96 g",ef:"market for electronics, unspecified",conf:"med",sup:"Kostal Kontakt",part:"KOS-LC0093",hs:"850440",state:"generating",appliedName:"PSU board (Kostal) – 2026"},
+  {id:"m5",item:"OBU_MAINBOARD",amt:"410 g",ef:"Onboard unit (Bosch) – 2026",conf:"synth",sup:"Bosch GmbH",part:"BOS-LC0092",hs:"852692",state:"applied",appliedName:"Onboard unit (Bosch) – 2026"},
+  {id:"m6",item:"TPE_VIBRATION_ISOLATOR",amt:"32 g",ef:"market for synthetic rubber",conf:"high",sup:"ContiTech",part:"CON-LC0081",hs:"401699",state:"idle",appliedName:"TPE vibration isolator – 2026"},
+  {id:"m7",item:"M5_AIRBAG_FRAME_SCREW",amt:"16.8 g",ef:"market for steel, low-alloyed",conf:"high",sup:"EJOT SE & Co",part:"EJO-LC0085",hs:"731815",state:"idle",appliedName:"M5 airbag frame screw – 2026"},
+];
+function matConf(m){
+  if(m.conf==="synth")return `<span class="chip synthef" title="AI-generated synthetic EF, reviewed and applied by a user">${svg("sparkles",11)}Synthetic EF</span>`;
+  return `<span class="confchip ${m.conf}">${m.conf==="high"?"High":"Medium"}</span>`;
+}
+function matAction(m){
+  if(m.state==="generating")return `<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`;
+  if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
+  if(m.state==="applied")return "";
+  return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate</button>`;
+}
+function openAssessment(){
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" onclick="closeOverlays()"></div>
+    <div class="modal-wrap" onclick="if(event.target===event.currentTarget)closeOverlays()">
+      <div class="modal" role="dialog" aria-modal="true" style="max-width:1160px">
+        <div class="modal-head">
+          <h2>Screw</h2>
+          <span class="chip adraft">Draft</span>
+          <span style="font-size:13px;color:var(--text-muted);white-space:nowrap">Wellington · 01/01/2025 – 12/31/2025</span>
+          <button class="close" onclick="closeOverlays()" style="margin-left:auto">${svg("close",18)}</button>
+        </div>
+        <section class="form-card" style="padding-bottom:26px">
+          <div class="assess-body">
+            <div class="assess-nav">
+              <div class="assess-nav-item">Production volume <span style="margin-left:auto;color:var(--alert-fg)">${svg("warn",14)}</span></div>
+              <div class="assess-nav-item active">Materials</div>
+              <div class="assess-nav-item">Direct emissions</div>
+              <div class="assess-nav-item">Electricity</div>
+              <div class="assess-nav-item">Other emissions <span class="mut">(excluded)</span></div>
+              <div class="assess-nav-item">Methodology</div>
+            </div>
+            <div class="assess-content">
+              <h3 style="font-size:16px;font-weight:700;color:var(--violet);margin-bottom:4px">Materials</h3>
+              <p class="sub" style="margin-bottom:14px">Provide information about the materials used in the production process. Sub-assemblies from your BOM are automatically excluded, as they don't require emission factors.</p>
+              <div class="tablewrap rvw" id="mat-tablewrap"></div>
+            </div>
+          </div>
+        </section>
+        <div class="modal-foot">
+          <button class="btn secondary" onclick="toast('Assessment saved as draft')">Save</button>
+          <button class="btn primary" style="height:38px;padding:0 18px;opacity:.5" onclick="toast('Run calculations — complete Production volume first')">Run calculations</button>
+        </div>
+      </div>
+    </div>`;
+  renderAssessment();
+  esc(closeOverlays);
+}
+function renderAssessment(){
+  const wrap=document.getElementById("mat-tablewrap");
+  if(!wrap)return;
+  wrap.innerHTML=`<table>
+    <thead><tr><th>Item</th><th>Amt</th><th>Source</th><th>${svg("sparkles",12)} Emission factor name</th><th>Confidence</th><th>Supplier</th><th>Part no</th><th>HS</th><th style="text-align:right"></th></tr></thead>
+    <tbody>
+      ${MATS.map(m=>`<tr>
+        <td>${m.item}</td><td>${m.amt}</td><td class="muted">BOM Provided</td>
+        <td><span style="color:var(--violet)">${m.ef}</span></td>
+        <td>${matConf(m)}</td>
+        <td>${m.sup}</td><td class="muted">${m.part}…</td><td class="muted">${m.hs}</td>
+        <td><span class="mat-act">${matAction(m)}<button class="iconbtn" title="Edit details" onclick="toast('Edit ${m.item} — out of scope for this mock')">${svg("pencil",14)}</button></span></td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
 renderTable();
 renderEF();
 if(location.hash==="#emission-factors") showPage("ef");
+if(location.hash==="#assessments") showPage("assess");
 </script>
 </body>
 </html>
