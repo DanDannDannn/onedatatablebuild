@@ -1045,16 +1045,19 @@ function renderNew(){
     // (synthetic with AI / custom) appear ONLY when the search has no match.
     const q=f.efQuery.trim().toLowerCase();
     const matches=EF_CHOICES.filter(o=>o.toLowerCase().includes(q));
-    const menuBody=matches.length
-      ? matches.map(o=>`<button type="button" role="option" class="efselect-item" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")
-      : `<div class="efselect-empty">No emission factor matches “${f.efQuery.trim()}”.</div>
-        <div class="efselect-sep"></div>
+    // The create actions are always available at the bottom of the menu; on
+    // a no-match search they follow the "no results" notice.
+    const createActions=`<div class="efselect-sep"></div>
         <button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
-          ${svg("plus",15)}<span><b>Create synthetic emission factor with AI</b><span class="subline">Deconstruct the line item into components</span></span>
+          ${svg("sparkles",15)}<span><b>Create synthetic emission factor with AI</b><span class="subline">Deconstruct the line item into components</span></span>
         </button>
         <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
-          ${svg("info",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
+          ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
         </button>`;
+    const menuBody=(matches.length
+      ? matches.map(o=>`<button type="button" role="option" class="efselect-item" onclick="pickEf('${o.replace(/'/g,"\\'")}')">${o}</button>`).join("")
+      : `<div class="efselect-empty">No emission factor matches “${f.efQuery.trim()}”.</div>`)
+      + createActions;
     efControl=`<div class="efselect">
       <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="${f.efOpen}" onclick="toggleEfMenu()">
         <span class="ph">Select an emission factor…</span>${svg("chev",16)}
@@ -1068,7 +1071,7 @@ function renderNew(){
   }
   let efNote="";
   if(f.custom) efNote=`<p class="sub" style="margin:12px 0 0">Custom factor — supplier-specific primary data. It will be saved with this entry.</p>`;
-  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">Search the emission factor library — if no factor matches, you can <b>create a synthetic emission factor with AI</b> or <b>add a custom factor</b> from your own data.</p>`;
+  else if(!f.efName&&f.synthPhase==="idle") efNote=`<p class="sub" style="margin:12px 0 0">No good match? <b>Create a synthetic emission factor with AI</b> or <b>add a custom factor</b> from your own data.</p>`;
   const canSubmit=!!f.efName&&f.synthPhase!=="improving"&&f.synthPhase!=="review";
 
   document.getElementById("overlays").innerHTML=`
