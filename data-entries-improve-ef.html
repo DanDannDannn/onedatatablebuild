@@ -787,10 +787,17 @@ function submitEntry(id){
   closeOverlays();
   toast(id.slice(0,8)+"… submitted · calculations started");
 }
-// Manual swap from the detail-modal EF dropdown (Ready-to-submit entries).
+// Manual swap from the detail-modal EF dropdown. Swapping away from an
+// applied synthetic EF reverts the entry to a standard match (the synthetic
+// factor stays in the registry).
 function pickDetailEf(id,name){
   const e=allEntries().find(x=>x.id===id);
-  if(e&&name!==e.before.ef){e.before.ef=name;renderTable();toast("Emission factor updated · "+name);}
+  if(e&&name!==calc(e,phaseOf(id)).ef){
+    if(phaseOf(id)==="after")delete state.phases[id];
+    e.custom=false;e.synthetic=false;
+    e.before.ef=name;
+    renderTable();toast("Emission factor updated · "+name);
+  }
   openDetail(id);
 }
 // Custom factor from the detail-modal dropdown — mirrors the new-entry flow:
@@ -1042,9 +1049,14 @@ function openDetail(id){
   // dropdown; the Generate EF action lives INSIDE the menu. Submitted entries
   // and generating/review/after states fall back to the read-only field.
   let efField;
-  if(ph==="before"&&(e.status==="Ready to submit"||e.status==="Draft")){
-    const base=c.ef.split(",")[0].trim();
-    const alts=[c.ef,base+", global average",base+", DACH region"];
+  // Editable in before AND after (applied synthetic) states — the user can
+  // still swap factors, generate again, or create a custom one. Only the
+  // in-flight states (generating / review) are read-only.
+  if((ph==="before"||ph==="after")&&(e.status==="Ready to submit"||e.status==="Draft")){
+    const base=(ph==="after"?e.before.ef:c.ef).split(",")[0].trim();
+    const alts=ph==="after"
+      ? [c.ef,e.before.ef,base+", global average"]
+      : [c.ef,base+", global average",base+", DACH region"];
     efField=`<div class="fld"><span class="lab">Emission factor name</span>
       <div class="efselect">
         <button type="button" class="efselect-trigger" aria-haspopup="listbox" aria-expanded="false"
