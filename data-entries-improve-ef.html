@@ -997,23 +997,27 @@ function openReview(kind,id,name,context){
     </div>`;
   esc(closeWiz);
 }
-// Synthetic EF detail on the Emission factors page — reuses the review body
-// read-only (the factor is already saved; no apply/dismiss).
+// Synthetic EF detail on the Emission factors page — the same right-side
+// panel as other factor details, with the review body (composition, energy)
+// read-only inside (the factor is already saved; no apply/dismiss).
 function openEFSynthDetail(name,val,unit){
-  document.getElementById("wizlayer").innerHTML=`
-    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
-    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
-    <div class="wizdlg rvw" role="dialog" aria-modal="true" style="width:620px">
-      <div class="head"><div style="flex:1;min-width:0"><h3 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</h3></div>
-        <span class="synth" style="margin:0;flex:0 0 auto">Synthetic</span>
-        <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
-      ${reviewBody({val,unit},"")}
-      <div class="dlg-foot" style="justify-content:flex-end">
-        <button class="btn outline" style="height:44px" onclick="closeWiz()">Cancel</button>
+  document.getElementById("overlays").innerHTML=`
+    <div class="scrim" onclick="closeOverlays()"></div>
+    <div class="modal-wrap efdrawer" onclick="if(event.target===event.currentTarget)closeOverlays()">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h2 class="trunc" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</h2>
+          <button class="close" onclick="closeOverlays()">${svg("close",18)}</button>
+        </div>
+        <section class="form-card rvw">
+          <div style="display:flex;flex-direction:column;gap:16px">${reviewBody({val,unit},"")}</div>
+        </section>
+        <div class="modal-foot">
+          <button class="btn outline" style="height:44px" onclick="closeOverlays()">Cancel</button>
+        </div>
       </div>
-    </div>
     </div>`;
-  esc(closeWiz);
+  esc(closeOverlays);
 }
 // Dismiss the proposal: nothing is applied, the row returns to its previous
 // state and the current EF stays in place.
