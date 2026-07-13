@@ -820,7 +820,7 @@ function openSetup(kind,id,name){
     <div class="wizdlg" role="dialog" aria-modal="true" style="width:460px">
       <div class="head"><div style="flex:1"><h3>Generate synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
         <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
-      <p class="subx" style="margin:-4px 0 0">AI builds a product-specific factor from the item's bill of materials to improve on the current broad match.</p>
+      <p class="subx" style="margin:-4px 0 0">AI deconstructs the item into a bill of materials and builds a product-specific emission factor — a better match than a broad category average.</p>
       <div>
         <p style="margin:0 0 6px;font-size:13px;font-weight:600">Add contextual info <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
         <textarea id="gen-ctx" rows="4" placeholder="Materials, components, certifications, or supplier details all improve the estimate."></textarea>
@@ -858,9 +858,9 @@ function startGeneration(){
         <h3 style="margin:0;font-size:15px;font-weight:600">Generating synthetic EF</h3>
       </div>
       <div id="stages">${STAGES.map((s,i)=>`<div class="stage" data-i="${i}"><span class="st-ic">${svg("circle",13)}</span>${s}</div>`).join("")}</div>
-      <p class="subx" style="margin:0">You can close this window and keep working — the row will show progress and tell you when it's ready. <b>Your current EF stays applied</b> until you apply the proposal.</p>
+      <p class="subx" style="margin:0">You can close this window and keep working — progress shows on the entry and you'll be notified when the result is ready to review. <b>Nothing changes until you apply it.</b></p>
       <div style="display:flex;justify-content:center;padding-top:2px">
-        <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes 5–10 minutes. Your current EF stays applied until you review.')">Close window</button>
+        <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes 5–10 minutes. The entry will show when the result is ready to review.')">Close window</button>
       </div>
     </div>
     </div>`;
