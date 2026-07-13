@@ -18,10 +18,10 @@ Generate EF (trigger) → Generate dialog (optional context) → staged generati
 
 **Core rules**
 
-1. **Non-destructive to the entry until Apply.** The currently assigned EF stays applied to the entry through generation and review. The entry's factor does not change until the user clicks *Apply synthetic EF*.
+1. **Non-destructive to the entry until accepted.** The currently assigned EF stays in place through generation and review. The entry's factor does not change until the user clicks **Use this EF** in the review dialog. (CTA renamed from "Apply synthetic EF" — "apply" implied a calculation that does not happen at this step.)
 2. **The factor is saved at generation, not at Apply.** The synthetic EF is written to Manage → Emission factors (source: *Synthetic EF*) the moment generation completes, whether or not the user goes on to apply it. Apply only points the row at the already-saved factor; Dismiss leaves it in the registry unused. (PM alignment, 2026-07-10.)
 3. **Generation is backgroundable.** The dialog can be closed mid-generation; the row shows a pinned *Generating* pill, then a pinned *Review →* button. A toast announces readiness.
-4. **Apply ≠ recalculate.** Applying swaps the factor on the entry. Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
+4. **Using the EF ≠ recalculating.** Accepting the result only swaps the factor on the entry. Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
 5. **Synthetic EFs are not primary data.** In the registry a synthetic factor's type is *Secondary* and the *This is primary data* flag is unchecked (it is AI-estimated, not measured).
 6. **Dismiss is safe.** Dismissing the proposal from the Review dialog discards the row's link to it; the row returns to its previous state and the current EF (if any) stays applied. The factor remains in the registry (rule 2).
 7. **Availability is eligibility-gated (epic DAM-7718).** Generate EF is offered only on **weight-based entries (kg) in scope 3.1/3.2 with a description**, in an editable status: the new-entry form, *Ready to submit*, and *Draft* — in both the grid hover CTA and the detail dropdown. Submitted entries must be unsubmitted first. Ineligible entries (spend-based, other categories, or no description) never see the trigger.
