@@ -713,7 +713,7 @@ function openEFDetail(i){
   // Synthetic factors open the review view (composition, energy) read-only;
   // custom factors keep the product's right-side detail panel.
   if(synthetic){
-    openEFSynthDetail(r[0],r[5],r[4].replace("kgCO₂e/","kg CO₂e / "));
+    openEFSynthDetail(r[0],r[5],r[4].replace("kgCO₂e/","kg CO₂e / "),i);
     return;
   }
   document.getElementById("overlays").innerHTML=`
@@ -745,11 +745,20 @@ function openEFDetail(i){
           <div class="dropzone" style="margin-top:14px">${svg("upload",26)}<span>Drag or upload up to 3 files</span></div>
         </section>
         <div class="modal-foot">
-          <button class="btn outline" style="height:44px" onclick="closeOverlays()">Cancel</button>
+          <button class="btn danger-outline" style="height:44px;padding:0 20px" onclick="deleteEF(${i})">Delete</button>
+          <button class="btn outline" style="height:44px" onclick="closeOverlays()">Close</button>
         </div>
       </div>
     </div>`;
   esc(closeOverlays);
+}
+// Delete a factor from the registry (session-level; seeds restore on reload).
+function deleteEF(i){
+  const name=(i<state.efNew.length?state.efNew[i]:EF_SEED[i-state.efNew.length])?.[0]||"Factor";
+  if(i<state.efNew.length)state.efNew.splice(i,1);
+  else EF_SEED.splice(i-state.efNew.length,1);
+  renderEF();closeOverlays();
+  toast(name+" deleted from Emission factors");
 }
 
 function showPage(p){
@@ -1000,7 +1009,7 @@ function openReview(kind,id,name,context){
 // Synthetic EF detail on the Emission factors page — the same right-side
 // panel as other factor details, with the review body (composition, energy)
 // read-only inside (the factor is already saved; no apply/dismiss).
-function openEFSynthDetail(name,val,unit){
+function openEFSynthDetail(name,val,unit,idx){
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeOverlays()"></div>
     <div class="modal-wrap efdrawer" onclick="if(event.target===event.currentTarget)closeOverlays()">
@@ -1013,7 +1022,8 @@ function openEFSynthDetail(name,val,unit){
           <div style="display:flex;flex-direction:column;gap:16px">${reviewBody({val,unit},"")}</div>
         </section>
         <div class="modal-foot">
-          <button class="btn outline" style="height:44px" onclick="closeOverlays()">Cancel</button>
+          <button class="btn danger-outline" style="height:44px;padding:0 20px" onclick="deleteEF(${idx})">Delete</button>
+          <button class="btn outline" style="height:44px" onclick="closeOverlays()">Close</button>
         </div>
       </div>
     </div>`;
