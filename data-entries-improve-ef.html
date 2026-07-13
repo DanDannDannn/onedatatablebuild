@@ -710,6 +710,12 @@ function openEFDetail(i){
   const r=[...state.efNew,...EF_SEED][i];
   if(!r)return;
   const synthetic=r[7].startsWith("Synthetic");
+  // Synthetic factors open the review view (composition, energy) read-only;
+  // custom factors keep the product's right-side detail panel.
+  if(synthetic){
+    openEFSynthDetail(r[0],r[5],r[4].replace("kgCO₂e/","kg CO₂e / "));
+    return;
+  }
   document.getElementById("overlays").innerHTML=`
     <div class="scrim" onclick="closeOverlays()"></div>
     <div class="modal-wrap efdrawer" onclick="if(event.target===event.currentTarget)closeOverlays()">
@@ -927,21 +933,15 @@ function reviewStats(kind,id){
   const e=allEntries().find(x=>x.id===id);ensureAfter(e);
   return {val:e.after.val==="—"?e.after.co2t:e.after.val,unit:"kg CO₂e / kg"};
 }
-function openReview(kind,id,name,context){
-  const jc=jobCtx[kind+":"+(id||"new")];
-  job={kind,id,name,context:context??jc?.context??"",efSaved:jc?.efSaved};
-  const s=reviewStats(kind,id);
-  document.getElementById("wizlayer").innerHTML=`
-    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
-    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
-    <div class="wizdlg rvw" role="dialog" aria-modal="true" style="width:620px">
-      <div class="head"><div style="flex:1"><h3>Review synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
-        <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+// Shared review body — used by the live Review dialog and by the Synthetic
+// EF detail view on the Emission factors page.
+function reviewBody(s,context){
+  return `
       <div class="kpi-row">
         <div class="kpi"><p class="k">Estimated EF</p><p class="v">${s.val} <small>${s.unit}</small></p></div>
         <div class="kpi"><p class="k">Components</p><p class="v">12</p></div>
       </div>
-      ${job.context?`<details class="ctx-details"><summary>Your context</summary><p style="margin:6px 0 0;line-height:1.6">${job.context}</p></details>`:""}
+      ${context?`<details class="ctx-details"><summary>Your context</summary><p style="margin:6px 0 0;line-height:1.6">${context}</p></details>`:""}
       <div>
         <p style="margin:0 0 8px;font-size:13px;font-weight:600">Components <span style="color:var(--text-muted);font-weight:400">· 12</span></p>
         <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
@@ -976,10 +976,40 @@ function openReview(kind,id,name,context){
           <div><span>Electricity, assembly</span><span style="color:var(--text-muted)">3.1 kWh / kg</span><span class="efref">market for electricity, DE grid</span></div>
           <div><span>Natural gas, process heat</span><span style="color:var(--text-muted)">0.8 MJ / kg</span><span class="efref">market for natural gas, DE</span></div>
         </div>
-      </div>
+      </div>`;
+}
+function openReview(kind,id,name,context){
+  const jc=jobCtx[kind+":"+(id||"new")];
+  job={kind,id,name,context:context??jc?.context??"",efSaved:jc?.efSaved};
+  const s=reviewStats(kind,id);
+  document.getElementById("wizlayer").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
+    <div class="wizdlg rvw" role="dialog" aria-modal="true" style="width:620px">
+      <div class="head"><div style="flex:1"><h3>Review synthetic EF</h3><p class="subx" style="margin-top:2px">${name}</p></div>
+        <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+      ${reviewBody(s,job.context)}
       <div class="dlg-foot" style="justify-content:flex-end">
         <button class="btn danger-outline" title="Discard this proposal — your current EF stays applied" onclick="dismissSynth()">Dismiss</button>
         <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Apply synthetic EF</button>
+      </div>
+    </div>
+    </div>`;
+  esc(closeWiz);
+}
+// Synthetic EF detail on the Emission factors page — reuses the review body
+// read-only (the factor is already saved; no apply/dismiss).
+function openEFSynthDetail(name,val,unit){
+  document.getElementById("wizlayer").innerHTML=`
+    <div class="scrim" style="z-index:1100" onclick="closeWiz()"></div>
+    <div class="wizoverlay" onclick="if(event.target===event.currentTarget)closeWiz()">
+    <div class="wizdlg rvw" role="dialog" aria-modal="true" style="width:620px">
+      <div class="head"><div style="flex:1;min-width:0"><h3 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</h3></div>
+        <span class="synth" style="margin:0;flex:0 0 auto">Synthetic</span>
+        <button class="close" onclick="closeWiz()">${svg("close",16)}</button></div>
+      ${reviewBody({val,unit},"")}
+      <div class="dlg-foot" style="justify-content:flex-end">
+        <button class="btn outline" style="height:44px" onclick="closeWiz()">Cancel</button>
       </div>
     </div>
     </div>`;
@@ -1387,7 +1417,7 @@ function matAction(m){
   if(m.state==="generating")return `<span class="pill-status" title="Synthetic EF generating — current EF stays applied"><span class="spin">${svg("refresh",11)}</span>Generating</span>`;
   if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays applied until you apply it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
   if(m.state==="failed")return `<button class="matbtn ready" title="Synthetic EF result ready to review" onclick="openFailedDialog('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
-  if(m.state==="applied")return "";
+  // Applied synthetic EFs can be regenerated — same hover button as idle rows.
   return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate EF</button>`;
 }
 function openAssessment(){
