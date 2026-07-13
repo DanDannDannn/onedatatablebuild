@@ -652,7 +652,7 @@ function renderTable(){
         <span class="actions${busyTray?" show":""}">
           ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate EF</button>`:""}
           ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays in place"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
-          ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays in place until you use it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
+          ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays in place until you accept it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
           ${ph==="failed"?`<button class="rowcta" title="Synthetic EF result ready to review" onclick="openFailedDialog('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
           <button class="iconbtn" title="Copy link to row" onclick="toast('Link to ${e.id.slice(0,8)}… copied to clipboard')">${svg("link",15)}</button>
           <button class="iconbtn danger" title="Delete entry" onclick="deleteRow('${e.id}')">${svg("trash",15)}</button>
@@ -873,7 +873,7 @@ function startGeneration(){
         <h3 style="margin:0;font-size:15px;font-weight:600">Generating synthetic EF</h3>
       </div>
       <div id="stages">${STAGES.map((s,i)=>`<div class="stage" data-i="${i}"><span class="st-ic">${svg("circle",13)}</span>${s}</div>`).join("")}</div>
-      <p class="subx" style="margin:0">You can close this window and keep working — progress shows on the entry and you'll be notified when the result is ready to review. <b>Nothing changes until you decide to use it.</b></p>
+      <p class="subx" style="margin:0">You can close this window and keep working — progress shows on the entry and you'll be notified when the result is ready to review. <b>Nothing changes until you accept it.</b></p>
       <div style="display:flex;justify-content:center;padding-top:2px">
         <button class="btn secondary" onclick="closeWiz();toast('Generating synthetic EF — takes 5–10 minutes. The entry will show when the result is ready to review.')">Close window</button>
       </div>
@@ -1000,7 +1000,7 @@ function openReview(kind,id,name,context){
       ${reviewBody(s,job.context)}
       <div class="dlg-foot" style="justify-content:flex-end">
         <button class="btn danger-outline" title="Discard this result — your current EF stays in place" onclick="dismissSynth()">Dismiss</button>
-        <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Use this EF</button>
+        <button class="btn primary" style="height:38px;padding:0 18px" onclick="applySynth()">Accept synthetic EF</button>
       </div>
     </div>
     </div>`;
@@ -1054,7 +1054,7 @@ function applySynth(){
     const e=allEntries().find(x=>x.id===j.id);ensureAfter(e);
     state.phases[j.id]="after";renderTable();
     if(document.querySelector(".modal-wrap"))openDetail(j.id);
-    toast(j.name+" now uses the synthetic EF — submit the entry to start calculations.");
+    toast("Synthetic EF accepted for "+j.name+" — submit the entry to start calculations.");
   } else if(j.kind==="material"){
     const m=MATS.find(x=>x.id===j.id);
     if(m){
@@ -1062,11 +1062,11 @@ function applySynth(){
       if(!j.efSaved){j.efSaved=synthName(m.item);saveEF(j.efSaved,"kgCO₂e/kg","1.03","Synthetic EF");}
       m.state="applied";m.ef=j.efSaved;m.conf="synth";renderAssessment();
     }
-    toast(j.name+" now uses the synthetic EF.");
+    toast("Synthetic EF accepted for "+j.name+".");
   } else if(j.kind==="newentry"&&newState){
     Object.assign(newState,{efName:j.efSaved||synthName(newState.desc),synthetic:true,custom:false,synthPhase:"done"});
     renderNew();
-    toast("This entry now uses the synthetic EF.");
+    toast("Synthetic EF accepted for this entry.");
   }
   job=null;
 }
@@ -1082,9 +1082,9 @@ function openDetail(id){
   const spend=e.consType==="Spend data";
   let banner="";
   if(ph==="improving"){
-    banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes 5–10 minutes — you can keep working. Your current EF stays in place until you decide to use the result.</span></div>`;
+    banner=`<div class="banner busy"><span class="spinner sm"></span><span class="tx"><b>Generating synthetic EF…</b> Takes 5–10 minutes — you can keep working. Your current EF stays in place until you accept the result.</span></div>`;
   } else if(ph==="review"){
-    banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays in place until you use it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
+    banner=`<div class="banner busy"><span style="flex:0 0 auto">${svg("sparkles",17)}</span><span class="tx"><b>Synthetic EF ready for review.</b> Your current EF stays in place until you accept it.</span><button class="btn primary" style="height:36px;padding:0 14px;font-size:13px" onclick="openReview('entry','${id}','${e.desc.replace(/'/g,"\\'")}')">Review</button></div>`;
   } else if(ph==="failed"){
     // The error state lives only inside the review window — here the banner
     // stays neutral, same as a successful result awaiting review.
@@ -1429,7 +1429,7 @@ function matConf(m){
 }
 function matAction(m){
   if(m.state==="generating")return `<span class="pill-status" title="Synthetic EF generating — current EF stays in place"><span class="spin">${svg("refresh",11)}</span>Generating</span>`;
-  if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays in place until you use it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
+  if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays in place until you accept it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
   if(m.state==="failed")return `<button class="matbtn ready" title="Synthetic EF result ready to review" onclick="openFailedDialog('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
   // Applied synthetic EFs can be regenerated — same hover button as idle rows.
   return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate EF</button>`;

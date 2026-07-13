@@ -18,7 +18,7 @@ Generate EF (trigger) → Generate dialog (optional context) → staged generati
 
 **Core rules**
 
-1. **Non-destructive to the entry until accepted.** The currently assigned EF stays in place through generation and review. The entry's factor does not change until the user clicks **Use this EF** in the review dialog. (CTA renamed from "Apply synthetic EF" — "apply" implied a calculation that does not happen at this step.)
+1. **Non-destructive to the entry until accepted.** The currently assigned EF stays in place through generation and review. The entry's factor does not change until the user clicks **Accept synthetic EF** in the review dialog. (CTA renamed from "Apply synthetic EF" — "apply" implied a calculation that does not happen at this step; Accept/Dismiss is the review pair.)
 2. **The factor is saved at generation, not at Apply.** The synthetic EF is written to Manage → Emission factors (source: *Synthetic EF*) the moment generation completes, whether or not the user goes on to apply it. Apply only points the row at the already-saved factor; Dismiss leaves it in the registry unused. (PM alignment, 2026-07-10.)
 3. **Generation is backgroundable.** The dialog can be closed mid-generation; the row shows a pinned *Generating* pill, then a pinned *Review →* button. A toast announces readiness.
 4. **Using the EF ≠ recalculating.** Accepting the result only swaps the factor on the entry. Emissions are recalculated only when the user submits the entry (*Submit to start calculations*).
