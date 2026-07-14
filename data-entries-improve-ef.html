@@ -650,7 +650,7 @@ function renderTable(){
       <td>${e.consType} · ${e.cons}</td>
       <td class="col-act" onclick="event.stopPropagation()">
         <span class="actions${busyTray?" show":""}">
-          ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate EF</button>`:""}
+          ${showCta?`<button class="rowcta" title="Generate a synthetic EF for this entry" onclick="improveEF('${e.id}')">${svg("sparkles",11)}Generate</button>`:""}
           ${ph==="improving"?`<span class="pill-status" title="Synthetic EF generating — current EF stays in place"><span class="spin">${svg("refresh",11)}</span>Generating</span>`:""}
           ${ph==="review"?`<button class="rowcta" title="Synthetic EF ready — current EF stays in place until you accept it" onclick="openReview('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
           ${ph==="failed"?`<button class="rowcta" title="Synthetic EF result ready to review" onclick="openFailedDialog('entry','${e.id}','${e.desc.replace(/'/g,"\\'")}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`:""}
@@ -1116,7 +1116,7 @@ function openDetail(id){
           ${alts.map(a=>`<button type="button" role="option" class="efselect-item${a===c.ef?" current":""}" onclick="pickDetailEf('${id}','${a.replace(/'/g,"\\'")}')">${a}</button>`).join("")}
           <div class="efselect-sep"></div>
           ${efEligible(e)?`<button type="button" class="efselect-item create" onclick="improveEF('${id}')">
-            ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic EF with AI for this line item</span></span>
+            ${svg("sparkles",15)}<span><b>Generate synthetic EF</b><span class="subline">Created with AI from the item's bill of materials</span></span>
           </button>`:""}
           <button type="button" class="efselect-item create" onclick="pickDetailCustom('${id}')">
             ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
@@ -1336,8 +1336,8 @@ function renderNew(){
     const genBlockedWhy=f.consType!=="Material/service data"?"Available for weight-based entries only":"Add a description to generate a synthetic factor";
     const createActions=`<div class="efselect-sep"></div>
         ${genEligible?`<button type="button" class="efselect-item create" onclick="pickEf('__synthetic__')">
-          ${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">Create a synthetic emission factor with AI</span></span>
-        </button>`:`<div class="efselect-item" style="cursor:default;color:var(--text-subtle)">${svg("sparkles",15)}<span><b>Generate EF</b><span class="subline">${genBlockedWhy}</span></span></div>`}
+          ${svg("sparkles",15)}<span><b>Generate synthetic EF</b><span class="subline">Created with AI from the item's bill of materials</span></span>
+        </button>`:`<div class="efselect-item" style="cursor:default;color:var(--text-subtle)">${svg("sparkles",15)}<span><b>Generate synthetic EF</b><span class="subline">${genBlockedWhy}</span></span></div>`}
         <button type="button" class="efselect-item create" onclick="pickEf('__custom__')">
           ${svg("plus",15)}<span><b>Create custom emission factor</b><span class="subline">Enter your own supplier-specific factor</span></span>
         </button>`;
@@ -1432,7 +1432,7 @@ function matAction(m){
   if(m.state==="review")return `<button class="matbtn ready" title="Synthetic EF ready — current EF stays in place until you accept it" onclick="openReview('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
   if(m.state==="failed")return `<button class="matbtn ready" title="Synthetic EF result ready to review" onclick="openFailedDialog('material','${m.id}','${m.item}')">${svg("sparkles",11)}Review${svg("arrow",11)}</button>`;
   // Applied synthetic EFs can be regenerated — same hover button as idle rows.
-  return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate EF</button>`;
+  return `<button class="matbtn" title="Generate a synthetic EF for this item" onclick="openSetup('material','${m.id}','${m.item}')">${svg("sparkles",11)}Generate</button>`;
 }
 function openAssessment(){
   document.getElementById("overlays").innerHTML=`

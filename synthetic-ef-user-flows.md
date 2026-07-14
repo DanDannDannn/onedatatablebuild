@@ -164,7 +164,7 @@ The flow itself is unchanged — same CTA (*Generate EF*), same dialog, same app
 
 ## Open questions
 
-1. **CTA wording:** board leans toward *"Improve EF match quality"* and rejects "Generate BOM"; the prototype currently uses *"Generate EF"*. Pick one label.
+1. ~~CTA wording~~ **Resolved (2026-07-14):** trigger CTAs use **"Generate synthetic EF"** where space allows (EF dropdown menu items) and **"Generate"** in compact inline placements (row hover tray, materials buttons). The review pair is **Accept synthetic EF / Dismiss**.
 2. **Storage model:** reuse the existing shared custom-EF functionality to store synthetic EFs, or a distinct type? (Leaning custom-EF; confirm in standup.)
 3. **Archive/cleanup** for synthetic EFs with 0 associated items (now more relevant since factors are saved at generation).
 4. **Apply-fail edge case (rule 9):** exact set of weight-driving fields that invalidate a pending proposal, and the error copy.
