@@ -115,9 +115,8 @@ tbody td{padding:13px 14px;border-top:1px solid var(--border);color:var(--text-s
   vertical-align:middle;white-space:nowrap;}
 tbody td.col-check{padding-left:18px;}
 tbody tr{cursor:pointer;}
-/* Hover row highlight, not zebra stripes (design feedback) — rows stay
-   white and separate via the 1px top border; hover carries the affordance. */
-tbody tr{background:#fff;}
+tbody tr:nth-child(odd){background:#fff;}
+tbody tr:nth-child(even){background:var(--bg-subtle);}
 tbody tr:hover{background:#F3EFFE;}
 td.id-cell{font-variant-numeric:tabular-nums;color:var(--text-muted);font-size:12px;max-width:150px;
   overflow:hidden;text-overflow:ellipsis;}
@@ -331,6 +330,7 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 .rvw table{font-size:12px;}
 .rvw tbody tr{cursor:default;}
 .rvw tbody tr:hover{background:inherit;}
+.rvw tbody tr:nth-child(even):hover{background:var(--bg-subtle);}
 .energy{border:1px solid var(--border);border-radius:var(--radius-md);}
 .energy>div{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;font-size:12px;}
 .energy>div+div{border-top:1px solid var(--border);}
