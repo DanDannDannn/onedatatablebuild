@@ -959,15 +959,14 @@ function PasswordGate({ onUnlock }) {
     }
     root.render(<App />);
   };
-  // Password gate disabled for now — boot directly. To re-enable, restore the
-  // sessionStorage check below and render <PasswordGate/> when not authed.
+  // Password gate: unlocked once per browser session (sessionStorage), so
+  // deep-links keep working after unlock within the same tab session.
   if (!window.location.hash) window.location.hash = "data";
-  boot();
-  // if (sessionStorage.getItem("fe-proto-auth") === "1") {
-  //   boot();
-  // } else {
-  //   root.render(<PasswordGate onUnlock={() => { sessionStorage.setItem("fe-proto-auth", "1"); if (!window.location.hash) window.location.hash = "overview"; boot(); }} />);
-  // }
+  if (sessionStorage.getItem("fe-proto-auth") === "1") {
+    boot();
+  } else {
+    root.render(<PasswordGate onUnlock={() => { sessionStorage.setItem("fe-proto-auth", "1"); boot(); }} />);
+  }
 })();
 </script>
 </body>
