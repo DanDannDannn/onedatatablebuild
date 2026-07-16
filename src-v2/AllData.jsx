@@ -355,6 +355,47 @@ function AllData({
 
   const uniqueOpts = (key, labelize) => uniqueOptsFor(entries, calcsByEntry, key, getCol, labelize);
 
+  // Single-calculation value for a per-calc column — used when a filter rule is
+  // evaluated against ONE calculation (parent-match satisfiability and sub-row
+  // dimming share this accessor so they can never disagree).
+  const calcColVal = (x, k) => {
+    const f = x.factor || {};
+    switch (k) {
+      case "scope": return x.scope;
+      case "scope2_method": return x.scope === 2 ? x.method : null;
+      case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
+      case "consumption_data_type": { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }
+      case "co2e_method": return x.calc_method || x.method;
+      case "consumption_value": return x.quantity;
+      case "consumption_unit": return x.unit;
+      case "ef_name": return f.name;
+      case "ef_value": return f.kg_per_unit;
+      case "ef_unit": return f.unit;
+      case "ef_source": return f.source;
+      case "ef_dataset": return f.dataset || f.source;
+      case "ef_year": return f.vintage;
+      case "ef_region": return f.region || "Global";
+      case "ef_lca": return f.lca || "Cradle-to-gate";
+      default: return undefined;
+    }
+  };
+  const calcRuleVal = (x, k) => {
+    if (k === "co2e_value") return x.kgCO2e;
+    if (k === "co2e_unit") return "kgCO₂e";
+    if (k === "ef_unit") return x.factor ? `kgCO₂e/${x.factor.unit}` : "";
+    const v = calcColVal(x, k);
+    return v == null ? "" : v;
+  };
+  // The per-calc rules a single calculation of entry `e` is expected to satisfy.
+  // CO₂e rules are excluded on ADDITIVE entries: there the number is the entry
+  // total (summable), so individual legs aren't measured against it.
+  const perCalcRulesFor = (e, mine, rules) => {
+    const perCalc = rules.filter(rl => PER_CALC.has(rl.col));
+    if (!perCalc.length) return perCalc;
+    const additive = !(mine.length > 1 && window.calcsAreAlternative(e, mine));
+    return additive ? perCalc.filter(rl => rl.col !== "co2e_value") : perCalc;
+  };
+
   // On the multi-value route "Multiple" is not a filter value — filters match
   // the base sub-row values by membership, so the option would be redundant.
   // The archived classic route keeps it (there the cell value IS "multiple").
@@ -411,7 +452,25 @@ function AllData({
   const filtered = React.useMemo(() => {
     let r = entries;
     if (period && period !== "all") r = r.filter(e => window.inPeriod(e, period));
-    if (filterRules.length) r = r.filter(e => window.evalFilterRules(filterRules, withCalcs(e), getRuleVal));
+    if (filterRules.length) {
+      r = r.filter(e => window.evalFilterRules(filterRules, withCalcs(e), getRuleVal));
+      // Multi-value route, AND groups: the entry must match through ONE
+      // calculation. Different legs satisfying different rules is not a match —
+      // mirrors sub-row dimming, so a visible parent always has a prominent leg.
+      const active = filterRules.filter(window.fbRuleActive);
+      const groupConn = filterRules[1]?.conn || "and";
+      if (window.FE_MULTI_ROUTE && groupConn === "and" && active.length > 1) {
+        r = r.filter(e => {
+          const mine = e._calcs || [];
+          if (mine.length <= 1) return true;
+          const rules = perCalcRulesFor(e, mine, active);
+          // 0–1 per-calc rules: the aggregate membership check above is already
+          // exactly "some leg satisfies it" — nothing further to prove.
+          if (rules.length <= 1) return true;
+          return mine.some(c => window.evalFilterRules(rules, c, calcRuleVal));
+        });
+      }
+    }
     if (globalQuery.trim()) {
       const q = globalQuery.toLowerCase();
       r = r.filter(e => matchesQuery(e, q));
@@ -627,27 +686,8 @@ function AllData({
   // per child: CO2e emission (the key per-calc number) and its unit (kgCO₂e).
   // Scope-dependent fields also render per child whenever scope conflicts,
   // since the summary is forced to "Multiple" in that case.
-  const calcColVal = (x, k) => {
-    const f = x.factor || {};
-    switch (k) {
-      case "scope": return x.scope;
-      case "scope2_method": return x.scope === 2 ? x.method : null;
-      case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
-      case "consumption_data_type": { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }
-      case "co2e_method": return x.calc_method || x.method;
-      case "consumption_value": return x.quantity;
-      case "consumption_unit": return x.unit;
-      case "ef_name": return f.name;
-      case "ef_value": return f.kg_per_unit;
-      case "ef_unit": return f.unit;
-      case "ef_source": return f.source;
-      case "ef_dataset": return f.dataset || f.source;
-      case "ef_year": return f.vintage;
-      case "ef_region": return f.region || "Global";
-      case "ef_lca": return f.lca || "Cradle-to-gate";
-      default: return undefined;
-    }
-  };
+  // (calcColVal is defined above the filter pipeline — it is shared with
+  // per-calc rule evaluation.)
   const CHILD_ALWAYS = new Set(["co2e_value", "co2e_unit"]);
   const childShows = (k, mine) => {
     if (CHILD_ALWAYS.has(k)) return true;
@@ -797,22 +837,14 @@ function AllData({
     // "Data 2" experiment: when active filter rules target per-calc columns,
     // every sub-row still renders, but the ones that don't themselves satisfy
     // the filter are visually de-emphasized (dimmed) so matching legs stand
-    // out. Even if NO leg matches individually (the parent matched only in
-    // aggregate — different legs satisfying different rules), every leg dims:
-    // "dimmed" consistently reads as "this calculation doesn't meet your
-    // filter". Only an all-legs-match result leaves everything prominent.
+    // out. Uses the same rule subset as the parent-match satisfiability check
+    // (perCalcRulesFor), so a visible parent always has ≥1 prominent leg.
     const dimIds = (() => {
       if (!window.FE_MULTI_ROUTE) return null;
-      const active = filterRules.filter(window.fbRuleActive).filter(rl => PER_CALC.has(rl.col));
-      if (!active.length) return null;
-      const kidVal = (x, k) => {
-        if (k === "co2e_value") return x.kgCO2e;
-        if (k === "co2e_unit") return "kgCO₂e";
-        if (k === "ef_unit") return x.factor ? `kgCO₂e/${x.factor.unit}` : "";
-        const v = calcColVal(x, k);
-        return v == null ? "" : v;
-      };
-      const match = new Set(r.mine.filter(c => window.evalFilterRules(active, c, kidVal)).map(c => c.id));
+      const active = filterRules.filter(window.fbRuleActive);
+      const rules = perCalcRulesFor(e, r.mine, active);
+      if (!rules.length) return null;
+      const match = new Set(r.mine.filter(c => window.evalFilterRules(rules, c, calcRuleVal)).map(c => c.id));
       if (match.size === r.mine.length) return null;
       return new Set(r.mine.filter(c => !match.has(c.id)).map(c => c.id));
     })();
