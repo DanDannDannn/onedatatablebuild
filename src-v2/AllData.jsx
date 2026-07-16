@@ -795,10 +795,12 @@ function AllData({
     // Entry-level columns are blank on children (shown once on the parent); the
     // leftmost content cell gets a tree connector.
     // "Data 2" experiment: when active filter rules target per-calc columns,
-    // every sub-row still renders, but the ones that don't themselves match
-    // are visually de-emphasized (dimmed) so the matching leg(s) stand out.
-    // If no sub-row matches individually (e.g. "is Multiple" matched only the
-    // aggregate) — or all of them match — nothing is dimmed.
+    // every sub-row still renders, but the ones that don't themselves satisfy
+    // the filter are visually de-emphasized (dimmed) so matching legs stand
+    // out. Even if NO leg matches individually (the parent matched only in
+    // aggregate — different legs satisfying different rules), every leg dims:
+    // "dimmed" consistently reads as "this calculation doesn't meet your
+    // filter". Only an all-legs-match result leaves everything prominent.
     const dimIds = (() => {
       if (!window.FE_MULTI_ROUTE) return null;
       const active = filterRules.filter(window.fbRuleActive).filter(rl => PER_CALC.has(rl.col));
@@ -811,7 +813,7 @@ function AllData({
         return v == null ? "" : v;
       };
       const match = new Set(r.mine.filter(c => window.evalFilterRules(active, c, kidVal)).map(c => c.id));
-      if (match.size === 0 || match.size === r.mine.length) return null;
+      if (match.size === r.mine.length) return null;
       return new Set(r.mine.filter(c => !match.has(c.id)).map(c => c.id));
     })();
     return (
