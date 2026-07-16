@@ -111,7 +111,9 @@ function uniqueOptsFor(entries, calcsByEntry, key, getColFn, labelize) {
     const v = getColFn({ ...en, _calcs: calcsByEntry.get(en.id) }, key);
     if (v == null || v === "") continue;
     const s = String(v);
-    if (s.startsWith("multiple, ")) { set.add("multiple"); s.slice(10).split(", ").forEach(p => p && set.add(p)); }
+    // Joined multi-values contribute only their base sub-row parts — "Multiple"
+    // itself is not offered as a filter value (any-sub-value matching covers it).
+    if (s.startsWith("multiple, ")) { s.slice(10).split(", ").forEach(p => p && set.add(p)); }
     else set.add(s);
   }
   const opts = [...set].sort().map(v => ({ k: String(v), l: labelize ? labelize(v) : String(v) }));
@@ -348,25 +350,29 @@ function AllData({
 
   const uniqueOpts = (key, labelize) => uniqueOptsFor(entries, calcsByEntry, key, getCol, labelize);
 
+  // On the multi-value route "Multiple" is not a filter value — filters match
+  // the base sub-row values by membership, so the option would be redundant.
+  // The archived classic route keeps it (there the cell value IS "multiple").
+  const withMulti = (opts) => window.FE_MULTI_ROUTE ? opts : [...opts, { k: "multiple", l: "Multiple" }];
   const colFilterCfg = React.useMemo(() => ({
     business_unit:   { options: uniqueOpts("business_unit") },
     status:          { options: [
       { k: "de_draft", l: "Draft" }, { k: "de_ready", l: "Ready to submit" },
       { k: "de_review", l: "Review pending" }, { k: "de_submitted", l: "Submitted" },
     ] },
-    scope:           { options: [{ k: "1", l: "Scope 1" }, { k: "2", l: "Scope 2" }, { k: "3", l: "Scope 3" }, { k: "multiple", l: "Multiple" }] },
-    scope3_category: { options: [
+    scope:           { options: withMulti([{ k: "1", l: "Scope 1" }, { k: "2", l: "Scope 2" }, { k: "3", l: "Scope 3" }]) },
+    scope3_category: { options: withMulti([
       { k: "3.1 Purchased goods and services", l: "3.1 Purchased goods and services" },
       { k: "3.2 Capital goods", l: "3.2 Capital goods" },
       { k: "3.3 Fuel- and energy-related activities", l: "3.3 Fuel- and energy-related activities" },
       { k: "3.4 Upstream transportation and distribution", l: "3.4 Upstream transportation and distribution" },
       { k: "3.5 Waste generated in operations", l: "3.5 Waste generated in operations" },
       { k: "3.6 Business travel", l: "3.6 Business travel" },
-      { k: "3.7 Employee commuting", l: "3.7 Employee commuting" }, { k: "multiple", l: "Multiple" },
-    ] },
+      { k: "3.7 Employee commuting", l: "3.7 Employee commuting" },
+    ]) },
     user_assigned:   { options: uniqueOpts("user_assigned") },
-    data_input_type: { options: [{ k: "Consumption data", l: "Consumption data" }, { k: "Precalculated", l: "Precalculated" }, { k: "multiple", l: "Multiple" }] },
-    consumption_data_type: { options: [{ k: "Activity", l: "Activity" }, { k: "Spend", l: "Spend" }, { k: "multiple", l: "Multiple" }] },
+    data_input_type: { options: withMulti([{ k: "Consumption data", l: "Consumption data" }, { k: "Precalculated", l: "Precalculated" }]) },
+    consumption_data_type: { options: withMulti([{ k: "Activity", l: "Activity" }, { k: "Spend", l: "Spend" }]) },
     selection_type: { options: [{ k: "Auto-selected", l: "Auto-selected" }, { k: "Manually selected", l: "Manually selected" }] },
     ef_source:       { options: uniqueOpts("ef_source") },
     ef_year:         { options: uniqueOpts("ef_year") },
