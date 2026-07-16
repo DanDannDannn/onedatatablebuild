@@ -418,7 +418,11 @@ function AllData({
       // getCol inside the comparator (O(n log n)) — matters for calc-derived columns.
       const keyed = r.map(e => {
         const k = new Array(sort.length);
-        for (let i = 0; i < sort.length; i++) k[i] = getCol(e, sort[i].key);
+        for (let i = 0; i < sort.length; i++) {
+          const v = getCol(e, sort[i].key);
+          // Aggregated "Multiple" cells sort like empties: always last, both directions.
+          k[i] = (typeof v === "string" && (v === "multiple" || v.startsWith("multiple, "))) ? null : v;
+        }
         return { e, k };
       });
       keyed.sort((a, b) => {
