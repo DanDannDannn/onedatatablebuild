@@ -222,6 +222,10 @@ function entryMatchesView(entry, mine, viewState, query) {
   if (rules.length && window.evalFilterRules) {
     const getVal = (e, k) => _matchColValue(e, mine, k);
     if (!window.evalFilterRules(rules, entry, getVal)) return false;
+    // Rule-wide invariant (shared with the grid + sub-row dimming): an AND
+    // group additionally requires ONE calculation to satisfy every per-calc
+    // condition — different legs matching different rules is not a match.
+    if (window.entryMatchesAndGroup && !window.entryMatchesAndGroup(entry, mine, rules)) return false;
   }
   const q = (query || "").trim().toLowerCase();
   if (q) {

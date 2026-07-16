@@ -35,6 +35,72 @@ function efBasisOf(c) {
   if (m.includes("precalc") || (c && c.precalculated)) return "Precalculated";
   return "Activity-based";
 }
+const SCOPE3_CAT = {
+  flight: "3.6 Business travel", purchased_goods: "3.1 Purchased goods and services",
+  capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
+  waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
+  employee_commuting: "3.7 Employee commuting", fuel_energy: "3.3 Fuel- and energy-related activities",
+  fuel: "3.3 Fuel- and energy-related activities",
+};
+const scope3CatOf = (c) => SCOPE3_CAT[c.category] || "3.3 Fuel- and energy-related activities";
+
+// ── Per-calculation filter matching (THE rule, applied grid-wide) ───────────
+// An AND filter matches a multi-calculation entry only if ONE calculation
+// satisfies EVERY per-calc condition. Different legs satisfying different
+// rules is NOT a match. Every consumer — the grid's row filter, sub-row
+// dimming, and the view tabs' match counts — goes through these helpers so
+// they can never disagree.
+const calcColVal = (x, k) => {
+  const f = x.factor || {};
+  switch (k) {
+    case "scope": return x.scope;
+    case "scope2_method": return x.scope === 2 ? x.method : null;
+    case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
+    case "consumption_data_type": { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }
+    case "co2e_method": return x.calc_method || x.method;
+    case "consumption_value": return x.quantity;
+    case "consumption_unit": return x.unit;
+    case "ef_name": return f.name;
+    case "ef_value": return f.kg_per_unit;
+    case "ef_unit": return f.unit;
+    case "ef_source": return f.source;
+    case "ef_dataset": return f.dataset || f.source;
+    case "ef_year": return f.vintage;
+    case "ef_region": return f.region || "Global";
+    case "ef_lca": return f.lca || "Cradle-to-gate";
+    default: return undefined;
+  }
+};
+const calcRuleVal = (x, k) => {
+  if (k === "co2e_value") return x.kgCO2e;
+  if (k === "co2e_unit") return "kgCO₂e";
+  if (k === "ef_unit") return x.factor ? `kgCO₂e/${x.factor.unit}` : "";
+  const v = calcColVal(x, k);
+  return v == null ? "" : v;
+};
+// The per-calc rules a single calculation of entry `e` is expected to satisfy.
+// CO₂e rules are excluded on ADDITIVE entries: there the number is the entry
+// total (summable), so individual legs aren't measured against it.
+const perCalcRulesFor = (e, mine, rules) => {
+  const perCalc = rules.filter(rl => window.PER_CALC_KEYS.has(rl.col));
+  if (!perCalc.length) return perCalc;
+  const additive = !(mine.length > 1 && window.calcsAreAlternative(e, mine));
+  return additive ? perCalc.filter(rl => rl.col !== "co2e_value") : perCalc;
+};
+// The shared predicate: does some calculation of `e` satisfy the whole AND
+// group? (True whenever the requirement doesn't apply: single calc, OR group,
+// fewer than two applicable per-calc rules — aggregate membership covers those.)
+function entryMatchesAndGroup(e, mine, allRules) {
+  if (!window.FE_MULTI_ROUTE) return true;
+  if (!mine || mine.length <= 1) return true;
+  const active = (allRules || []).filter(window.fbRuleActive);
+  if (active.length < 2) return true;
+  if (((allRules[1] && allRules[1].conn) || "and") === "or") return true;
+  const rules = perCalcRulesFor(e, mine, active);
+  if (rules.length <= 1) return true;
+  return mine.some(c => window.evalFilterRules(rules, c, calcRuleVal));
+}
+Object.assign(window, { calcRuleVal, perCalcRulesFor, entryMatchesAndGroup });
 // ── Styled grid tooltip ─────────────────────────────────────────────────────
 // One floating tooltip for the whole grid, delegated on the table's mouseover:
 //   · column headers → full title + column description + interaction hints
@@ -258,14 +324,7 @@ function AllData({
     employee_commuting: "Employee commuting", fuel_energy: "Fuel & energy-related activities",
     fuel: "Fuel",
   };
-  const SCOPE3_CAT = {
-    flight: "3.6 Business travel", purchased_goods: "3.1 Purchased goods and services",
-    capital_goods: "3.2 Capital goods", upstream_transport: "3.4 Upstream transportation and distribution",
-    waste: "3.5 Waste generated in operations", business_travel: "3.6 Business travel",
-    employee_commuting: "3.7 Employee commuting", fuel_energy: "3.3 Fuel- and energy-related activities",
-    fuel: "3.3 Fuel- and energy-related activities",
-  };
-  const scope3CatOf = (c) => SCOPE3_CAT[c.category] || "3.3 Fuel- and energy-related activities";
+  // (SCOPE3_CAT / scope3CatOf are module-level — shared with calcColVal.)
 
   // Single rolled-up Status. Precedence (high→low):
   //   Calculation failed > Processing > Draft > Ready to Submit > Approved.
@@ -355,47 +414,6 @@ function AllData({
 
   const uniqueOpts = (key, labelize) => uniqueOptsFor(entries, calcsByEntry, key, getCol, labelize);
 
-  // Single-calculation value for a per-calc column — used when a filter rule is
-  // evaluated against ONE calculation (parent-match satisfiability and sub-row
-  // dimming share this accessor so they can never disagree).
-  const calcColVal = (x, k) => {
-    const f = x.factor || {};
-    switch (k) {
-      case "scope": return x.scope;
-      case "scope2_method": return x.scope === 2 ? x.method : null;
-      case "scope3_category": return x.scope === 3 ? scope3CatOf(x) : null;
-      case "consumption_data_type": { const b = efBasisOf(x); return b === "Spend-based" ? "Spend" : b === "Activity-based" ? "Activity" : null; }
-      case "co2e_method": return x.calc_method || x.method;
-      case "consumption_value": return x.quantity;
-      case "consumption_unit": return x.unit;
-      case "ef_name": return f.name;
-      case "ef_value": return f.kg_per_unit;
-      case "ef_unit": return f.unit;
-      case "ef_source": return f.source;
-      case "ef_dataset": return f.dataset || f.source;
-      case "ef_year": return f.vintage;
-      case "ef_region": return f.region || "Global";
-      case "ef_lca": return f.lca || "Cradle-to-gate";
-      default: return undefined;
-    }
-  };
-  const calcRuleVal = (x, k) => {
-    if (k === "co2e_value") return x.kgCO2e;
-    if (k === "co2e_unit") return "kgCO₂e";
-    if (k === "ef_unit") return x.factor ? `kgCO₂e/${x.factor.unit}` : "";
-    const v = calcColVal(x, k);
-    return v == null ? "" : v;
-  };
-  // The per-calc rules a single calculation of entry `e` is expected to satisfy.
-  // CO₂e rules are excluded on ADDITIVE entries: there the number is the entry
-  // total (summable), so individual legs aren't measured against it.
-  const perCalcRulesFor = (e, mine, rules) => {
-    const perCalc = rules.filter(rl => PER_CALC.has(rl.col));
-    if (!perCalc.length) return perCalc;
-    const additive = !(mine.length > 1 && window.calcsAreAlternative(e, mine));
-    return additive ? perCalc.filter(rl => rl.col !== "co2e_value") : perCalc;
-  };
-
   // On the multi-value route "Multiple" is not a filter value — filters match
   // the base sub-row values by membership, so the option would be redundant.
   // The archived classic route keeps it (there the cell value IS "multiple").
@@ -453,23 +471,12 @@ function AllData({
     let r = entries;
     if (period && period !== "all") r = r.filter(e => window.inPeriod(e, period));
     if (filterRules.length) {
-      r = r.filter(e => window.evalFilterRules(filterRules, withCalcs(e), getRuleVal));
-      // Multi-value route, AND groups: the entry must match through ONE
-      // calculation. Different legs satisfying different rules is not a match —
-      // mirrors sub-row dimming, so a visible parent always has a prominent leg.
-      const active = filterRules.filter(window.fbRuleActive);
-      const groupConn = filterRules[1]?.conn || "and";
-      if (window.FE_MULTI_ROUTE && groupConn === "and" && active.length > 1) {
-        r = r.filter(e => {
-          const mine = e._calcs || [];
-          if (mine.length <= 1) return true;
-          const rules = perCalcRulesFor(e, mine, active);
-          // 0–1 per-calc rules: the aggregate membership check above is already
-          // exactly "some leg satisfies it" — nothing further to prove.
-          if (rules.length <= 1) return true;
-          return mine.some(c => window.evalFilterRules(rules, c, calcRuleVal));
-        });
-      }
+      // Rule-wide invariant: aggregate membership match PLUS the AND-group
+      // requirement that one calculation satisfies every per-calc condition
+      // (entryMatchesAndGroup, shared with dimming and the view-tab counts).
+      r = r.filter(e =>
+        window.evalFilterRules(filterRules, withCalcs(e), getRuleVal) &&
+        entryMatchesAndGroup(e, e._calcs || [], filterRules));
     }
     if (globalQuery.trim()) {
       const q = globalQuery.toLowerCase();
