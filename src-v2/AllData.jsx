@@ -302,7 +302,12 @@ function AllData({
       case "ef_name": return aggOrFirst(c => c.factor?.name, f?.name || "");
       case "additional_description": return (e.details && e.details.additional_description) || "";
       case "business_unit": return e.business_unit;
-      case "co2e_value": return mine.reduce((s, c) => s + c.kgCO2e, 0);
+      case "co2e_value": {
+        // Alternative methods (location vs market) aren't additive — mirror the
+        // cell's "Multiple" so sorting/filtering never uses a fabricated sum.
+        if (mine.length > 1 && window.calcsAreAlternative(e, mine)) return window.multiJoin(mine.map(c => c.kgCO2e));
+        return mine.reduce((s, c) => s + c.kgCO2e, 0);
+      }
       case "business_activity": return e.business_activity;
       case "user_assigned": return e.user_assigned;
       case "start_date": return e.start_date;

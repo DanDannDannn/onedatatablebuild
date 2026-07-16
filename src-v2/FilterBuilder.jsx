@@ -44,9 +44,11 @@ function fbMatchRule(rule, e, getVal) {
     case "starts":   return cs.toLowerCase().startsWith(v.toLowerCase());
     case "empty":    return cs === "";
     case "nempty":   return cs !== "";
-    case "eq":       return parseFloat(cs) === parseFloat(v);
-    case "gt":       return parseFloat(cs) >  parseFloat(v);
-    case "lt":       return parseFloat(cs) <  parseFloat(v);
+    // Non-summable aggregates ("multiple, v1, v2") match numerically when ANY
+    // sub-value meets the criteria (parts[0] is the "multiple" marker — skip it).
+    case "eq":       return parts ? parts.slice(1).some(p => parseFloat(p) === parseFloat(v)) : parseFloat(cs) === parseFloat(v);
+    case "gt":       return parts ? parts.slice(1).some(p => parseFloat(p) >  parseFloat(v)) : parseFloat(cs) >  parseFloat(v);
+    case "lt":       return parts ? parts.slice(1).some(p => parseFloat(p) <  parseFloat(v)) : parseFloat(cs) <  parseFloat(v);
     default:         return true;
   }
 }
