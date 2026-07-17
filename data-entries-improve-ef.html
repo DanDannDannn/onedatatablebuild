@@ -367,6 +367,78 @@ select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www
 </style>
 </head>
 <body>
+<!-- ── Password gate (client-side deterrent, no brand). Same password + session
+     key as index.html, so unlocking either page keeps both open this tab session. ── -->
+<style>
+  .proto-gate { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(1200px 600px at 50% -10%, #3D3580 0%, #302A6C 45%, #1E1A4A 100%); font-family: "Satoshi Variable","Satoshi",system-ui,sans-serif; }
+  .proto-gate__card { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; background: #3D3580; border: 1px solid rgba(255,255,255,0.10); border-radius: 16px; padding: 32px 28px; box-shadow: 0 24px 64px -16px rgba(11,16,49,0.55); text-align: left; }
+  .proto-gate__title { margin: 0; font-size: 24px; font-weight: 700; color: #FF9E0D; letter-spacing: -0.2px; }
+  .proto-gate__sub { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: #FFFFFF; opacity: 0.85; }
+  .proto-gate__input { width: 100%; box-sizing: border-box; height: 44px; padding: 0 14px; font-size: 14px; font-family: inherit; color: #FFFFFF; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; }
+  .proto-gate__input::placeholder { color: #C2C9FF; opacity: 0.6; }
+  .proto-gate__input:focus { border-color: #5A4DFF; box-shadow: 0 0 0 3px rgba(90,77,255,0.30); }
+  .proto-gate__input.is-error { border-color: #F35151; box-shadow: 0 0 0 3px rgba(243,81,81,0.22); }
+  .proto-gate__err { font-size: 12.5px; color: #FFC9C9; margin-top: -4px; }
+  .proto-gate__btn { height: 44px; border: none; border-radius: 8px; cursor: pointer; background: #5A4DFF; color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; transition: background 150ms ease, opacity 150ms ease; margin-top: 2px; }
+  .proto-gate__btn:hover:not(:disabled) { background: #472AD8; }
+  .proto-gate__btn:disabled { opacity: 0.55; cursor: default; }
+</style>
+<script>
+(function () {
+  // Same password + session key as index.html.
+  var PROTO_PASSWORD_SHA256 = "20df8ad6cb70ec8b4114b0182fe0861b15565132f53edd3955e10dd68e145077"; // default: "forward-earth"
+  if (sessionStorage.getItem("fe-proto-auth") === "1") return;
+
+  async function sha256Hex(str) {
+    var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return [].map.call(new Uint8Array(buf), function (x) { return x.toString(16).padStart(2, "0"); }).join("");
+  }
+
+  var prevOverflow = document.documentElement.style.overflow;
+  document.documentElement.style.overflow = "hidden";
+
+  var gate = document.createElement("div");
+  gate.className = "proto-gate";
+  gate.innerHTML =
+    '<form class="proto-gate__card">' +
+      '<h1 class="proto-gate__title">Private prototype</h1>' +
+      '<p class="proto-gate__sub">Enter the password to view the Data entries workspace.</p>' +
+      '<input class="proto-gate__input" type="password" placeholder="Password" autocomplete="off" autofocus />' +
+      '<div class="proto-gate__err" style="display:none">Incorrect password — please try again.</div>' +
+      '<button class="proto-gate__btn" type="submit" disabled>Enter</button>' +
+    '</form>';
+  document.body.appendChild(gate);
+
+  var form = gate.querySelector("form");
+  var input = gate.querySelector(".proto-gate__input");
+  var err = gate.querySelector(".proto-gate__err");
+  var btn = gate.querySelector(".proto-gate__btn");
+  var busy = false;
+
+  input.addEventListener("input", function () {
+    btn.disabled = !input.value || busy;
+    input.classList.remove("is-error");
+    err.style.display = "none";
+  });
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (!input.value || busy) return;
+    busy = true; btn.disabled = true; btn.textContent = "Checking…";
+    var ok = (await sha256Hex(input.value)) === PROTO_PASSWORD_SHA256;
+    busy = false; btn.textContent = "Enter";
+    if (ok) {
+      sessionStorage.setItem("fe-proto-auth", "1");
+      document.documentElement.style.overflow = prevOverflow;
+      gate.remove();
+    } else {
+      input.classList.add("is-error");
+      err.style.display = "";
+      input.value = ""; btn.disabled = true; input.focus();
+    }
+  });
+})();
+</script>
 <div class="app">
   <!-- ── Sidebar ── -->
   <aside class="sidebar">
