@@ -62,25 +62,25 @@ const STATUS_ICONS = {
 };
 
 // ── V2: two independent lifecycle columns ───────────────────────────────────
-// Data entry (the record's human workflow): draft → ready to submit →
-//   review pending → submitted.
+// Data entry (the record's human workflow): Draft → Ready to submit →
+//   Submitted, with Failed for calculation failures (precedence: failed first).
 // Calculation (the engine outcome): no calculation → processing →
 //   review pending → confirmed.
 Object.assign(STATUS_LABELS, {
-  de_draft: "Draft", de_ready: "Ready", de_review: "In review", de_submitted: "Submitted",
+  de_draft: "Draft", de_ready: "Ready to submit", de_submitted: "Submitted", de_failed: "Failed",
   cs_none: "No calculation", cs_processing: "Processing",
   cs_sug_high: "Suggested · high confidence", cs_sug_low: "Suggested · low confidence", cs_confirmed: "Confirmed",
 });
 Object.assign(STATUS_ICONS, {
-  de_draft: "pencil", de_ready: "arrowUp", de_review: "clock", de_submitted: "check",
+  de_draft: "pencil", de_ready: "arrowUp", de_submitted: "check", de_failed: "warn",
   cs_none: null, cs_processing: "clock",
   cs_sug_high: "sparkle", cs_sug_low: "sparkle", cs_confirmed: "check",
 });
 function entryWorkflow(e, mine) {
+  if (e.entry_status === "failed" || (mine || []).some(c => c.status === "failed")) return "de_failed";
   if (e.entry_status === "draft") return "de_draft";
   if (e.entry_status === "ready" || !mine || mine.length === 0) return "de_ready";
-  if (mine.every(c => c.status === "confirmed")) return "de_submitted";
-  return "de_review"; // submitted; calcs still under review / processing / failed
+  return "de_submitted"; // submitted — calcs may still be processing / under review
 }
 // Two shapes of multi-calc entry:
 //  · "additive"    — one activity split into parts (gas, commute, materials…);

@@ -326,19 +326,6 @@ function AllData({
   };
   // (SCOPE3_CAT / scope3CatOf are module-level — shared with calcColVal.)
 
-  // Single rolled-up Status. Precedence (high→low):
-  //   Calculation failed > Processing > Draft > Ready to Submit > Approved.
-  // Approved is GATED by Quality: an entry with calcs still awaiting review
-  // (suggested) can't reach Approved — it stays "Ready to submit".
-  const mergedStatus = (e, mine) => {
-    if (e.entry_status === "failed") return "failed";
-    if (e.entry_status === "processing" || (mine && mine.some(c => c.status === "pending"))) return "processing";
-    if (e.entry_status === "draft") return "draft";
-    if (!mine || mine.length === 0) return "ready";
-    if (mine.every(c => c.status === "confirmed")) return "approved";
-    return "ready";
-  };
-
   const getCol = (e, key) => {
     const mine = e._calcs || [];
     const first = mine[0];
@@ -421,8 +408,8 @@ function AllData({
   const colFilterCfg = React.useMemo(() => ({
     business_unit:   { options: uniqueOpts("business_unit") },
     status:          { options: [
-      { k: "de_draft", l: "Draft" }, { k: "de_ready", l: "Ready to submit" },
-      { k: "de_review", l: "Review pending" }, { k: "de_submitted", l: "Submitted" },
+      { k: "de_submitted", l: "Submitted" }, { k: "de_ready", l: "Ready to submit" },
+      { k: "de_draft", l: "Draft" }, { k: "de_failed", l: "Failed" },
     ] },
     scope:           { options: withMulti([{ k: "1", l: "Scope 1" }, { k: "2", l: "Scope 2" }, { k: "3", l: "Scope 3" }]) },
     scope3_category: { options: withMulti([

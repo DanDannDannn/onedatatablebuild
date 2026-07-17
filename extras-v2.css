@@ -757,7 +757,7 @@
 /* Data entry workflow */
 .st-de_draft     { background: var(--fe-gray-100, #F3F4F6); color: var(--fe-gray-700, #374151);}
 .st-de_ready     { background: #EAF3FF; color: #1E40AF;}
-.st-de_review    { background: var(--fe-alert-50, #FEF3C7); color: var(--fe-alert-700, #B45309);}
+.st-de_failed    { background: #FEE2E2; color: #991B1B;}
 .st-de_submitted { background: var(--fe-success-50, #ECFDF5); color: var(--fe-success-700, #047857);}
 /* Calculation workflow */
 .st-cs_none       { background: transparent; color: var(--fe-fg-subtle); font-weight: 500;}

@@ -181,13 +181,13 @@ function viewStateEqual(a, b) { return normalizeViewState(a) === normalizeViewSt
 const _MATCH_SCOPE3 = { flight: "6 \u00b7 Business travel", purchased_goods: "1 \u00b7 Purchased goods & services",
   capital_goods: "2 \u00b7 Capital goods", upstream_transport: "4 \u00b7 Upstream transport & distribution",
   waste: "5 \u00b7 Waste generated in operations", business_travel: "6 \u00b7 Business travel" };
+// Fallback mirror of bits.jsx entryWorkflow (used only if that script is absent):
+// Submitted / Ready to submit / Draft / Failed.
 function _matchStatus(e, mine) {
-  if (e.entry_status === "failed") return "failed";
-  if (e.entry_status === "processing" || (mine && mine.some(c => c.status === "pending"))) return "processing";
-  if (e.entry_status === "draft") return "draft";
-  if (!mine || mine.length === 0) return "ready";
-  if (mine.every(c => c.status === "confirmed")) return "approved";
-  return "ready";
+  if (e.entry_status === "failed" || (mine && mine.some(c => c.status === "failed"))) return "de_failed";
+  if (e.entry_status === "draft") return "de_draft";
+  if (e.entry_status === "ready" || !mine || mine.length === 0) return "de_ready";
+  return "de_submitted";
 }
 function _matchConsumptionUnit(e) {
   if (e.category === "electricity" || e.category === "natural_gas") return "kWh";
